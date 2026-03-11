@@ -40,8 +40,7 @@ const bufferedLocation = (vehicleId: number, gps: GPSData): void => {
 
 const flushBuffer = async (): Promise<void> => {
 
-    if (isFlushing) return
-    if (locationBuffer.size === 0) return
+    if (isFlushing || locationBuffer.size === 0) return
 
     isFlushing = true
     const snapshot = new Map(locationBuffer);
