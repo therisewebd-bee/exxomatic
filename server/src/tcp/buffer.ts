@@ -24,6 +24,7 @@ let flushTimer: ReturnType<typeof setInterval> | null = null
 //GpsData is data fromat of the 
 //in-which it's interpreter
 
+
 const bufferedLocation = (vehicleId: number, gps: GPSData): void => {
     locationBuffer.set(vehicleId, {
         vehicleId,

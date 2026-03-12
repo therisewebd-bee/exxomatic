@@ -9,7 +9,6 @@ const startTcpServer = async (): Promise<void> => {
         socket.on('data', (data: Buffer) => {
             const rawData = data.toString().trim()
             logger.info(`data from ${socket.remoteAddress} sender : ${rawData} `)
-            socket.write('ACK\r\n');
         })
 
         socket.on('close', () => {
