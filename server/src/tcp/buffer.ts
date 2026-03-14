@@ -1,4 +1,5 @@
 //import data parser , primsa file and query from db
+//this code has somekind of the race conditon 
 import logger from "../services/logger/logger.js"
 interface BufferedLocation {
     vehicleId: number
