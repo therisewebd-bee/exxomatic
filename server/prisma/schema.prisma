@@ -23,6 +23,7 @@ model VehicleInfo {
   customer    User                @relation(fields: [customerId], references: [id])
   locations   LocationLog[]
   compliances VehicleCompliance[]
+  geofech     Geofence[]
 
   @@index([imei])
   @@index([vechicleNumb])
@@ -72,6 +73,7 @@ model Geofence {
   isActive  Boolean                  @default(true)
   createdAt DateTime                 @default(now())
   updatedAt DateTime                 @updatedAt
+  vehicles  VehicleInfo[]
 }
 
 model VehicleCompliance {
