@@ -1,4 +1,4 @@
-import { email, uuid, z } from "zod";
+import { z } from "zod";
 
 
 const nameSchema = z.string().min(2, "Name must be at lest 2 char long").

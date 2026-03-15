@@ -1,6 +1,6 @@
 import { prismaAdapter } from "./dbInit.js";
 import { CreateAccountInput, FindUserQueryInput, UpdateUserInput, UserIdParam } from "../dto/user.dto.js";
-import { catchService } from "../utils/utilHandler.js";
+import { catchService } from "../utils/utilHanlder.js";
 
 
 
@@ -9,6 +9,7 @@ import { catchService } from "../utils/utilHandler.js";
 //whcih track , error in case the db call fails
 //using other two parameter it is possible to
 //trace out error propley
+//uID stands for userId 
 
 const createUserAccount = catchService(async (userDataScheam: CreateAccountInput) => {
     return await prismaAdapter.user.create({
@@ -21,7 +22,7 @@ const createUserAccount = catchService(async (userDataScheam: CreateAccountInput
 const findUserAccountByEmail = catchService(async (findUSD: FindUserQueryInput) => {
     return await prismaAdapter.user.findUnique({
         where: {
-            email: findUSD.query.email || ""
+            email: findUSD.query.email
         },
         select: {
             id: true,
@@ -75,12 +76,3 @@ const findUserAccounts = catchService(async (findUSD: FindUserQueryInput) => {
         take: limit
     })
 }, "DB-Call:User", "Find User Accounts");
-
-export {
-    createUserAccount,
-    findUserAccountByEmail,
-    findUserAccountById,
-    updateUserAccount,
-    deleteUserAccount,
-    findUserAccounts
-};

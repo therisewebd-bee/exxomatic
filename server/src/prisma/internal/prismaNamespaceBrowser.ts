@@ -55,7 +55,6 @@ export const ModelName = {
   LocationLog: 'LocationLog',
   User: 'User',
   Geofence: 'Geofence',
-  VehiclesOnGeofences: 'VehiclesOnGeofences',
   VehicleCompliance: 'VehicleCompliance'
 } as const
 
@@ -127,15 +126,6 @@ export const GeofenceScalarFieldEnum = {
 } as const
 
 export type GeofenceScalarFieldEnum = (typeof GeofenceScalarFieldEnum)[keyof typeof GeofenceScalarFieldEnum]
-
-
-export const VehiclesOnGeofencesScalarFieldEnum = {
-  vehicleId: 'vehicleId',
-  geofenceId: 'geofenceId',
-  assignedAt: 'assignedAt'
-} as const
-
-export type VehiclesOnGeofencesScalarFieldEnum = (typeof VehiclesOnGeofencesScalarFieldEnum)[keyof typeof VehiclesOnGeofencesScalarFieldEnum]
 
 
 export const VehicleComplianceScalarFieldEnum = {

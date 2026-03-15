@@ -5,7 +5,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -23,7 +23,7 @@ model VehicleInfo {
   customer    User                @relation(fields: [customerId], references: [id])
   locations   LocationLog[]
   compliances VehicleCompliance[]
-  geofech     Geofence[]
+  geofences VehiclesOnGeofences[] @relation("VehicleToJoin")
 
   @@index([imei])
   @@index([vechicleNumb])
@@ -70,15 +70,28 @@ model Geofence {
   id        String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String                   @db.VarChar(50)
   zone      Unsupported("geometry")?
+  zoneHash  String?                  @unique @db.VarChar(32)
   isActive  Boolean                  @default(true)
   createdAt DateTime                 @default(now())
   updatedAt DateTime                 @updatedAt
-  vehicles  VehicleInfo[]
+  vehicles  VehiclesOnGeofences[] @relation("GeofenceToJoin")
+
+  @@index([zoneHash])
+}
+
+model VehiclesOnGeofences {
+  vehicleId  String      @db.Uuid
+  geofenceId String      @db.Uuid
+  vehicle    VehicleInfo @relation("VehicleToJoin", fields: [vehicleId], references: [id])
+  geofence   Geofence    @relation("GeofenceToJoin", fields: [geofenceId], references: [id])
+  assignedAt DateTime    @default(now())
+
+  @@id([vehicleId, geofenceId])
 }
 
 model VehicleCompliance {
   id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  vehicleId String
+  vehicleId String @db.Uuid
 
   // Fuel entry
   fuelQuantity Decimal // in liters

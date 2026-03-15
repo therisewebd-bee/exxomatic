@@ -59,3 +59,11 @@ const findVehicleCompliances = catchService(async (findVCS: FindVehicleComplianc
         }
     })
 }, "DB-Call:Compliance", "Find Compliance Records");
+
+export {
+    createVehicleCompliance,
+    updateVehicleCompliance,
+    deleteVehicleCompliance,
+    findVehicleComplianceById,
+    findVehicleCompliances
+};

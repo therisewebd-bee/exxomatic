@@ -1,5 +1,5 @@
 import net from "net"
-import logger from "../services/logger/logger"
+import logger from "../logger/logger"
 
 
 //creating a tcp server to accept request 
@@ -20,9 +20,9 @@ const startTcpServer = async (): Promise<void> => {
             logger.error(`[tcp] error: ${err.message}`)
         })
     })
-    
 
-    server.listen(5000,()=>{
+
+    server.listen(5000, () => {
         logger.info('[tcp] server up')
     })
 }

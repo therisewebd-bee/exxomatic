@@ -62,11 +62,6 @@ export type User = Prisma.UserModel
  */
 export type Geofence = Prisma.GeofenceModel
 /**
- * Model VehiclesOnGeofences
- * 
- */
-export type VehiclesOnGeofences = Prisma.VehiclesOnGeofencesModel
-/**
  * Model VehicleCompliance
  * 
  */

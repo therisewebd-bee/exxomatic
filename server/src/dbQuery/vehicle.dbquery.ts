@@ -12,52 +12,92 @@ import { catchService } from "../utils/utilHandler.js";
 
 const createVehicle = catchService(async (vehicleDataScheam: CreateVehicleInput) => {
     const { geofenceIds, ...body } = vehicleDataScheam.body;
-    return await prismaAdapter.vehicleInfo.create({
+    
+    const vehicle = await prismaAdapter.vehicleInfo.create({
         data: {
-            ...body,
-            geofech: geofenceIds ? {
-                connect: geofenceIds.map(id => ({ id }))
-            } : undefined
+            ...body
         }
-    })
+    });
+
+    if (geofenceIds && geofenceIds.length > 0) {
+        await prismaAdapter.vehiclesOnGeofences.createMany({
+            data: geofenceIds.map(gId => ({
+                vehicleId: vehicle.id,
+                geofenceId: gId
+            }))
+        });
+    }
+
+    return vehicle;
 }, "DB-Call:Vehicle", "Vehicle Creation");
 
 const updateVehicle = catchService(async (vID: VehicleIdParam, vehicleDataScheam: UpdateVehicleInput) => {
     const { geofenceIds, ...body } = vehicleDataScheam.body;
-    return await prismaAdapter.vehicleInfo.update({
+    const { vehicleId } = vID.params;
+
+    const vehicle = await prismaAdapter.vehicleInfo.update({
         where: {
-            id: vID.params.vehicleId
+            id: vehicleId
         },
         data: {
-            ...body,
-            geofech: geofenceIds ? {
-                set: geofenceIds.map(id => ({ id }))
-            } : undefined
+            ...body
         }
-    })
+    });
+
+    if (geofenceIds) {
+        // Sync relations
+        await prismaAdapter.vehiclesOnGeofences.deleteMany({
+            where: { vehicleId: vehicleId }
+        });
+
+        if (geofenceIds.length > 0) {
+            await prismaAdapter.vehiclesOnGeofences.createMany({
+                data: geofenceIds.map(gId => ({
+                    vehicleId: vehicleId,
+                    geofenceId: gId
+                }))
+            });
+        }
+    }
+
+    return vehicle;
 }, "DB-Call:Vehicle", "Update Vehicle");
 
 const deleteVehicle = catchService(async (vID: VehicleIdParam) => {
+    const { vehicleId } = vID.params;
+
+    // Explicitly delete relations first
+    await prismaAdapter.vehiclesOnGeofences.deleteMany({
+        where: { vehicleId: vehicleId }
+    });
+
     return await prismaAdapter.vehicleInfo.delete({
         where: {
-            id: vID.params.vehicleId
+            id: vehicleId
         }
-    })
+    });
 }, "DB-Call:Vehicle", "Delete Vehicle");
 
 const findVehicleById = catchService(async (vID: VehicleIdParam) => {
+    const { vehicleId } = vID.params;
+
     return await prismaAdapter.vehicleInfo.findUnique({
         where: {
-            id: vID.params.vehicleId
+            id: vehicleId
         },
         include: {
-            geofech: true
+            geofences: {
+                include: {
+                    geofence: true
+                }
+            }
         }
-    })
+    });
 }, "DB-Call:Vehicle", "Find Vehicle By Id");
 
 const findVehicles = catchService(async (findVDS: FindVehicleQueryInput) => {
     const { customerId, imei, vechicleNumb, page = 1, limit = 10 } = findVDS.query;
+    
     return await prismaAdapter.vehicleInfo.findMany({
         where: {
             customerId,
@@ -65,9 +105,21 @@ const findVehicles = catchService(async (findVDS: FindVehicleQueryInput) => {
             vechicleNumb
         },
         include: {
-            geofech: true
+            geofences: {
+                include: {
+                    geofence: true
+                }
+            }
         },
         skip: (page - 1) * limit,
         take: limit
-    })
+    });
 }, "DB-Call:Vehicle", "Find Vehicles");
+
+export {
+    createVehicle,
+    updateVehicle,
+    deleteVehicle,
+    findVehicleById,
+    findVehicles
+};

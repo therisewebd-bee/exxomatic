@@ -190,7 +190,7 @@ export type GeofenceWhereInput = {
   isActive?: Prisma.BoolFilter<"Geofence"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Geofence"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Geofence"> | Date | string
-  vehicles?: Prisma.VehiclesOnGeofencesListRelationFilter
+  vehicles?: Prisma.VehicleInfoListRelationFilter
 }
 
 export type GeofenceOrderByWithRelationInput = {
@@ -200,7 +200,7 @@ export type GeofenceOrderByWithRelationInput = {
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  vehicles?: Prisma.VehiclesOnGeofencesOrderByRelationAggregateInput
+  vehicles?: Prisma.VehicleInfoOrderByRelationAggregateInput
 }
 
 export type GeofenceWhereUniqueInput = Prisma.AtLeast<{
@@ -213,7 +213,7 @@ export type GeofenceWhereUniqueInput = Prisma.AtLeast<{
   isActive?: Prisma.BoolFilter<"Geofence"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Geofence"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Geofence"> | Date | string
-  vehicles?: Prisma.VehiclesOnGeofencesListRelationFilter
+  vehicles?: Prisma.VehicleInfoListRelationFilter
 }, "id" | "zoneHash">
 
 export type GeofenceOrderByWithAggregationInput = {
@@ -247,7 +247,7 @@ export type GeofenceCreateInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  vehicles?: Prisma.VehiclesOnGeofencesCreateNestedManyWithoutGeofenceInput
+  vehicles?: Prisma.VehicleInfoCreateNestedManyWithoutGeofechInput
 }
 
 export type GeofenceUncheckedCreateInput = {
@@ -257,7 +257,7 @@ export type GeofenceUncheckedCreateInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  vehicles?: Prisma.VehiclesOnGeofencesUncheckedCreateNestedManyWithoutGeofenceInput
+  vehicles?: Prisma.VehicleInfoUncheckedCreateNestedManyWithoutGeofechInput
 }
 
 export type GeofenceUpdateInput = {
@@ -267,7 +267,7 @@ export type GeofenceUpdateInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vehicles?: Prisma.VehiclesOnGeofencesUpdateManyWithoutGeofenceNestedInput
+  vehicles?: Prisma.VehicleInfoUpdateManyWithoutGeofechNestedInput
 }
 
 export type GeofenceUncheckedUpdateInput = {
@@ -277,7 +277,7 @@ export type GeofenceUncheckedUpdateInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vehicles?: Prisma.VehiclesOnGeofencesUncheckedUpdateManyWithoutGeofenceNestedInput
+  vehicles?: Prisma.VehicleInfoUncheckedUpdateManyWithoutGeofechNestedInput
 }
 
 export type GeofenceCreateManyInput = {
@@ -307,6 +307,16 @@ export type GeofenceUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type GeofenceListRelationFilter = {
+  every?: Prisma.GeofenceWhereInput
+  some?: Prisma.GeofenceWhereInput
+  none?: Prisma.GeofenceWhereInput
+}
+
+export type GeofenceOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
 export type GeofenceCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
@@ -334,27 +344,46 @@ export type GeofenceMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type GeofenceScalarRelationFilter = {
-  is?: Prisma.GeofenceWhereInput
-  isNot?: Prisma.GeofenceWhereInput
+export type GeofenceCreateNestedManyWithoutVehiclesInput = {
+  create?: Prisma.XOR<Prisma.GeofenceCreateWithoutVehiclesInput, Prisma.GeofenceUncheckedCreateWithoutVehiclesInput> | Prisma.GeofenceCreateWithoutVehiclesInput[] | Prisma.GeofenceUncheckedCreateWithoutVehiclesInput[]
+  connectOrCreate?: Prisma.GeofenceCreateOrConnectWithoutVehiclesInput | Prisma.GeofenceCreateOrConnectWithoutVehiclesInput[]
+  connect?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+}
+
+export type GeofenceUncheckedCreateNestedManyWithoutVehiclesInput = {
+  create?: Prisma.XOR<Prisma.GeofenceCreateWithoutVehiclesInput, Prisma.GeofenceUncheckedCreateWithoutVehiclesInput> | Prisma.GeofenceCreateWithoutVehiclesInput[] | Prisma.GeofenceUncheckedCreateWithoutVehiclesInput[]
+  connectOrCreate?: Prisma.GeofenceCreateOrConnectWithoutVehiclesInput | Prisma.GeofenceCreateOrConnectWithoutVehiclesInput[]
+  connect?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+}
+
+export type GeofenceUpdateManyWithoutVehiclesNestedInput = {
+  create?: Prisma.XOR<Prisma.GeofenceCreateWithoutVehiclesInput, Prisma.GeofenceUncheckedCreateWithoutVehiclesInput> | Prisma.GeofenceCreateWithoutVehiclesInput[] | Prisma.GeofenceUncheckedCreateWithoutVehiclesInput[]
+  connectOrCreate?: Prisma.GeofenceCreateOrConnectWithoutVehiclesInput | Prisma.GeofenceCreateOrConnectWithoutVehiclesInput[]
+  upsert?: Prisma.GeofenceUpsertWithWhereUniqueWithoutVehiclesInput | Prisma.GeofenceUpsertWithWhereUniqueWithoutVehiclesInput[]
+  set?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+  disconnect?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+  delete?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+  connect?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+  update?: Prisma.GeofenceUpdateWithWhereUniqueWithoutVehiclesInput | Prisma.GeofenceUpdateWithWhereUniqueWithoutVehiclesInput[]
+  updateMany?: Prisma.GeofenceUpdateManyWithWhereWithoutVehiclesInput | Prisma.GeofenceUpdateManyWithWhereWithoutVehiclesInput[]
+  deleteMany?: Prisma.GeofenceScalarWhereInput | Prisma.GeofenceScalarWhereInput[]
+}
+
+export type GeofenceUncheckedUpdateManyWithoutVehiclesNestedInput = {
+  create?: Prisma.XOR<Prisma.GeofenceCreateWithoutVehiclesInput, Prisma.GeofenceUncheckedCreateWithoutVehiclesInput> | Prisma.GeofenceCreateWithoutVehiclesInput[] | Prisma.GeofenceUncheckedCreateWithoutVehiclesInput[]
+  connectOrCreate?: Prisma.GeofenceCreateOrConnectWithoutVehiclesInput | Prisma.GeofenceCreateOrConnectWithoutVehiclesInput[]
+  upsert?: Prisma.GeofenceUpsertWithWhereUniqueWithoutVehiclesInput | Prisma.GeofenceUpsertWithWhereUniqueWithoutVehiclesInput[]
+  set?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+  disconnect?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+  delete?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+  connect?: Prisma.GeofenceWhereUniqueInput | Prisma.GeofenceWhereUniqueInput[]
+  update?: Prisma.GeofenceUpdateWithWhereUniqueWithoutVehiclesInput | Prisma.GeofenceUpdateWithWhereUniqueWithoutVehiclesInput[]
+  updateMany?: Prisma.GeofenceUpdateManyWithWhereWithoutVehiclesInput | Prisma.GeofenceUpdateManyWithWhereWithoutVehiclesInput[]
+  deleteMany?: Prisma.GeofenceScalarWhereInput | Prisma.GeofenceScalarWhereInput[]
 }
 
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
-}
-
-export type GeofenceCreateNestedOneWithoutVehiclesInput = {
-  create?: Prisma.XOR<Prisma.GeofenceCreateWithoutVehiclesInput, Prisma.GeofenceUncheckedCreateWithoutVehiclesInput>
-  connectOrCreate?: Prisma.GeofenceCreateOrConnectWithoutVehiclesInput
-  connect?: Prisma.GeofenceWhereUniqueInput
-}
-
-export type GeofenceUpdateOneRequiredWithoutVehiclesNestedInput = {
-  create?: Prisma.XOR<Prisma.GeofenceCreateWithoutVehiclesInput, Prisma.GeofenceUncheckedCreateWithoutVehiclesInput>
-  connectOrCreate?: Prisma.GeofenceCreateOrConnectWithoutVehiclesInput
-  upsert?: Prisma.GeofenceUpsertWithoutVehiclesInput
-  connect?: Prisma.GeofenceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.GeofenceUpdateToOneWithWhereWithoutVehiclesInput, Prisma.GeofenceUpdateWithoutVehiclesInput>, Prisma.GeofenceUncheckedUpdateWithoutVehiclesInput>
 }
 
 export type GeofenceCreateWithoutVehiclesInput = {
@@ -380,15 +409,32 @@ export type GeofenceCreateOrConnectWithoutVehiclesInput = {
   create: Prisma.XOR<Prisma.GeofenceCreateWithoutVehiclesInput, Prisma.GeofenceUncheckedCreateWithoutVehiclesInput>
 }
 
-export type GeofenceUpsertWithoutVehiclesInput = {
+export type GeofenceUpsertWithWhereUniqueWithoutVehiclesInput = {
+  where: Prisma.GeofenceWhereUniqueInput
   update: Prisma.XOR<Prisma.GeofenceUpdateWithoutVehiclesInput, Prisma.GeofenceUncheckedUpdateWithoutVehiclesInput>
   create: Prisma.XOR<Prisma.GeofenceCreateWithoutVehiclesInput, Prisma.GeofenceUncheckedCreateWithoutVehiclesInput>
-  where?: Prisma.GeofenceWhereInput
 }
 
-export type GeofenceUpdateToOneWithWhereWithoutVehiclesInput = {
-  where?: Prisma.GeofenceWhereInput
+export type GeofenceUpdateWithWhereUniqueWithoutVehiclesInput = {
+  where: Prisma.GeofenceWhereUniqueInput
   data: Prisma.XOR<Prisma.GeofenceUpdateWithoutVehiclesInput, Prisma.GeofenceUncheckedUpdateWithoutVehiclesInput>
+}
+
+export type GeofenceUpdateManyWithWhereWithoutVehiclesInput = {
+  where: Prisma.GeofenceScalarWhereInput
+  data: Prisma.XOR<Prisma.GeofenceUpdateManyMutationInput, Prisma.GeofenceUncheckedUpdateManyWithoutVehiclesInput>
+}
+
+export type GeofenceScalarWhereInput = {
+  AND?: Prisma.GeofenceScalarWhereInput | Prisma.GeofenceScalarWhereInput[]
+  OR?: Prisma.GeofenceScalarWhereInput[]
+  NOT?: Prisma.GeofenceScalarWhereInput | Prisma.GeofenceScalarWhereInput[]
+  id?: Prisma.UuidFilter<"Geofence"> | string
+  name?: Prisma.StringFilter<"Geofence"> | string
+  zoneHash?: Prisma.StringNullableFilter<"Geofence"> | string | null
+  isActive?: Prisma.BoolFilter<"Geofence"> | boolean
+  createdAt?: Prisma.DateTimeFilter<"Geofence"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Geofence"> | Date | string
 }
 
 export type GeofenceUpdateWithoutVehiclesInput = {
@@ -401,6 +447,15 @@ export type GeofenceUpdateWithoutVehiclesInput = {
 }
 
 export type GeofenceUncheckedUpdateWithoutVehiclesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  zoneHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type GeofenceUncheckedUpdateManyWithoutVehiclesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   zoneHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -436,7 +491,7 @@ export type GeofenceCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Ext
  * GeofenceCountOutputType without action
  */
 export type GeofenceCountOutputTypeCountVehiclesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.VehiclesOnGeofencesWhereInput
+  where?: Prisma.VehicleInfoWhereInput
 }
 
 
@@ -489,7 +544,7 @@ export type GeofenceIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
 export type $GeofencePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Geofence"
   objects: {
-    vehicles: Prisma.$VehiclesOnGeofencesPayload<ExtArgs>[]
+    vehicles: Prisma.$VehicleInfoPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -892,7 +947,7 @@ readonly fields: GeofenceFieldRefs;
  */
 export interface Prisma__GeofenceClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  vehicles<T extends Prisma.Geofence$vehiclesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Geofence$vehiclesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VehiclesOnGeofencesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  vehicles<T extends Prisma.Geofence$vehiclesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Geofence$vehiclesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VehicleInfoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1325,23 +1380,23 @@ export type GeofenceDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
  */
 export type Geofence$vehiclesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the VehiclesOnGeofences
+   * Select specific fields to fetch from the VehicleInfo
    */
-  select?: Prisma.VehiclesOnGeofencesSelect<ExtArgs> | null
+  select?: Prisma.VehicleInfoSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the VehiclesOnGeofences
+   * Omit specific fields from the VehicleInfo
    */
-  omit?: Prisma.VehiclesOnGeofencesOmit<ExtArgs> | null
+  omit?: Prisma.VehicleInfoOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.VehiclesOnGeofencesInclude<ExtArgs> | null
-  where?: Prisma.VehiclesOnGeofencesWhereInput
-  orderBy?: Prisma.VehiclesOnGeofencesOrderByWithRelationInput | Prisma.VehiclesOnGeofencesOrderByWithRelationInput[]
-  cursor?: Prisma.VehiclesOnGeofencesWhereUniqueInput
+  include?: Prisma.VehicleInfoInclude<ExtArgs> | null
+  where?: Prisma.VehicleInfoWhereInput
+  orderBy?: Prisma.VehicleInfoOrderByWithRelationInput | Prisma.VehicleInfoOrderByWithRelationInput[]
+  cursor?: Prisma.VehicleInfoWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.VehiclesOnGeofencesScalarFieldEnum | Prisma.VehiclesOnGeofencesScalarFieldEnum[]
+  distinct?: Prisma.VehicleInfoScalarFieldEnum | Prisma.VehicleInfoScalarFieldEnum[]
 }
 
 /**

@@ -193,7 +193,7 @@ export type VehicleInfoWhereInput = {
   customer?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   locations?: Prisma.LocationLogListRelationFilter
   compliances?: Prisma.VehicleComplianceListRelationFilter
-  geofences?: Prisma.VehiclesOnGeofencesListRelationFilter
+  geofech?: Prisma.GeofenceListRelationFilter
 }
 
 export type VehicleInfoOrderByWithRelationInput = {
@@ -206,7 +206,7 @@ export type VehicleInfoOrderByWithRelationInput = {
   customer?: Prisma.UserOrderByWithRelationInput
   locations?: Prisma.LocationLogOrderByRelationAggregateInput
   compliances?: Prisma.VehicleComplianceOrderByRelationAggregateInput
-  geofences?: Prisma.VehiclesOnGeofencesOrderByRelationAggregateInput
+  geofech?: Prisma.GeofenceOrderByRelationAggregateInput
 }
 
 export type VehicleInfoWhereUniqueInput = Prisma.AtLeast<{
@@ -222,7 +222,7 @@ export type VehicleInfoWhereUniqueInput = Prisma.AtLeast<{
   customer?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   locations?: Prisma.LocationLogListRelationFilter
   compliances?: Prisma.VehicleComplianceListRelationFilter
-  geofences?: Prisma.VehiclesOnGeofencesListRelationFilter
+  geofech?: Prisma.GeofenceListRelationFilter
 }, "id" | "imei" | "vechicleNumb">
 
 export type VehicleInfoOrderByWithAggregationInput = {
@@ -258,7 +258,7 @@ export type VehicleInfoCreateInput = {
   customer: Prisma.UserCreateNestedOneWithoutVehicleInfosInput
   locations?: Prisma.LocationLogCreateNestedManyWithoutVehicleInput
   compliances?: Prisma.VehicleComplianceCreateNestedManyWithoutVehicleInput
-  geofences?: Prisma.VehiclesOnGeofencesCreateNestedManyWithoutVehicleInput
+  geofech?: Prisma.GeofenceCreateNestedManyWithoutVehiclesInput
 }
 
 export type VehicleInfoUncheckedCreateInput = {
@@ -270,7 +270,7 @@ export type VehicleInfoUncheckedCreateInput = {
   updatedAt?: Date | string
   locations?: Prisma.LocationLogUncheckedCreateNestedManyWithoutVehicleInput
   compliances?: Prisma.VehicleComplianceUncheckedCreateNestedManyWithoutVehicleInput
-  geofences?: Prisma.VehiclesOnGeofencesUncheckedCreateNestedManyWithoutVehicleInput
+  geofech?: Prisma.GeofenceUncheckedCreateNestedManyWithoutVehiclesInput
 }
 
 export type VehicleInfoUpdateInput = {
@@ -282,7 +282,7 @@ export type VehicleInfoUpdateInput = {
   customer?: Prisma.UserUpdateOneRequiredWithoutVehicleInfosNestedInput
   locations?: Prisma.LocationLogUpdateManyWithoutVehicleNestedInput
   compliances?: Prisma.VehicleComplianceUpdateManyWithoutVehicleNestedInput
-  geofences?: Prisma.VehiclesOnGeofencesUpdateManyWithoutVehicleNestedInput
+  geofech?: Prisma.GeofenceUpdateManyWithoutVehiclesNestedInput
 }
 
 export type VehicleInfoUncheckedUpdateInput = {
@@ -294,7 +294,7 @@ export type VehicleInfoUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   locations?: Prisma.LocationLogUncheckedUpdateManyWithoutVehicleNestedInput
   compliances?: Prisma.VehicleComplianceUncheckedUpdateManyWithoutVehicleNestedInput
-  geofences?: Prisma.VehiclesOnGeofencesUncheckedUpdateManyWithoutVehicleNestedInput
+  geofech?: Prisma.GeofenceUncheckedUpdateManyWithoutVehiclesNestedInput
 }
 
 export type VehicleInfoCreateManyInput = {
@@ -429,18 +429,42 @@ export type VehicleInfoUncheckedUpdateManyWithoutCustomerNestedInput = {
   deleteMany?: Prisma.VehicleInfoScalarWhereInput | Prisma.VehicleInfoScalarWhereInput[]
 }
 
-export type VehicleInfoCreateNestedOneWithoutGeofencesInput = {
-  create?: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofencesInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofencesInput>
-  connectOrCreate?: Prisma.VehicleInfoCreateOrConnectWithoutGeofencesInput
-  connect?: Prisma.VehicleInfoWhereUniqueInput
+export type VehicleInfoCreateNestedManyWithoutGeofechInput = {
+  create?: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofechInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput> | Prisma.VehicleInfoCreateWithoutGeofechInput[] | Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput[]
+  connectOrCreate?: Prisma.VehicleInfoCreateOrConnectWithoutGeofechInput | Prisma.VehicleInfoCreateOrConnectWithoutGeofechInput[]
+  connect?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
 }
 
-export type VehicleInfoUpdateOneRequiredWithoutGeofencesNestedInput = {
-  create?: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofencesInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofencesInput>
-  connectOrCreate?: Prisma.VehicleInfoCreateOrConnectWithoutGeofencesInput
-  upsert?: Prisma.VehicleInfoUpsertWithoutGeofencesInput
-  connect?: Prisma.VehicleInfoWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.VehicleInfoUpdateToOneWithWhereWithoutGeofencesInput, Prisma.VehicleInfoUpdateWithoutGeofencesInput>, Prisma.VehicleInfoUncheckedUpdateWithoutGeofencesInput>
+export type VehicleInfoUncheckedCreateNestedManyWithoutGeofechInput = {
+  create?: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofechInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput> | Prisma.VehicleInfoCreateWithoutGeofechInput[] | Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput[]
+  connectOrCreate?: Prisma.VehicleInfoCreateOrConnectWithoutGeofechInput | Prisma.VehicleInfoCreateOrConnectWithoutGeofechInput[]
+  connect?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
+}
+
+export type VehicleInfoUpdateManyWithoutGeofechNestedInput = {
+  create?: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofechInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput> | Prisma.VehicleInfoCreateWithoutGeofechInput[] | Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput[]
+  connectOrCreate?: Prisma.VehicleInfoCreateOrConnectWithoutGeofechInput | Prisma.VehicleInfoCreateOrConnectWithoutGeofechInput[]
+  upsert?: Prisma.VehicleInfoUpsertWithWhereUniqueWithoutGeofechInput | Prisma.VehicleInfoUpsertWithWhereUniqueWithoutGeofechInput[]
+  set?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
+  disconnect?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
+  delete?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
+  connect?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
+  update?: Prisma.VehicleInfoUpdateWithWhereUniqueWithoutGeofechInput | Prisma.VehicleInfoUpdateWithWhereUniqueWithoutGeofechInput[]
+  updateMany?: Prisma.VehicleInfoUpdateManyWithWhereWithoutGeofechInput | Prisma.VehicleInfoUpdateManyWithWhereWithoutGeofechInput[]
+  deleteMany?: Prisma.VehicleInfoScalarWhereInput | Prisma.VehicleInfoScalarWhereInput[]
+}
+
+export type VehicleInfoUncheckedUpdateManyWithoutGeofechNestedInput = {
+  create?: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofechInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput> | Prisma.VehicleInfoCreateWithoutGeofechInput[] | Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput[]
+  connectOrCreate?: Prisma.VehicleInfoCreateOrConnectWithoutGeofechInput | Prisma.VehicleInfoCreateOrConnectWithoutGeofechInput[]
+  upsert?: Prisma.VehicleInfoUpsertWithWhereUniqueWithoutGeofechInput | Prisma.VehicleInfoUpsertWithWhereUniqueWithoutGeofechInput[]
+  set?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
+  disconnect?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
+  delete?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
+  connect?: Prisma.VehicleInfoWhereUniqueInput | Prisma.VehicleInfoWhereUniqueInput[]
+  update?: Prisma.VehicleInfoUpdateWithWhereUniqueWithoutGeofechInput | Prisma.VehicleInfoUpdateWithWhereUniqueWithoutGeofechInput[]
+  updateMany?: Prisma.VehicleInfoUpdateManyWithWhereWithoutGeofechInput | Prisma.VehicleInfoUpdateManyWithWhereWithoutGeofechInput[]
+  deleteMany?: Prisma.VehicleInfoScalarWhereInput | Prisma.VehicleInfoScalarWhereInput[]
 }
 
 export type VehicleInfoCreateNestedOneWithoutCompliancesInput = {
@@ -465,7 +489,7 @@ export type VehicleInfoCreateWithoutLocationsInput = {
   updatedAt?: Date | string
   customer: Prisma.UserCreateNestedOneWithoutVehicleInfosInput
   compliances?: Prisma.VehicleComplianceCreateNestedManyWithoutVehicleInput
-  geofences?: Prisma.VehiclesOnGeofencesCreateNestedManyWithoutVehicleInput
+  geofech?: Prisma.GeofenceCreateNestedManyWithoutVehiclesInput
 }
 
 export type VehicleInfoUncheckedCreateWithoutLocationsInput = {
@@ -476,7 +500,7 @@ export type VehicleInfoUncheckedCreateWithoutLocationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   compliances?: Prisma.VehicleComplianceUncheckedCreateNestedManyWithoutVehicleInput
-  geofences?: Prisma.VehiclesOnGeofencesUncheckedCreateNestedManyWithoutVehicleInput
+  geofech?: Prisma.GeofenceUncheckedCreateNestedManyWithoutVehiclesInput
 }
 
 export type VehicleInfoCreateOrConnectWithoutLocationsInput = {
@@ -503,7 +527,7 @@ export type VehicleInfoUpdateWithoutLocationsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customer?: Prisma.UserUpdateOneRequiredWithoutVehicleInfosNestedInput
   compliances?: Prisma.VehicleComplianceUpdateManyWithoutVehicleNestedInput
-  geofences?: Prisma.VehiclesOnGeofencesUpdateManyWithoutVehicleNestedInput
+  geofech?: Prisma.GeofenceUpdateManyWithoutVehiclesNestedInput
 }
 
 export type VehicleInfoUncheckedUpdateWithoutLocationsInput = {
@@ -514,7 +538,7 @@ export type VehicleInfoUncheckedUpdateWithoutLocationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   compliances?: Prisma.VehicleComplianceUncheckedUpdateManyWithoutVehicleNestedInput
-  geofences?: Prisma.VehiclesOnGeofencesUncheckedUpdateManyWithoutVehicleNestedInput
+  geofech?: Prisma.GeofenceUncheckedUpdateManyWithoutVehiclesNestedInput
 }
 
 export type VehicleInfoCreateWithoutCustomerInput = {
@@ -525,7 +549,7 @@ export type VehicleInfoCreateWithoutCustomerInput = {
   updatedAt?: Date | string
   locations?: Prisma.LocationLogCreateNestedManyWithoutVehicleInput
   compliances?: Prisma.VehicleComplianceCreateNestedManyWithoutVehicleInput
-  geofences?: Prisma.VehiclesOnGeofencesCreateNestedManyWithoutVehicleInput
+  geofech?: Prisma.GeofenceCreateNestedManyWithoutVehiclesInput
 }
 
 export type VehicleInfoUncheckedCreateWithoutCustomerInput = {
@@ -536,7 +560,7 @@ export type VehicleInfoUncheckedCreateWithoutCustomerInput = {
   updatedAt?: Date | string
   locations?: Prisma.LocationLogUncheckedCreateNestedManyWithoutVehicleInput
   compliances?: Prisma.VehicleComplianceUncheckedCreateNestedManyWithoutVehicleInput
-  geofences?: Prisma.VehiclesOnGeofencesUncheckedCreateNestedManyWithoutVehicleInput
+  geofech?: Prisma.GeofenceUncheckedCreateNestedManyWithoutVehiclesInput
 }
 
 export type VehicleInfoCreateOrConnectWithoutCustomerInput = {
@@ -577,7 +601,7 @@ export type VehicleInfoScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"VehicleInfo"> | Date | string
 }
 
-export type VehicleInfoCreateWithoutGeofencesInput = {
+export type VehicleInfoCreateWithoutGeofechInput = {
   id?: string
   imei: string
   vechicleNumb: string
@@ -588,7 +612,7 @@ export type VehicleInfoCreateWithoutGeofencesInput = {
   compliances?: Prisma.VehicleComplianceCreateNestedManyWithoutVehicleInput
 }
 
-export type VehicleInfoUncheckedCreateWithoutGeofencesInput = {
+export type VehicleInfoUncheckedCreateWithoutGeofechInput = {
   id?: string
   imei: string
   vechicleNumb: string
@@ -599,42 +623,25 @@ export type VehicleInfoUncheckedCreateWithoutGeofencesInput = {
   compliances?: Prisma.VehicleComplianceUncheckedCreateNestedManyWithoutVehicleInput
 }
 
-export type VehicleInfoCreateOrConnectWithoutGeofencesInput = {
+export type VehicleInfoCreateOrConnectWithoutGeofechInput = {
   where: Prisma.VehicleInfoWhereUniqueInput
-  create: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofencesInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofencesInput>
+  create: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofechInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput>
 }
 
-export type VehicleInfoUpsertWithoutGeofencesInput = {
-  update: Prisma.XOR<Prisma.VehicleInfoUpdateWithoutGeofencesInput, Prisma.VehicleInfoUncheckedUpdateWithoutGeofencesInput>
-  create: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofencesInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofencesInput>
-  where?: Prisma.VehicleInfoWhereInput
+export type VehicleInfoUpsertWithWhereUniqueWithoutGeofechInput = {
+  where: Prisma.VehicleInfoWhereUniqueInput
+  update: Prisma.XOR<Prisma.VehicleInfoUpdateWithoutGeofechInput, Prisma.VehicleInfoUncheckedUpdateWithoutGeofechInput>
+  create: Prisma.XOR<Prisma.VehicleInfoCreateWithoutGeofechInput, Prisma.VehicleInfoUncheckedCreateWithoutGeofechInput>
 }
 
-export type VehicleInfoUpdateToOneWithWhereWithoutGeofencesInput = {
-  where?: Prisma.VehicleInfoWhereInput
-  data: Prisma.XOR<Prisma.VehicleInfoUpdateWithoutGeofencesInput, Prisma.VehicleInfoUncheckedUpdateWithoutGeofencesInput>
+export type VehicleInfoUpdateWithWhereUniqueWithoutGeofechInput = {
+  where: Prisma.VehicleInfoWhereUniqueInput
+  data: Prisma.XOR<Prisma.VehicleInfoUpdateWithoutGeofechInput, Prisma.VehicleInfoUncheckedUpdateWithoutGeofechInput>
 }
 
-export type VehicleInfoUpdateWithoutGeofencesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  imei?: Prisma.StringFieldUpdateOperationsInput | string
-  vechicleNumb?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  customer?: Prisma.UserUpdateOneRequiredWithoutVehicleInfosNestedInput
-  locations?: Prisma.LocationLogUpdateManyWithoutVehicleNestedInput
-  compliances?: Prisma.VehicleComplianceUpdateManyWithoutVehicleNestedInput
-}
-
-export type VehicleInfoUncheckedUpdateWithoutGeofencesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  imei?: Prisma.StringFieldUpdateOperationsInput | string
-  vechicleNumb?: Prisma.StringFieldUpdateOperationsInput | string
-  customerId?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  locations?: Prisma.LocationLogUncheckedUpdateManyWithoutVehicleNestedInput
-  compliances?: Prisma.VehicleComplianceUncheckedUpdateManyWithoutVehicleNestedInput
+export type VehicleInfoUpdateManyWithWhereWithoutGeofechInput = {
+  where: Prisma.VehicleInfoScalarWhereInput
+  data: Prisma.XOR<Prisma.VehicleInfoUpdateManyMutationInput, Prisma.VehicleInfoUncheckedUpdateManyWithoutGeofechInput>
 }
 
 export type VehicleInfoCreateWithoutCompliancesInput = {
@@ -645,7 +652,7 @@ export type VehicleInfoCreateWithoutCompliancesInput = {
   updatedAt?: Date | string
   customer: Prisma.UserCreateNestedOneWithoutVehicleInfosInput
   locations?: Prisma.LocationLogCreateNestedManyWithoutVehicleInput
-  geofences?: Prisma.VehiclesOnGeofencesCreateNestedManyWithoutVehicleInput
+  geofech?: Prisma.GeofenceCreateNestedManyWithoutVehiclesInput
 }
 
 export type VehicleInfoUncheckedCreateWithoutCompliancesInput = {
@@ -656,7 +663,7 @@ export type VehicleInfoUncheckedCreateWithoutCompliancesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   locations?: Prisma.LocationLogUncheckedCreateNestedManyWithoutVehicleInput
-  geofences?: Prisma.VehiclesOnGeofencesUncheckedCreateNestedManyWithoutVehicleInput
+  geofech?: Prisma.GeofenceUncheckedCreateNestedManyWithoutVehiclesInput
 }
 
 export type VehicleInfoCreateOrConnectWithoutCompliancesInput = {
@@ -683,7 +690,7 @@ export type VehicleInfoUpdateWithoutCompliancesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customer?: Prisma.UserUpdateOneRequiredWithoutVehicleInfosNestedInput
   locations?: Prisma.LocationLogUpdateManyWithoutVehicleNestedInput
-  geofences?: Prisma.VehiclesOnGeofencesUpdateManyWithoutVehicleNestedInput
+  geofech?: Prisma.GeofenceUpdateManyWithoutVehiclesNestedInput
 }
 
 export type VehicleInfoUncheckedUpdateWithoutCompliancesInput = {
@@ -694,7 +701,7 @@ export type VehicleInfoUncheckedUpdateWithoutCompliancesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   locations?: Prisma.LocationLogUncheckedUpdateManyWithoutVehicleNestedInput
-  geofences?: Prisma.VehiclesOnGeofencesUncheckedUpdateManyWithoutVehicleNestedInput
+  geofech?: Prisma.GeofenceUncheckedUpdateManyWithoutVehiclesNestedInput
 }
 
 export type VehicleInfoCreateManyCustomerInput = {
@@ -713,7 +720,7 @@ export type VehicleInfoUpdateWithoutCustomerInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   locations?: Prisma.LocationLogUpdateManyWithoutVehicleNestedInput
   compliances?: Prisma.VehicleComplianceUpdateManyWithoutVehicleNestedInput
-  geofences?: Prisma.VehiclesOnGeofencesUpdateManyWithoutVehicleNestedInput
+  geofech?: Prisma.GeofenceUpdateManyWithoutVehiclesNestedInput
 }
 
 export type VehicleInfoUncheckedUpdateWithoutCustomerInput = {
@@ -724,13 +731,44 @@ export type VehicleInfoUncheckedUpdateWithoutCustomerInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   locations?: Prisma.LocationLogUncheckedUpdateManyWithoutVehicleNestedInput
   compliances?: Prisma.VehicleComplianceUncheckedUpdateManyWithoutVehicleNestedInput
-  geofences?: Prisma.VehiclesOnGeofencesUncheckedUpdateManyWithoutVehicleNestedInput
+  geofech?: Prisma.GeofenceUncheckedUpdateManyWithoutVehiclesNestedInput
 }
 
 export type VehicleInfoUncheckedUpdateManyWithoutCustomerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   imei?: Prisma.StringFieldUpdateOperationsInput | string
   vechicleNumb?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type VehicleInfoUpdateWithoutGeofechInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  imei?: Prisma.StringFieldUpdateOperationsInput | string
+  vechicleNumb?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customer?: Prisma.UserUpdateOneRequiredWithoutVehicleInfosNestedInput
+  locations?: Prisma.LocationLogUpdateManyWithoutVehicleNestedInput
+  compliances?: Prisma.VehicleComplianceUpdateManyWithoutVehicleNestedInput
+}
+
+export type VehicleInfoUncheckedUpdateWithoutGeofechInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  imei?: Prisma.StringFieldUpdateOperationsInput | string
+  vechicleNumb?: Prisma.StringFieldUpdateOperationsInput | string
+  customerId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  locations?: Prisma.LocationLogUncheckedUpdateManyWithoutVehicleNestedInput
+  compliances?: Prisma.VehicleComplianceUncheckedUpdateManyWithoutVehicleNestedInput
+}
+
+export type VehicleInfoUncheckedUpdateManyWithoutGeofechInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  imei?: Prisma.StringFieldUpdateOperationsInput | string
+  vechicleNumb?: Prisma.StringFieldUpdateOperationsInput | string
+  customerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -743,13 +781,13 @@ export type VehicleInfoUncheckedUpdateManyWithoutCustomerInput = {
 export type VehicleInfoCountOutputType = {
   locations: number
   compliances: number
-  geofences: number
+  geofech: number
 }
 
 export type VehicleInfoCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   locations?: boolean | VehicleInfoCountOutputTypeCountLocationsArgs
   compliances?: boolean | VehicleInfoCountOutputTypeCountCompliancesArgs
-  geofences?: boolean | VehicleInfoCountOutputTypeCountGeofencesArgs
+  geofech?: boolean | VehicleInfoCountOutputTypeCountGeofechArgs
 }
 
 /**
@@ -779,8 +817,8 @@ export type VehicleInfoCountOutputTypeCountCompliancesArgs<ExtArgs extends runti
 /**
  * VehicleInfoCountOutputType without action
  */
-export type VehicleInfoCountOutputTypeCountGeofencesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.VehiclesOnGeofencesWhereInput
+export type VehicleInfoCountOutputTypeCountGeofechArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.GeofenceWhereInput
 }
 
 
@@ -794,7 +832,7 @@ export type VehicleInfoSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   customer?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   locations?: boolean | Prisma.VehicleInfo$locationsArgs<ExtArgs>
   compliances?: boolean | Prisma.VehicleInfo$compliancesArgs<ExtArgs>
-  geofences?: boolean | Prisma.VehicleInfo$geofencesArgs<ExtArgs>
+  geofech?: boolean | Prisma.VehicleInfo$geofechArgs<ExtArgs>
   _count?: boolean | Prisma.VehicleInfoCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["vehicleInfo"]>
 
@@ -832,7 +870,7 @@ export type VehicleInfoInclude<ExtArgs extends runtime.Types.Extensions.Internal
   customer?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   locations?: boolean | Prisma.VehicleInfo$locationsArgs<ExtArgs>
   compliances?: boolean | Prisma.VehicleInfo$compliancesArgs<ExtArgs>
-  geofences?: boolean | Prisma.VehicleInfo$geofencesArgs<ExtArgs>
+  geofech?: boolean | Prisma.VehicleInfo$geofechArgs<ExtArgs>
   _count?: boolean | Prisma.VehicleInfoCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type VehicleInfoIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -848,7 +886,7 @@ export type $VehicleInfoPayload<ExtArgs extends runtime.Types.Extensions.Interna
     customer: Prisma.$UserPayload<ExtArgs>
     locations: Prisma.$LocationLogPayload<ExtArgs>[]
     compliances: Prisma.$VehicleCompliancePayload<ExtArgs>[]
-    geofences: Prisma.$VehiclesOnGeofencesPayload<ExtArgs>[]
+    geofech: Prisma.$GeofencePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1254,7 +1292,7 @@ export interface Prisma__VehicleInfoClient<T, Null = never, ExtArgs extends runt
   customer<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   locations<T extends Prisma.VehicleInfo$locationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VehicleInfo$locationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LocationLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   compliances<T extends Prisma.VehicleInfo$compliancesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VehicleInfo$compliancesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VehicleCompliancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  geofences<T extends Prisma.VehicleInfo$geofencesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VehicleInfo$geofencesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VehiclesOnGeofencesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  geofech<T extends Prisma.VehicleInfo$geofechArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VehicleInfo$geofechArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GeofencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1739,27 +1777,27 @@ export type VehicleInfo$compliancesArgs<ExtArgs extends runtime.Types.Extensions
 }
 
 /**
- * VehicleInfo.geofences
+ * VehicleInfo.geofech
  */
-export type VehicleInfo$geofencesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type VehicleInfo$geofechArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the VehiclesOnGeofences
+   * Select specific fields to fetch from the Geofence
    */
-  select?: Prisma.VehiclesOnGeofencesSelect<ExtArgs> | null
+  select?: Prisma.GeofenceSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the VehiclesOnGeofences
+   * Omit specific fields from the Geofence
    */
-  omit?: Prisma.VehiclesOnGeofencesOmit<ExtArgs> | null
+  omit?: Prisma.GeofenceOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.VehiclesOnGeofencesInclude<ExtArgs> | null
-  where?: Prisma.VehiclesOnGeofencesWhereInput
-  orderBy?: Prisma.VehiclesOnGeofencesOrderByWithRelationInput | Prisma.VehiclesOnGeofencesOrderByWithRelationInput[]
-  cursor?: Prisma.VehiclesOnGeofencesWhereUniqueInput
+  include?: Prisma.GeofenceInclude<ExtArgs> | null
+  where?: Prisma.GeofenceWhereInput
+  orderBy?: Prisma.GeofenceOrderByWithRelationInput | Prisma.GeofenceOrderByWithRelationInput[]
+  cursor?: Prisma.GeofenceWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.VehiclesOnGeofencesScalarFieldEnum | Prisma.VehiclesOnGeofencesScalarFieldEnum[]
+  distinct?: Prisma.GeofenceScalarFieldEnum | Prisma.GeofenceScalarFieldEnum[]
 }
 
 /**

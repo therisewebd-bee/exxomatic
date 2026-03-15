@@ -1,4 +1,4 @@
-import { email, uuid, z } from "zod";
+import { z } from "zod";
 
 
 const imeiSchema = z.string().min(15, "IMEI must be at lest 15 char long").

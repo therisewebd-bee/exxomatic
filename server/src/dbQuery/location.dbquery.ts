@@ -50,3 +50,10 @@ const deleteLocationLog = catchService(async (lID: LocationIdParam) => {
         }
     })
 }, "DB-Call:Location", "Delete Location Log");
+
+export {
+    createLocationLog,
+    findLocationLogs,
+    findLocationLogById,
+    deleteLocationLog
+};

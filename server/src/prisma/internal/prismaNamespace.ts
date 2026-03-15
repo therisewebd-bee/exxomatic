@@ -388,7 +388,6 @@ export const ModelName = {
   LocationLog: 'LocationLog',
   User: 'User',
   Geofence: 'Geofence',
-  VehiclesOnGeofences: 'VehiclesOnGeofences',
   VehicleCompliance: 'VehicleCompliance'
 } as const
 
@@ -405,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "vehicleInfo" | "locationLog" | "user" | "geofence" | "vehiclesOnGeofences" | "vehicleCompliance"
+    modelProps: "vehicleInfo" | "locationLog" | "user" | "geofence" | "vehicleCompliance"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -705,80 +704,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    VehiclesOnGeofences: {
-      payload: Prisma.$VehiclesOnGeofencesPayload<ExtArgs>
-      fields: Prisma.VehiclesOnGeofencesFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.VehiclesOnGeofencesFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.VehiclesOnGeofencesFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload>
-        }
-        findFirst: {
-          args: Prisma.VehiclesOnGeofencesFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.VehiclesOnGeofencesFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload>
-        }
-        findMany: {
-          args: Prisma.VehiclesOnGeofencesFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload>[]
-        }
-        create: {
-          args: Prisma.VehiclesOnGeofencesCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload>
-        }
-        createMany: {
-          args: Prisma.VehiclesOnGeofencesCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.VehiclesOnGeofencesCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload>[]
-        }
-        delete: {
-          args: Prisma.VehiclesOnGeofencesDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload>
-        }
-        update: {
-          args: Prisma.VehiclesOnGeofencesUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload>
-        }
-        deleteMany: {
-          args: Prisma.VehiclesOnGeofencesDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.VehiclesOnGeofencesUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.VehiclesOnGeofencesUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload>[]
-        }
-        upsert: {
-          args: Prisma.VehiclesOnGeofencesUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VehiclesOnGeofencesPayload>
-        }
-        aggregate: {
-          args: Prisma.VehiclesOnGeofencesAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateVehiclesOnGeofences>
-        }
-        groupBy: {
-          args: Prisma.VehiclesOnGeofencesGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.VehiclesOnGeofencesGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.VehiclesOnGeofencesCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.VehiclesOnGeofencesCountAggregateOutputType> | number
-        }
-      }
-    }
     VehicleCompliance: {
       payload: Prisma.$VehicleCompliancePayload<ExtArgs>
       fields: Prisma.VehicleComplianceFieldRefs
@@ -944,15 +869,6 @@ export const GeofenceScalarFieldEnum = {
 } as const
 
 export type GeofenceScalarFieldEnum = (typeof GeofenceScalarFieldEnum)[keyof typeof GeofenceScalarFieldEnum]
-
-
-export const VehiclesOnGeofencesScalarFieldEnum = {
-  vehicleId: 'vehicleId',
-  geofenceId: 'geofenceId',
-  assignedAt: 'assignedAt'
-} as const
-
-export type VehiclesOnGeofencesScalarFieldEnum = (typeof VehiclesOnGeofencesScalarFieldEnum)[keyof typeof VehiclesOnGeofencesScalarFieldEnum]
 
 
 export const VehicleComplianceScalarFieldEnum = {
@@ -1192,7 +1108,6 @@ export type GlobalOmitConfig = {
   locationLog?: Prisma.LocationLogOmit
   user?: Prisma.UserOmit
   geofence?: Prisma.GeofenceOmit
-  vehiclesOnGeofences?: Prisma.VehiclesOnGeofencesOmit
   vehicleCompliance?: Prisma.VehicleComplianceOmit
 }
 

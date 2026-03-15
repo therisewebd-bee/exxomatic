@@ -1,4 +1,4 @@
-import { email, uuid, z } from "zod";
+import { z } from "zod";
 
 
 const vehicleIdSchema = z.uuid("VehicleId must be a valid UUID")
