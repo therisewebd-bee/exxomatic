@@ -277,7 +277,7 @@ export type VehicleComplianceWhereInput = {
   OR?: Prisma.VehicleComplianceWhereInput[]
   NOT?: Prisma.VehicleComplianceWhereInput | Prisma.VehicleComplianceWhereInput[]
   id?: Prisma.UuidFilter<"VehicleCompliance"> | string
-  vehicleId?: Prisma.StringFilter<"VehicleCompliance"> | string
+  vehicleId?: Prisma.UuidFilter<"VehicleCompliance"> | string
   fuelQuantity?: Prisma.DecimalFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   fuelRate?: Prisma.DecimalFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCost?: Prisma.DecimalFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -312,7 +312,7 @@ export type VehicleComplianceWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.VehicleComplianceWhereInput | Prisma.VehicleComplianceWhereInput[]
   OR?: Prisma.VehicleComplianceWhereInput[]
   NOT?: Prisma.VehicleComplianceWhereInput | Prisma.VehicleComplianceWhereInput[]
-  vehicleId?: Prisma.StringFilter<"VehicleCompliance"> | string
+  vehicleId?: Prisma.UuidFilter<"VehicleCompliance"> | string
   fuelQuantity?: Prisma.DecimalFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   fuelRate?: Prisma.DecimalFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCost?: Prisma.DecimalFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -351,7 +351,7 @@ export type VehicleComplianceScalarWhereWithAggregatesInput = {
   OR?: Prisma.VehicleComplianceScalarWhereWithAggregatesInput[]
   NOT?: Prisma.VehicleComplianceScalarWhereWithAggregatesInput | Prisma.VehicleComplianceScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"VehicleCompliance"> | string
-  vehicleId?: Prisma.StringWithAggregatesFilter<"VehicleCompliance"> | string
+  vehicleId?: Prisma.UuidWithAggregatesFilter<"VehicleCompliance"> | string
   fuelQuantity?: Prisma.DecimalWithAggregatesFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   fuelRate?: Prisma.DecimalWithAggregatesFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCost?: Prisma.DecimalWithAggregatesFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -640,7 +640,7 @@ export type VehicleComplianceScalarWhereInput = {
   OR?: Prisma.VehicleComplianceScalarWhereInput[]
   NOT?: Prisma.VehicleComplianceScalarWhereInput | Prisma.VehicleComplianceScalarWhereInput[]
   id?: Prisma.UuidFilter<"VehicleCompliance"> | string
-  vehicleId?: Prisma.StringFilter<"VehicleCompliance"> | string
+  vehicleId?: Prisma.UuidFilter<"VehicleCompliance"> | string
   fuelQuantity?: Prisma.DecimalFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   fuelRate?: Prisma.DecimalFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCost?: Prisma.DecimalFilter<"VehicleCompliance"> | runtime.Decimal | runtime.DecimalJsLike | number | string
