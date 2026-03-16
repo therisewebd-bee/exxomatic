@@ -13,7 +13,7 @@ import { catchService } from '../utils/utilHandler.js';
 //using other two parameter it is possible to
 //trace out error propley
 
-const createVehicleCompliance = catchService(
+const createVehicleComplianceDb = catchService(
   async (complianceDataScheam: CreateVehicleComplianceInput) => {
     return await prismaAdapter.vehicleCompliance.create({
       data: {
@@ -25,7 +25,7 @@ const createVehicleCompliance = catchService(
   'Create Compliance Record'
 );
 
-const updateVehicleCompliance = catchService(
+const updateVehicleComplianceDb = catchService(
   async (cID: ComplianceIdParam, complianceDataScheam: UpdateVehicleComplianceInput) => {
     return await prismaAdapter.vehicleCompliance.update({
       where: {
@@ -40,7 +40,7 @@ const updateVehicleCompliance = catchService(
   'Update Compliance Record'
 );
 
-const deleteVehicleCompliance = catchService(
+const deleteVehicleComplianceDb = catchService(
   async (cID: ComplianceIdParam) => {
     return await prismaAdapter.vehicleCompliance.delete({
       where: {
@@ -52,7 +52,7 @@ const deleteVehicleCompliance = catchService(
   'Delete Compliance Record'
 );
 
-const findVehicleComplianceById = catchService(
+const findVehicleComplianceByIdDb = catchService(
   async (cID: ComplianceIdParam) => {
     return await prismaAdapter.vehicleCompliance.findUnique({
       where: {
@@ -64,7 +64,7 @@ const findVehicleComplianceById = catchService(
   'Find Compliance By Id'
 );
 
-const findVehicleCompliances = catchService(
+const findVehicleCompliancesDb = catchService(
   async (findVCS: FindVehicleComplianceQueryInput) => {
     const { vehicleId, filledBy, page = 1, limit = 10 } = findVCS.query;
     return await prismaAdapter.vehicleCompliance.findMany({
@@ -84,9 +84,9 @@ const findVehicleCompliances = catchService(
 );
 
 export {
-  createVehicleCompliance,
-  updateVehicleCompliance,
-  deleteVehicleCompliance,
-  findVehicleComplianceById,
-  findVehicleCompliances,
+  createVehicleComplianceDb,
+  updateVehicleComplianceDb,
+  deleteVehicleComplianceDb,
+  findVehicleComplianceByIdDb,
+  findVehicleCompliancesDb,
 };

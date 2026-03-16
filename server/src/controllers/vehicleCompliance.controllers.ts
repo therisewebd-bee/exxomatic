@@ -1,13 +1,13 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import AsyncHandler from '../utils/asyncHandler.utils.js';
 import { ApiResponse } from '../utils/apiResponse.utils.js';
 import { ApiError } from '../utils/apiError.utils.js';
 import {
-  createVehicleCompliance,
-  updateVehicleCompliance,
-  deleteVehicleCompliance,
-  findVehicleComplianceById,
-  findVehicleCompliances,
+  createVehicleComplianceDb,
+  updateVehicleComplianceDb,
+  deleteVehicleComplianceDb,
+  findVehicleComplianceByIdDb,
+  findVehicleCompliancesDb,
 } from '../dbQuery/vehicleCompliance.dbquery.js';
 import {
   CreateVehicleComplianceInput,
@@ -15,31 +15,32 @@ import {
   FindVehicleComplianceQueryInput,
   ComplianceIdParam,
 } from '../dto/vehicleCompliance.dto.js';
+import { ValidatedRequest } from '../types/request.js';
 
-const logComplianceHandler = AsyncHandler(async (req: Request, res: Response) => {
-  const body = req.body as CreateVehicleComplianceInput['body'];
+const logComplianceHandler = AsyncHandler(async (req: ValidatedRequest<CreateVehicleComplianceInput>, res: Response) => {
+  const { body } = req.validated;
 
-  const logged = await createVehicleCompliance({ body });
+  const logged = await createVehicleComplianceDb({ body });
 
   return res
     .status(201)
     .json(new ApiResponse(201, logged, 'Compliance record logged successfully'));
 });
 
-const getCompliances = AsyncHandler(async (req: Request, res: Response) => {
-  const query = req.query as FindVehicleComplianceQueryInput['query'];
+const getCompliances = AsyncHandler(async (req: ValidatedRequest<FindVehicleComplianceQueryInput>, res: Response) => {
+  const { query } = req.validated;
 
-  const result = await findVehicleCompliances({ query });
+  const result = await findVehicleCompliancesDb({ query });
 
   return res
     .status(200)
     .json(new ApiResponse(200, result, 'Compliance records retrieved successfully'));
 });
 
-const getCompliance = AsyncHandler(async (req: Request, res: Response) => {
-  const params = req.params as unknown as ComplianceIdParam['params'];
+const getCompliance = AsyncHandler(async (req: ValidatedRequest<ComplianceIdParam>, res: Response) => {
+  const { params } = req.validated;
 
-  const record = await findVehicleComplianceById({ params });
+  const record = await findVehicleComplianceByIdDb({ params });
   if (!record) {
     throw new ApiError(404, 'Compliance record not found');
   }
@@ -49,25 +50,24 @@ const getCompliance = AsyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(200, record, 'Compliance record retrieved successfully'));
 });
 
-const updateComplianceHandler = AsyncHandler(async (req: Request, res: Response) => {
-  const body = req.body as UpdateVehicleComplianceInput['body'];
-  const params = req.params as unknown as ComplianceIdParam['params'];
+const updateComplianceHandler = AsyncHandler(async (req: ValidatedRequest<UpdateVehicleComplianceInput & ComplianceIdParam>, res: Response) => {
+  const { body, params } = req.validated;
 
   if (Object.keys(body).length === 0) {
     throw new ApiError(400, 'At least one field must be provided for update');
   }
 
-  const updated = await updateVehicleCompliance({ params }, { body });
+  const updated = await updateVehicleComplianceDb({ params }, { body });
 
   return res
     .status(200)
     .json(new ApiResponse(200, updated, 'Compliance record updated successfully'));
 });
 
-const deleteComplianceHandler = AsyncHandler(async (req: Request, res: Response) => {
-  const params = req.params as unknown as ComplianceIdParam['params'];
+const deleteComplianceHandler = AsyncHandler(async (req: ValidatedRequest<ComplianceIdParam>, res: Response) => {
+  const { params } = req.validated;
 
-  const result = await deleteVehicleCompliance({ params });
+  const result = await deleteVehicleComplianceDb({ params });
 
   return res
     .status(200)

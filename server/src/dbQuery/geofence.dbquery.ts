@@ -16,7 +16,7 @@ const hashGeofence = (zone: object) => {
   return crypto.createHash('md5').update(normalized).digest('hex');
 };
 
-const createGeofence = catchService(
+const createGeofenceDb = catchService(
   async (geoFenceData: CreateGeofenceInput) => {
     const { vehicleIds, name, zone, isActive } = geoFenceData.body;
     const zoneHash = hashGeofence(zone);
@@ -75,7 +75,7 @@ const createGeofence = catchService(
   'creating GeoFence'
 );
 
-const updateGeofence = catchService(
+const updateGeofenceDb = catchService(
   async (gID: GeofenceIdParam, geoFenceData: UpdateGeofenceInput) => {
     const { vehicleIds, name, zone, isActive } = geoFenceData.body;
     const { geofenceId } = gID.params;
@@ -120,7 +120,7 @@ const updateGeofence = catchService(
   'updating GeoFence'
 );
 
-const findGeofenceById = catchService(
+const findGeofenceByIdDb = catchService(
   async (geofenceId: string) => {
     return await prismaAdapter.geofence.findUnique({
       where: { id: geofenceId },
@@ -137,7 +137,7 @@ const findGeofenceById = catchService(
   'finding GeoFence with Id'
 );
 
-const findAllGeofence = catchService(
+const findAllGeofenceDb = catchService(
   async (page: number = 1, limit: number = 10) => {
     const skip = (page - 1) * limit;
     return await prismaAdapter.geofence.findMany({
@@ -157,18 +157,18 @@ const findAllGeofence = catchService(
   'finding all GeoFences'
 );
 
-const checkWithInGeofence = catchService(
-  async (geoFenceData: FindGeofenceQueryInput) => {
-    const { lat, lng, imei } = geoFenceData.query;
-
+const checkWithInGeofenceDb = catchService(
+  async (imei: string, lat: number, lng: number) => {
     const result = await prismaAdapter.$queryRaw<
       {
         geoId: string;
+        name: string;
         isInside: boolean;
       }[]
     >`
         SELECT 
             g.id as "geoId",
+            g.name as "name",
             ST_Contains(
                 g.zone,
                 ST_SetSRID(ST_MakePoint(${Number(lng)}, ${Number(lat)}), 4326)
@@ -188,10 +188,10 @@ const checkWithInGeofence = catchService(
 );
 
 export {
-  createGeofence,
-  findAllGeofence,
-  findGeofenceById,
-  checkWithInGeofence,
-  updateGeofence,
+  createGeofenceDb,
+  findAllGeofenceDb,
+  findGeofenceByIdDb,
+  checkWithInGeofenceDb,
+  updateGeofenceDb,
   hashGeofence,
 };

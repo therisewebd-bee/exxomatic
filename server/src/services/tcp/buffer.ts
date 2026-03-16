@@ -1,80 +1,65 @@
-//import data parser , primsa file and query from db
-//this code has somekind of the race conditon
 import logger from '../logger/logger.js';
-interface BufferedLocation {
-  vehicleId: number;
-  latitude: number;
-  longitude: number;
-  speed: number;
-  altitude: number;
-  heading: number;
-  ignition: boolean;
-  batteryVoltage: number;
-  timestamp: Date;
-}
+import { TrackerPayload, processTrackerUpdate } from '../tracker/tracker.logic.js';
 
-//creating a in-memory buffer , so db call can be reduce
-//as data will come every 10s
-//and a o(1) lookup can be done
+/**
+ * In-memory buffer to reduce DB overhead for high-frequency trackers.
+ * Flushes every 2 minutes.
+ */
 
-let locationBuffer = new Map<number, BufferedLocation>();
+let locationBuffer = new Map<string, TrackerPayload>();
 let isFlushing = false;
 let flushTimer: ReturnType<typeof setInterval> | null = null;
 
-//GpsData is data fromat of the
-//in-which it's interpreter
-
-const bufferedLocation = (vehicleId: number, gps: GPSData): void => {
-  locationBuffer.set(vehicleId, {
-    vehicleId,
-    latitude: gps.latitude,
-    longitude: gps.longitude,
-    speed: gps.speed,
-    altitude: gps.altitude,
-    heading: gps.heading,
-    ignition: gps.ignition,
-    batteryVoltage: gps.batteryVoltage,
-    timestamp: new Date(),
-  });
+/**
+ * Add an update to the buffer. 
+ * Overwrites existing entry for the same IMEI to keep only the latest.
+ */
+export const bufferLocationUpdate = (payload: TrackerPayload): void => {
+  locationBuffer.set(payload.imei, payload);
 };
 
-const flushBuffer = async (): Promise<void> => {
+/**
+ * Flush all buffered updates through the main normalization pipeline
+ */
+export const flushBuffer = async (): Promise<void> => {
   if (isFlushing || locationBuffer.size === 0) return;
 
   isFlushing = true;
   const snapshot = new Map(locationBuffer);
-  locationBuffer.clear(); //this clear data so new update data can come after maxTime
-  //and snapshot is copy , make sure data is store correctly
+  locationBuffer.clear();
 
+  logger.info(`[buffer] flushing ${snapshot.size} vehicle updates`);
+
+  const updates = Array.from(snapshot.values());
+  
   try {
-    const latestLocations = [...snapshot.values()];
-    //call prisma query here to store data
-    logger.info(`[buffer] upserted ${latestLocations.length} vehicles`);
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
+    const results = await Promise.allSettled(
+      updates.map((payload) => processTrackerUpdate(payload))
+    );
 
-    logger.error('[buffer] flush failed', {
-      message: err.message,
-      stack: err.stack,
+    const successCount = results.filter(r => r.status === 'fulfilled').length;
+    const failCount = results.length - successCount;
+
+    logger.info(`[buffer] flush complete: ${successCount} success, ${failCount} failed`);
+  } catch (error: any) {
+    logger.error(`[buffer] critical flush failure: ${error.message}`);
+    snapshot.forEach((val, key) => {
+      if (!locationBuffer.has(key)) locationBuffer.set(key, val);
     });
-
-    if (locationBuffer.size === 0) locationBuffer = new Map(snapshot);
   } finally {
     isFlushing = false;
   }
 };
 
-//seting a 2 min timer
-//so data can be updated on db itself
-const startFlushTimer = (): void => {
+export const startFlushTimer = (intervalMs: number = 120000): void => {
   if (flushTimer) return;
-  flushTimer = setInterval(flushBuffer, 120000);
-  logger.info('[buffer] flush timer started — every 2 minutes');
+  flushTimer = setInterval(flushBuffer, intervalMs);
+  logger.info(`[buffer] timer started: flushing every ${intervalMs / 1000}s`);
 };
 
-// flush remaining on shutdown
+// Shutdown handler
 process.on('SIGTERM', async () => {
-  logger.info('[buffer] SIGTERM received — flushing before shutdown');
+  logger.info('[buffer] SIGTERM: final flush before exit');
   if (flushTimer) clearInterval(flushTimer);
   await flushBuffer();
 });

@@ -13,7 +13,7 @@ import { catchService } from '../utils/utilHandler.js';
 //using other two parameter it is possible to
 //trace out error propley
 
-const createVehicle = catchService(
+const createVehicleDb = catchService(
   async (vehicleDataScheam: CreateVehicleInput) => {
     const { geofenceIds, ...body } = vehicleDataScheam.body;
 
@@ -38,7 +38,7 @@ const createVehicle = catchService(
   'Vehicle Creation'
 );
 
-const updateVehicle = catchService(
+const updateVehicleDb = catchService(
   async (vID: VehicleIdParam, vehicleDataScheam: UpdateVehicleInput) => {
     const { geofenceIds, ...body } = vehicleDataScheam.body;
     const { vehicleId } = vID.params;
@@ -74,7 +74,7 @@ const updateVehicle = catchService(
   'Update Vehicle'
 );
 
-const deleteVehicle = catchService(
+const deleteVehicleDb = catchService(
   async (vID: VehicleIdParam) => {
     const { vehicleId } = vID.params;
 
@@ -93,7 +93,7 @@ const deleteVehicle = catchService(
   'Delete Vehicle'
 );
 
-const findVehicleById = catchService(
+const findVehicleByIdDb = catchService(
   async (vID: VehicleIdParam) => {
     const { vehicleId } = vID.params;
 
@@ -114,7 +114,7 @@ const findVehicleById = catchService(
   'Find Vehicle By Id'
 );
 
-const findVehicles = catchService(
+const findVehiclesDb = catchService(
   async (findVDS: FindVehicleQueryInput) => {
     const { customerId, imei, vechicleNumb, page = 1, limit = 10 } = findVDS.query;
 
@@ -139,4 +139,4 @@ const findVehicles = catchService(
   'Find Vehicles'
 );
 
-export { createVehicle, updateVehicle, deleteVehicle, findVehicleById, findVehicles };
+export { createVehicleDb, updateVehicleDb, deleteVehicleDb, findVehicleByIdDb, findVehiclesDb };

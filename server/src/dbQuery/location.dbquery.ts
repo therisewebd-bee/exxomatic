@@ -12,7 +12,7 @@ import { catchService } from '../utils/utilHandler.js';
 //using other two parameter it is possible to
 //trace out error propley
 
-const createLocationLog = catchService(
+const createLocationLogDb = catchService(
   async (locationDataScheam: CreateLocationLogInput) => {
     return await prismaAdapter.locationLog.create({
       data: {
@@ -24,7 +24,7 @@ const createLocationLog = catchService(
   'Create Location Log'
 );
 
-const findLocationLogs = catchService(
+const findLocationLogsDb = catchService(
   async (findLDS: FindLocationQueryInput) => {
     const { imei, startDate, endDate, limit = 100 } = findLDS.query;
     return await prismaAdapter.locationLog.findMany({
@@ -45,7 +45,7 @@ const findLocationLogs = catchService(
   'Find Location Logs'
 );
 
-const findLocationLogById = catchService(
+const findLocationLogByIdDb = catchService(
   async (lID: LocationIdParam) => {
     return await prismaAdapter.locationLog.findUnique({
       where: {
@@ -57,7 +57,7 @@ const findLocationLogById = catchService(
   'Find Location Log By Id'
 );
 
-const deleteLocationLog = catchService(
+const deleteLocationLogDb = catchService(
   async (lID: LocationIdParam) => {
     return await prismaAdapter.locationLog.delete({
       where: {
@@ -69,4 +69,4 @@ const deleteLocationLog = catchService(
   'Delete Location Log'
 );
 
-export { createLocationLog, findLocationLogs, findLocationLogById, deleteLocationLog };
+export { createLocationLogDb, findLocationLogsDb, findLocationLogByIdDb, deleteLocationLogDb };

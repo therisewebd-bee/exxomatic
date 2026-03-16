@@ -22,7 +22,7 @@ router.use(verifyAuth);
 router.post('/', validate(createVehicleSchema), registerVehicleHandler);
 router.get('/', validate(findVehicleQuerySchema, true), getVehicles);
 router.get('/:vehicleId', validate(vehicleIdParamSchema, true), getVehicle);
-router.patch('/:vehicleId', validate(vehicleIdParamSchema), validate(updateVehicleSchema), updateVehicleHandler);
+router.patch('/:vehicleId', validate(vehicleIdParamSchema, true), validate(updateVehicleSchema), updateVehicleHandler);
 router.delete('/:vehicleId', validate(vehicleIdParamSchema, true), deleteVehicleHandler);
 
 export default router;

@@ -8,12 +8,15 @@ import mainRouter from './routes/index.js';
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Ease for Leaflet/Simulation testing
+}));
 app.use(compression());
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 app.use(cookieParser());
 app.use(cors());
+app.use(express.static('public'));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -23,7 +26,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api', mainRouter);
 
-//setup ayncHanlder util to return respsonse in json
+// Error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   const statusCode = err.statusCode ?? 500;
   const response: any = {

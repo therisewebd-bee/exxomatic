@@ -13,7 +13,7 @@ import { catchService } from '../utils/utilHandler.js';
 //using other two parameter it is possible to
 //trace out error propley
 
-const createUserAccount = catchService(
+const createUserAccountDb = catchService(
   async (userDataScheam: CreateAccountInput) => {
     return await prismaAdapter.user.create({
       data: {
@@ -25,7 +25,7 @@ const createUserAccount = catchService(
   'Account Creation'
 );
 
-const findUserAccountByEmail = catchService(
+const findUserAccountByEmailDb = catchService(
   async (findUSD: FindUserQueryInput) => {
     return await prismaAdapter.user.findUnique({
       where: {
@@ -43,7 +43,7 @@ const findUserAccountByEmail = catchService(
   'Find Account'
 );
 
-const findUserAccountById = catchService(
+const findUserAccountByIdDb = catchService(
   async (uID: UserIdParam) => {
     return await prismaAdapter.user.findUnique({
       where: {
@@ -55,7 +55,7 @@ const findUserAccountById = catchService(
   'Find Account By Id'
 );
 
-const updateUserAccount = catchService(
+const updateUserAccountDb = catchService(
   async (uID: UserIdParam, userDataScheam: UpdateUserInput) => {
     return await prismaAdapter.user.update({
       where: {
@@ -70,7 +70,7 @@ const updateUserAccount = catchService(
   'Update User Account'
 );
 
-const deleteUserAccount = catchService(
+const deleteUserAccountDb = catchService(
   async (uID: UserIdParam) => {
     return await prismaAdapter.user.delete({
       where: {
@@ -82,7 +82,7 @@ const deleteUserAccount = catchService(
   'Delete User Account'
 );
 
-const findUserAccounts = catchService(
+const findUserAccountsDb = catchService(
   async (findUSD: FindUserQueryInput) => {
     const { email, role, page = 1, limit = 10 } = findUSD.query;
 
@@ -100,10 +100,10 @@ const findUserAccounts = catchService(
 );
 
 export {
-  createUserAccount,
-  findUserAccountByEmail,
-  findUserAccountById,
-  updateUserAccount,
-  deleteUserAccount,
-  findUserAccounts,
+  createUserAccountDb,
+  findUserAccountByEmailDb,
+  findUserAccountByIdDb,
+  updateUserAccountDb,
+  deleteUserAccountDb,
+  findUserAccountsDb,
 };

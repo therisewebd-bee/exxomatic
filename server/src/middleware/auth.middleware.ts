@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import AsyncHandler from '../utils/asyncHandler.utils.js';
 import { ApiError } from '../utils/apiError.utils.js';
 import { verifyToken } from '../utils/auth.utils.js';
-import { findUserAccountById } from '../dbQuery/user.dbquery.js';
+import { findUserAccountByIdDb } from '../dbQuery/user.dbquery.js';
 
 export const verifyAuth = AsyncHandler(async (req: any, res: Response, next: NextFunction) => {
   try {
@@ -14,7 +14,7 @@ export const verifyAuth = AsyncHandler(async (req: any, res: Response, next: Nex
 
     const decoded = verifyToken(token);
 
-    const user = await findUserAccountById({ params: { userId: decoded.id } });
+    const user = await findUserAccountByIdDb({ params: { userId: decoded.id } });
     if (!user) {
       throw new ApiError(401, 'Invalid access token - user not found');
     }

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetLive | Advanced Fleet Management</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --sidebar-width: 260px;
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
+
+        #app-layout { display: flex; height: 100vh; width: 100vw; }
+
+        /* Sidebar */
+        #sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        .sidebar-header { padding: 25px; border-bottom: 1px solid var(--border); }
+        .sidebar-header h1 { margin: 0; font-size: 20px; color: var(--primary); font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .nav-list { list-style: none; padding: 15px; margin: 0; flex-grow: 1; }
+        .nav-item {
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .nav-item:hover { background: rgba(59, 130, 246, 0.1); color: var(--text-main); }
+        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 12px var(--primary-glow); }
+        .sidebar-footer { padding: 20px; border-top: 1px solid var(--border); }
+
+        /* Main Content */
+        #main-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        .tab-content { display: none; height: 100%; width: 100%; position: relative; }
+        .tab-content.active { display: flex; flex-direction: column; }
+
+        /* Map Section */
+        #map-container { flex-grow: 1; position: relative; }
+        #map { height: 100%; width: 100%; }
+        #log-panel {
+            position: absolute; bottom: 20px; right: 20px; width: 350px; height: 200px;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px);
+            border: 1px solid var(--border); border-radius: 12px;
+            display: flex; flex-direction: column; overflow: hidden; z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .log-header { padding: 8px 15px; background: rgba(255,255,255,0.05); font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); }
+        #log-body { flex-grow: 1; overflow-y: scroll; padding: 10px; font-family: 'Fira Code', monospace; font-size: 10px; }
+
+        /* Management Panes */
+        .mgmt-pane { padding: 40px; overflow-y: auto; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .pane-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .pane-header h2 { margin: 0; font-size: 28px; }
+        
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 25px; margin-bottom: 20px; }
+        .table-container { width: 100%; overflow-x: auto; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 15px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-weight: 500; font-size: 13px; }
+        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+
+        /* Forms & Buttons */
+        input, select {
+            padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--bg-input); color: white; outline: none; transition: 0.2s; width: 100%;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); }
+        button {
+            padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px;
+            cursor: pointer; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+        }
+        button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-glow); }
+        button.danger { background: var(--accent-red); }
+        button.secondary { background: var(--border); }
+
+        /* Auth Overlay */
+        #auth-overlay {
+            position: fixed; inset: 0; background: var(--bg-dark); 
+            display: flex; align-items: center; justify-content: center; z-index: 9999;
+        }
+        .auth-card {
+            background: var(--bg-card); padding: 40px; border-radius: 24px;
+            width: 100%; max-width: 450px; border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        .auth-card h2 { text-align: center; margin-bottom: 30px; font-size: 24px; }
+        .auth-tabs { display: flex; gap: 10px; margin-bottom: 30px; }
+        .auth-tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.5; transition: 0.2s; }
+        .auth-tab.active { opacity: 1; border-color: var(--primary); color: var(--primary); font-weight: 600; }
+
+        /* Notifications */
+        #notification-center {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 10001; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .toast {
+            background: var(--bg-card); color: white; padding: 15px 25px; border-radius: 12px;
+            border-left: 5px solid var(--primary); box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            animation: slideIn 0.3s ease-out; pointer-events: all;
+        }
+        .toast.danger { border-left-color: var(--accent-red); }
+
+        @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .hidden { display: none !important; }
+        .marker-icon { background: var(--primary); border: 2px solid white; border-radius: 50%; width: 12px; height: 12px; box-shadow: 0 0 10px var(--primary-glow); }
+        
+        /* Modal */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; z-index: 2000;
+        }
+        .modal-card { background: var(--bg-card); width: 100%; max-width: 500px; border-radius: 20px; border: 1px solid var(--border); overflow: hidden; }
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 25px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="notification-center"></div>
+
+    <!-- Auth Layer -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2>FleetLive Ingress</h2>
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchAuth('login')">Login</div>
+                <div class="auth-tab" onclick="switchAuth('signup')">Create Account</div>
+            </div>
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+                <div id="signup-fields" class="hidden" style="margin-bottom: 15px;">
+                    <input type="text" id="auth-name" placeholder="Full Name">
+                </div>
+                <input type="email" id="auth-email" placeholder="Email Address" required style="margin-bottom: 15px;">
+                <input type="password" id="auth-password" placeholder="Password" required style="margin-bottom: 25px;">
+                <button type="submit" style="width: 100%; justify-content: center;">Authenticate</button>
+            </form>
+            <p id="auth-error" style="color: var(--accent-red); font-size: 13px; text-align: center; margin-top: 20px;"></p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="app-layout" class="hidden">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <h1>⚡ FleetLive</h1>
+            </div>
+            <nav class="nav-list">
+                <li class="nav-item active" onclick="showTab('map-tab')">📍 Live Tracking</li>
+                <li class="nav-item" onclick="showTab('vehicles-tab')">🚛 Vehicle Fleet</li>
+                <li class="nav-item" onclick="showTab('geofence-tab')">🛡️ Geofencing</li>
+                <li class="nav-item" onclick="showTab('logs-tab')">📑 System Logs</li>
+            </nav>
+            <div class="sidebar-footer">
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;" id="user-info">Logged in as: ...</div>
+                <button class="secondary" onclick="logout()" style="width: 100%; justify-content: center;">Sign Out</button>
+            </div>
+        </aside>
+
+        <main id="main-content">
+            <!-- Map Tab -->
+            <section id="map-tab" class="tab-content active">
+                <div id="map-container">
+                    <div id="map"></div>
+                    <div id="log-panel">
+                        <div class="log-header">Live Telemetry Stream</div>
+                        <div id="log-body"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vehicles Tab -->
+            <section id="vehicles-tab" class="tab-content mgmt-pane">
+                <div class="pane-header">
+                    <h2>Vehicle Management</h2>
+                    <button onclick="openModal('vehicle')">+ Register Vehicle</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>IMEI</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vehicle-list">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Geofence Tab -->
+            <section id="geofence-tab" class="tab-content mgmt-pane">
+                <div class="pane-header">
+                    <h2>Geofence Zones</h2>
+                    <button onclick="openModal('geofence')">+ New Zone</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Zone (WKT)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="geofence-list">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Logs Tab -->
+            <section id="logs-tab" class="tab-content mgmt-pane">
+                <h2>Activity Logs</h2>
+                <div class="card" id="history-container">
+                    <p>Fetching history...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-title">Action</h3>
+                <span style="cursor: pointer;" onclick="closeModal()">✕</span>
+            </div>
+            <div class="modal-body">
+                <form id="mgmt-form">
+                    <!-- Dynamic fields -->
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Store
+        let state = {
+            token: localStorage.getItem('fleet_token'),
+            user: JSON.parse(localStorage.getItem('fleet_user')),
+            authMode: 'login',
+            activeTab: 'map-tab',
+            socket: null,
+            markers: {},
+            vehicles: [],
+            geofences: []
+        };
+
+        const ENDPOINTS = {
+            login: '/api/users/login',
+            signup: '/api/users/register',
+            vehicles: '/api/vehicles',
+            geofences: '/api/geofences',
+            history: '/api/locations/history'
+        };
+
+        // UI Initialization
+        window.onload = async () => {
+            if (state.token && state.user) {
+                initApp();
+            }
+        };
+
+        function notify(msg, type = 'info') {
+            const center = document.getElementById('notification-center');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'error' ? 'danger' : ''}`;
+            toast.innerText = msg;
+            center.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Auth Logic
+        function switchAuth(mode) {
+            state.authMode = mode;
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.auth-tab:nth-child(${mode === 'login' ? 1 : 2})`).classList.add('active');
+            document.getElementById('signup-fields').classList.toggle('hidden', mode === 'login');
+            document.getElementById('auth-error').innerText = '';
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value;
+
+            const url = state.authMode === 'login' ? ENDPOINTS.login : ENDPOINTS.signup;
+            const body = state.authMode === 'login' ? { email, password } : { email, password, name };
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const result = await res.json();
+
+                if (!res.ok) throw new Error(result.message || 'Auth failed');
+
+                if (state.authMode === 'login') {
+                    state.token = result.data.accessToken;
+                    state.user = result.data.user;
+                    localStorage.setItem('fleet_token', state.token);
+                    localStorage.setItem('fleet_user', JSON.stringify(state.user));
+                    initApp();
+                } else {
+                    notify('Account created! Please login.', 'success');
+                    switchAuth('login');
+                }
+            } catch (err) {
+                document.getElementById('auth-error').innerText = err.message;
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        // App Initialization
+        function initApp() {
+            document.getElementById('auth-overlay').classList.add('hidden');
+            document.getElementById('app-layout').classList.remove('hidden');
+            document.getElementById('user-info').innerText = `Logged in as: ${state.user.name || state.user.email}`;
+            
+            initMap();
+            connectWS();
+            refreshAll();
+        }
+
+        let map;
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([18.59, 73.82], 13);
+            L.control.zoom({ position: 'topright' }).addTo(map);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CartoDB'
+            }).addTo(map);
+        }
+
+        function connectWS() {
+            if (state.socket) state.socket.close();
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            state.socket = new WebSocket(`${protocol}//${location.host}?token=${state.token}`);
+
+            state.socket.onopen = () => {
+                log('Secure telemetry link established');
+                notify('Connected to live stream');
+            };
+
+            state.socket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                if (data.event === 'tracker:update') handleLiveUpdate(data.data);
+                if (data.event === 'geofence:breach') {
+                    data.data.breaches.forEach(b => {
+                        notify(`🚨 BREACH: ${data.data.imei} - Inside ${b.name}`, 'error');
+                    });
+                }
+            };
+
+            state.socket.onclose = () => {
+                log('Telemetry link lost. Reconnecting...');
+                setTimeout(connectWS, 5000);
+            };
+        }
+
+        function log(msg) {
+            const body = document.getElementById('log-body');
+            const entry = document.createElement('div');
+            entry.style.marginBottom = '4px';
+            entry.innerHTML = `<span style="color:var(--primary)">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+            body.prepend(entry);
+        }
+
+        // Tab Management
+        function showTab(id) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            state.activeTab = id;
+            if (id === 'map-tab') map.invalidateSize();
+            refreshAll();
+        }
+
+        // Data Management
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: { 
+                    'Authorization': `Bearer ${state.token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            if (body) options.body = JSON.stringify(body);
+            
+            const res = await fetch(endpoint, options);
+            if (res.status === 401) logout();
+            return res.json();
+        }
+
+        async function refreshAll() {
+            if (state.activeTab === 'vehicles-tab') {
+                const res = await apiCall(ENDPOINTS.vehicles);
+                state.vehicles = res.data || [];
+                renderVehicles();
+            }
+            if (state.activeTab === 'geofence-tab') {
+                const res = await apiCall(ENDPOINTS.geofences);
+                state.geofences = res.data || [];
+                renderGeofences();
+            }
+        }
+
+        function renderVehicles() {
+            const list = document.getElementById('vehicle-list');
+            list.innerHTML = state.vehicles.map(v => `
+                <tr>
+                    <td><code>${v.imei}</code></td>
+                    <td>${v.name}</td>
+                    <td>${v.type}</td>
+                    <td>
+                        <button class="secondary" onclick="deleteItem('vehicle', '${v.id}')">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderGeofences() {
+            const list = document.getElementById('geofence-list');
+            list.innerHTML = state.geofences.map(g => `
+                <tr>
+                    <td>${g.name}</td>
+                    <td style="font-family: monospace; font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${g.zone}</td>
+                    <td>
+                        <button class="secondary" onclick="deleteItem('geofence', '${g.id}')">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // CRUD Operations
+        function openModal(type) {
+            const overlay = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const form = document.getElementById('mgmt-form');
+            overlay.classList.remove('hidden');
+
+            if (type === 'vehicle') {
+                title.innerText = 'Register New Tracker';
+                form.innerHTML = `
+                    <input type="text" id="m-imei" placeholder="IMEI Number" required style="margin-bottom:15px">
+                    <input type="text" id="m-name" placeholder="Vehicle Nickname" required style="margin-bottom:15px">
+                    <select id="m-type" style="margin-bottom:20px">
+                        <option value="TRUCK">Truck</option>
+                        <option value="CAR">Car</option>
+                        <option value="BIKE">Bike</option>
+                    </select>
+                    <button type="button" onclick="submitMgmt('vehicle')" style="width:100%">Create Vehicle</button>
+                `;
+            } else {
+                title.innerText = 'Create Geofence Zone';
+                form.innerHTML = `
+                    <input type="text" id="m-name" placeholder="Zone Name" required style="margin-bottom:15px">
+                    <textarea id="m-zone" placeholder="Polygon WKT (e.g. POLYGON((0 0, 0 1, 1 1, 1 0, 0 0)))" required style="width:100%; height:100px; background:var(--bg-input); border:1px solid var(--border); color:white; border-radius:8px; padding:10px; margin-bottom:20px"></textarea>
+                    <button type="button" onclick="submitMgmt('geofence')" style="width:100%">Save Zone</button>
+                `;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+        }
+
+        async function submitMgmt(type) {
+            let body;
+            if (type === 'vehicle') {
+                body = {
+                    imei: document.getElementById('m-imei').value,
+                    name: document.getElementById('m-name').value,
+                    type: document.getElementById('m-type').value
+                };
+            } else {
+                body = {
+                    name: document.getElementById('m-name').value,
+                    zone: document.getElementById('m-zone').value
+                };
+            }
+
+            try {
+                const res = await apiCall(ENDPOINTS[type === 'vehicle' ? 'vehicles' : 'geofences'], 'POST', body);
+                if (res.success) {
+                    notify(`${type} created!`, 'success');
+                    closeModal();
+                    refreshAll();
+                } else {
+                    notify(res.message, 'error');
+                }
+            } catch (err) {
+                notify('Failed to save', 'error');
+            }
+        }
+
+        async function deleteItem(type, id) {
+            if (!confirm(`Confirm deletion of this ${type}?`)) return;
+            const endpoint = `${ENDPOINTS[type === 'vehicle' ? 'vehicles' : 'geofences']}/${id}`;
+            await apiCall(endpoint, 'DELETE');
+            notify(`${type} deleted`);
+            refreshAll();
+        }
+
+        // Live Logic
+        function handleLiveUpdate(data) {
+            const { imei, lat, lng } = data.location;
+            const status = data.status; // 'entered' or 'exited'
+            const timestamp = new Date(data.location.timestamp).toLocaleTimeString();
+
+            log(`Update from <b>${imei}</b> at ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+
+            if (state.markers[imei]) {
+                state.markers[imei].setLatLng([lat, lng]);
+                state.markers[imei].setPopupContent(`
+                    <div style="color:#000">
+                        <b>Tracker: ${imei}</b><br>
+                        Last seen: ${timestamp}<br>
+                        Status: ${status}
+                    </div>
+                `);
+            } else {
+                const marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup(`<b>Tracker: ${imei}</b>`);
+                state.markers[imei] = marker;
+            }
+            
+            // Auto-pan to first active vehicle if map is empty
+            if (Object.keys(state.markers).length === 1) map.panTo([lat, lng]);
+        }
+    </script>
+</body>
+</html>

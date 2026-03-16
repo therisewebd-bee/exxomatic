@@ -6,6 +6,9 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+
+  // preview features to enable if not on v4:
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
@@ -16,14 +19,14 @@ model VehicleInfo {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   imei         String   @unique @db.VarChar(25)
   vechicleNumb String   @unique @db.VarChar(25)
-  customerId   String
+  customerId   String   @db.Uuid
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  customer    User                @relation(fields: [customerId], references: [id])
+  customer    User                  @relation(fields: [customerId], references: [id])
   locations   LocationLog[]
   compliances VehicleCompliance[]
-  geofences VehiclesOnGeofences[] @relation("VehicleToJoin")
+  geofences   VehiclesOnGeofences[] @relation("VehicleToJoin")
 
   @@index([imei])
   @@index([vechicleNumb])
@@ -60,21 +63,21 @@ model User {
   name         String        @db.VarChar(50)
   email        String        @unique @db.VarChar(100)
   password     String        @db.VarChar(80)
-  role         Role          @default(Customer)
+  role         userRole      @default(Customer)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   vehicleInfos VehicleInfo[]
 }
 
 model Geofence {
-  id        String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String                   @db.VarChar(50)
-  zone      Unsupported("geometry")?
-  zoneHash  String?                  @unique @db.VarChar(32)
-  isActive  Boolean                  @default(true)
-  createdAt DateTime                 @default(now())
-  updatedAt DateTime                 @updatedAt
-  vehicles  VehiclesOnGeofences[] @relation("GeofenceToJoin")
+  id        String                                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String                                      @db.VarChar(50)
+  zone      Unsupported("public.geometry(Point,4326)")?
+  zoneHash  String?                                     @unique @db.VarChar(32)
+  isActive  Boolean                                     @default(true)
+  createdAt DateTime                                    @default(now())
+  updatedAt DateTime                                    @updatedAt
+  vehicles  VehiclesOnGeofences[]                       @relation("GeofenceToJoin")
 
   @@index([zoneHash])
 }
@@ -118,7 +121,7 @@ model VehicleCompliance {
   @@index([filledAt])
 }
 
-enum Role {
+enum userRole {
   Admin
   Customer
 }

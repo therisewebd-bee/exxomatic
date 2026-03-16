@@ -25,7 +25,7 @@ router.post('/login', validate(loginAccountSchema), loginUserHandler);
 // Protected routes
 router.get('/', verifyAuth, validate(findUserQuerySchema, true), getUsers);
 router.get('/:userId', verifyAuth, validate(userIdParamSchema, true), getUser);
-router.patch('/:userId', verifyAuth, validate(userIdParamSchema), validate(updateUserSchema), updateUserHandler);
+router.patch('/:userId', verifyAuth, validate(userIdParamSchema, true), validate(updateUserSchema), updateUserHandler);
 router.delete('/:userId', verifyAuth, validate(userIdParamSchema, true), deleteUserHandler);
 
 export default router;
