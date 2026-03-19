@@ -272,7 +272,7 @@ function DrawControl({ active, onDrawComplete }) {
             map.off(L.Draw.Event.CREATED);
             map.off(L.Draw.Event.DRAWSTART);
             map.off(L.Draw.Event.DRAWSTOP);
-            try { map.removeControl(drawControl); } catch {}
+            try { map.removeControl(drawControl); } catch { }
             map.removeLayer(drawnItems);
         };
     }, [map]);
@@ -283,7 +283,7 @@ function DrawControl({ active, onDrawComplete }) {
         if (active) {
             controlRef.current.addTo(map);
         } else {
-            try { map.removeControl(controlRef.current); } catch {}
+            try { map.removeControl(controlRef.current); } catch { }
             if (drawnRef.current) drawnRef.current.clearLayers();
         }
     }, [active, map]);
@@ -331,29 +331,7 @@ function DrawControl({ active, onDrawComplete }) {
 
     if (!active) return null;
 
-    return (
-        <>
-            {/* Floating action buttons */}
-            <div className="absolute top-20 left-2 z-[1000] flex flex-col gap-2">
-                {isDrawing && (
-                    <button
-                        onClick={handleCancel}
-                        className="bg-red-500 hover:bg-red-600 text-white text-sm w-8 h-8 rounded-lg shadow-lg transition flex items-center justify-center"
-                        title="Cancel current drawing"
-                    >
-                        ✕
-                    </button>
-                )}
-                <button
-                    onClick={() => { if (drawnRef.current) drawnRef.current.clearLayers(); }}
-                    className="bg-gray-700 hover:bg-gray-800 text-white text-sm w-8 h-8 rounded-lg shadow-lg transition flex items-center justify-center"
-                    title="Clear all drawn shapes"
-                >
-                    🗑
-                </button>
-            </div>
-        </>
-    );
+    return null;
 }
 
 // Simple circle→polygon helper (radius in meters, angle in radians)
@@ -386,16 +364,16 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
             endTime,
             limit: 500
         })
-        .then(res => {
-            const coords = (res.data || [])
-                .filter(loc => loc.lat && loc.lng)
-                .map(loc => [loc.lat, loc.lng]);
-            setHistoryPath(coords);
-        })
-        .catch(err => {
-            console.error('Failed to load history', err);
-            setHistoryPath([]);
-        });
+            .then(res => {
+                const coords = (res.data || [])
+                    .filter(loc => loc.lat && loc.lng)
+                    .map(loc => [loc.lat, loc.lng]);
+                setHistoryPath(coords);
+            })
+            .catch(err => {
+                console.error('Failed to load history', err);
+                setHistoryPath([]);
+            });
     }, [selectedVehicle]);
 
     // Load geofence polygons (they come without actual geometry from Prisma, but we try)
@@ -411,7 +389,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
                     }));
                 setGeofencePolygons(polygons);
             })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     const unknownIcon = createUnknownIcon();

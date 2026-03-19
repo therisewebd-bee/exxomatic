@@ -47,23 +47,40 @@ function Dashboard() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    let liveBuffer = {};
+    let unknownBuffer = {};
+    let bufferTimer = null;
+
+    const flushBuffers = () => {
+      if (Object.keys(liveBuffer).length > 0) {
+        setLivePositions(prev => ({ ...prev, ...liveBuffer }));
+        liveBuffer = {};
+      }
+      if (Object.keys(unknownBuffer).length > 0) {
+        setUnknownDevices(prev => ({ ...prev, ...unknownBuffer }));
+        unknownBuffer = {};
+      }
+    };
+
     function handleLive(data) {
       const loc = data.location;
       if (!loc) return;
-      setLivePositions((prev) => ({
-        ...prev,
-        [loc.imei]: { lat: loc.lat, lng: loc.lng, speed: loc.speed || 0, ignition: loc.ignition, timestamp: loc.timestamp },
-      }));
+      liveBuffer[loc.imei] = { lat: loc.lat, lng: loc.lng, speed: loc.speed || 0, ignition: loc.ignition, timestamp: loc.timestamp };
     }
 
     function handleUnknown(data) {
       const loc = data.location;
       if (!loc) return;
-      setUnknownDevices((prev) => ({
-        ...prev,
-        [loc.imei]: { lat: loc.lat, lng: loc.lng, speed: loc.speed || 0, timestamp: loc.timestamp },
-      }));
+      // We also handle 'unknown' devices broadcasting as live payload per recent backend changes
+      if (data.status === 'UNKNOWN_DEVICE') {
+        unknownBuffer[loc.imei] = { lat: loc.lat, lng: loc.lng, speed: loc.speed || 0, timestamp: loc.timestamp };
+      } else {
+        liveBuffer[loc.imei] = { lat: loc.lat, lng: loc.lng, speed: loc.speed || 0, ignition: loc.ignition, timestamp: loc.timestamp };
+      }
     }
+
+    // Flush updates to React twice a second (500ms) to prevent UI freezing
+    bufferTimer = setInterval(flushBuffers, 500);
 
     function handleBreach(data) {
       setNotifications((prev) => [
@@ -83,6 +100,7 @@ function Dashboard() {
     ws.on('geofence:breach', handleBreach);
 
     return () => {
+      clearInterval(bufferTimer);
       ws.off('tracker:live', handleLive);
       ws.off('tracker:unknown', handleUnknown);
       ws.off('geofence:breach', handleBreach);
