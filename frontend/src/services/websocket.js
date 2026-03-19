@@ -93,3 +93,12 @@ export function off(event, callback) {
   if (!listeners[event]) return;
   listeners[event] = listeners[event].filter((cb) => cb !== callback);
 }
+
+export function sendViewport(bounds) {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({
+      type: 'map:viewport',
+      data: bounds
+    }));
+  }
+}

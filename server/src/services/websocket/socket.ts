@@ -50,7 +50,15 @@ class WebSocketService {
       }
 
       ws.on('message', (message: string) => {
-        logger.info(`[ws] received: ${message}`);
+        try {
+          const parsed = JSON.parse(message);
+          if (parsed.type === 'map:viewport' && parsed.data) {
+            connectionManager.setViewport(ws, parsed.data);
+            logger.debug(`[ws] viewport updated for ${ws.identity?.email}`);
+          }
+        } catch (e) {
+          logger.warn(`[ws] invalid message: ${message}`);
+        }
       });
 
       ws.on('close', () => {
@@ -70,13 +78,19 @@ class WebSocketService {
   }
 
   /**
-   * Broadcast with data isolation
+   * Broadcast with data isolation and spatial filtering
    * @param event Event name
    * @param data Payload
    * @param imei Mandatory for Customer isolation, optional for global broadcasts
+   * @param lat Optional latitude for spatial filtering
+   * @param lng Optional longitude for spatial filtering
    */
-  public broadcast<T>(event: string, data: T, imei?: string): void {
-    const clients = connectionManager.getAuthorizedClients(imei);
+  public broadcast<T>(event: string, data: T, imei?: string, lat?: number, lng?: number): void {
+    // Only apply spatial filtering to tracking updates to keep critical alerts like geofence breaches global
+    const filterLat = event === 'tracker:live' ? lat : undefined;
+    const filterLng = event === 'tracker:live' ? lng : undefined;
+
+    const clients = connectionManager.getAuthorizedClients(imei, filterLat, filterLng);
     const message = JSON.stringify(SocketResponse.format(event, data));
     
     clients.forEach((client) => {

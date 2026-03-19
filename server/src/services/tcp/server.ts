@@ -63,7 +63,7 @@ const startTcpServer = async (): Promise<void> => {
                     timestamp: (payload.timestamp || new Date()).toISOString(),
                   },
                   status: 'UNKNOWN_DEVICE'
-                }); // Broadcast to Admins (no imei filter = Admin-only)
+                }, undefined, payload.lat, payload.lng); // Broadcast to Admins with spatial filter
               }
             } else {
               // 1. Buffer for batch DB persistence (O(1) Map overwrite per IMEI)
@@ -80,7 +80,7 @@ const startTcpServer = async (): Promise<void> => {
                   timestamp: (payload.timestamp || new Date()).toISOString(),
                 },
                 status: 'LIVE_FEED'
-              }, payload.imei);
+              }, payload.imei, payload.lat, payload.lng);
             }
           }
         } catch (error: any) {

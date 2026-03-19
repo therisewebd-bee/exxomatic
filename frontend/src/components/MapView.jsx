@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet-draw';
 import { MdLayers } from 'react-icons/md';
 import { getGeofences, createVehicle, getLocationHistory } from '../services/api';
 import { getCachedTile, cacheTile } from '../services/tileCache';
+import { sendViewport } from '../services/websocket';
 
 // Custom TileLayer that caches tiles in IndexedDB
 function CachedTileLayer() {
@@ -347,6 +348,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
     const mapRef = useRef(null);
     const [geofencePolygons, setGeofencePolygons] = useState([]);
     const [historyPath, setHistoryPath] = useState([]);
+    const [showHistoryData, setShowHistoryData] = useState(false);
 
     // Load history when vehicle selected
     useEffect(() => {
@@ -359,16 +361,15 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
         const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // last 24h
 
         getLocationHistory({
-            vehicleId: selectedVehicle.id,
-            startTime,
-            endTime,
+            imei: selectedVehicle.imei,
+            startDate: startTime,
+            endDate: endTime,
             limit: 500
         })
             .then(res => {
-                const coords = (res.data || [])
-                    .filter(loc => loc.lat && loc.lng)
-                    .map(loc => [loc.lat, loc.lng]);
-                setHistoryPath(coords);
+                const logs = (res.data || [])
+                    .filter(loc => loc.lat && loc.lng);
+                setHistoryPath(logs);
             })
             .catch(err => {
                 console.error('Failed to load history', err);
@@ -394,6 +395,57 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
 
     const unknownIcon = createUnknownIcon();
 
+    // --- Viewport Culling Logic ---
+    const [bounds, setBounds] = useState(null);
+
+// Helper to track map bounds and sync with backend
+function BoundsTracker({ onBoundsChange }) {
+    const map = useMap();
+
+    // Initialize bounds on mount
+    useEffect(() => {
+        const b = map.getBounds();
+        onBoundsChange(b);
+        sendViewport({
+            minLat: b.getSouthWest().lat,
+            maxLat: b.getNorthEast().lat,
+            minLng: b.getSouthWest().lng,
+            maxLng: b.getNorthEast().lng
+        });
+    }, [map, onBoundsChange]);
+
+    // Trigger on move/zoom completion
+    const onInteractionEnd = () => {
+        const b = map.getBounds();
+        onBoundsChange(b);
+        sendViewport({
+            minLat: b.getSouthWest().lat,
+            maxLat: b.getNorthEast().lat,
+            minLng: b.getSouthWest().lng,
+            maxLng: b.getNorthEast().lng
+        });
+    };
+
+    useMapEvents({
+        moveend: onInteractionEnd,
+        zoomend: onInteractionEnd,
+    });
+
+    return null;
+}
+
+    // Filter vehicles to only those inside current viewport
+    const visibleVehicles = vehicles.filter(v => {
+        if (!v.lat || !v.lng) return false;
+        if (!bounds) return true; // Show all if bounds not yet loaded
+        return bounds.contains([v.lat, v.lng]);
+    });
+
+    const visibleUnknown = Object.entries(unknownDevices).filter(([imei, pos]) => {
+        if (!bounds) return true;
+        return bounds.contains([pos.lat, pos.lng]);
+    });
+
     // Decide center: use first vehicle with valid coords, fallback to Pune
     const firstLive = vehicles.find(v => v.lat && v.lng);
     const mapCenter = firstLive ? [firstLive.lat, firstLive.lng] : center;
@@ -408,6 +460,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
                 ref={mapRef}
             >
                 <CachedTileLayer />
+                <BoundsTracker onBoundsChange={setBounds} />
 
                 <FlyToVehicle selectedVehicle={selectedVehicle} />
                 <DrawControl active={drawingActive} onDrawComplete={onDrawComplete} />
@@ -415,7 +468,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
                 {/* Vehicle History Path */}
                 {historyPath.length > 1 && (
                     <Polyline
-                        positions={historyPath}
+                        positions={historyPath.map(loc => [loc.lat, loc.lng])}
                         pathOptions={{ color: '#3B82F6', weight: 4, opacity: 0.8 }}
                     />
                 )}
@@ -434,7 +487,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
                 ))}
 
                 {/* Vehicle markers */}
-                {vehicles.map((vehicle) => {
+                {visibleVehicles.map((vehicle) => {
                     if (!vehicle.lat || !vehicle.lng) return null;
                     const isSelected = selectedVehicle?.id === vehicle.id;
                     const icon = isSelected
@@ -460,7 +513,16 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
                                         ></span>
                                         <span className="text-gray-600">{statusLabels[vehicle.status] || 'Unknown'}</span>
                                     </div>
-                                    <div className="text-gray-500">Speed: {vehicle.speed || 0} km/h</div>
+                                    <div className="text-gray-500 mb-2">Speed: {vehicle.speed || 0} km/h</div>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowHistoryData(true);
+                                        }}
+                                        className="w-full py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded flex items-center justify-center gap-1 transition-colors"
+                                    >
+                                        <MdAssessment size={14} /> View Historical Data
+                                    </button>
                                 </div>
                             </Popup>
                         </Marker>
@@ -468,7 +530,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
                 })}
 
                 {/* Unknown device markers */}
-                {Object.entries(unknownDevices).map(([imei, pos]) => (
+                {visibleUnknown.map(([imei, pos]) => (
                     <Marker key={`unknown-${imei}`} position={[pos.lat, pos.lng]} icon={unknownIcon}>
                         <Popup>
                             <div className="text-sm text-center">
@@ -498,6 +560,56 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, un
                     </Marker>
                 ))}
             </MapContainer>
+
+            {/* History Data Table Overlay */}
+            {showHistoryData && selectedVehicle && (
+                <div className="absolute right-4 bottom-20 z-[1001] w-80 max-h-[400px] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-brand-purple animate-pulse"></div>
+                            <h3 className="font-bold text-gray-800 text-sm">{selectedVehicle.plate} History</h3>
+                        </div>
+                        <button onClick={() => setShowHistoryData(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                            <MdClose size={20} />
+                        </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-2">
+                        <table className="w-full text-left text-[11px]">
+                            <thead className="sticky top-0 bg-gray-50 text-gray-500 font-semibold">
+                                <tr>
+                                    <th className="px-2 py-1.5 border-b border-gray-100">Time</th>
+                                    <th className="px-2 py-1.5 border-b border-gray-100">Speed</th>
+                                    <th className="px-2 py-1.5 border-b border-gray-100 text-right">Coords</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {historyPath.length === 0 ? (
+                                    <tr><td colSpan={3} className="text-center py-4 text-gray-400 italic">No history available for last 24h</td></tr>
+                                ) : (
+                                    historyPath.map((loc, idx) => (
+                                        <tr key={idx} className="hover:bg-purple-50 transition-colors border-b border-gray-50">
+                                            <td className="px-2 py-1.5 text-gray-600">
+                                                {new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </td>
+                                            <td className="px-2 py-1.5 font-bold text-brand-purple">
+                                                {loc.speed || 0} km/h
+                                            </td>
+                                            <td className="px-2 py-1.5 text-right text-gray-400">
+                                                {Number(loc.lat).toFixed(4)}, {Number(loc.lng).toFixed(4)}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div className="px-4 py-2 bg-purple-50 text-[10px] text-brand-purple italic border-t border-purple-100">
+                        Showing last 24 hours of data (max 500 points)
+                    </div>
+                </div>
+            )}
 
             {/* Layers button */}
             <button className="absolute top-4 right-4 z-[1000] bg-white hover:bg-gray-50 shadow-lg rounded-lg px-3 py-2 flex items-center gap-2 text-sm font-medium text-gray-700 transition-all duration-200 hover:shadow-xl border border-gray-200">

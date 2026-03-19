@@ -9,9 +9,17 @@ interface ClientIdentity {
   role: 'Admin' | 'Customer';
 }
 
+interface Viewport {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
+
 interface AuthenticatedSocket extends WebSocket {
   identity?: ClientIdentity;
   authorizedImeis?: Set<string>;
+  viewport?: Viewport;
 }
 
 class ConnectionManager {
@@ -54,25 +62,39 @@ class ConnectionManager {
     this.clients.delete(ws);
   }
 
+  public setViewport(ws: AuthenticatedSocket, bounds: Viewport): void {
+    ws.viewport = bounds;
+  }
+
   /**
-   * Get all clients authorized to see updates for a specific IMEI
+   * Get all clients authorized to see updates for a specific IMEI, optionally filtered by spatial location
    */
-  public getAuthorizedClients(imei?: string): AuthenticatedSocket[] {
+  public getAuthorizedClients(imei?: string, lat?: number, lng?: number): AuthenticatedSocket[] {
     const authorized: AuthenticatedSocket[] = [];
 
     for (const client of this.clients) {
       if (!client.identity) continue;
 
-      // Admins see everything
+      // 1. Check Identity/Role Authorization
+      let isRoleAuthorized = false;
       if (client.identity.role === 'Admin') {
-        authorized.push(client);
-        continue;
+        isRoleAuthorized = true;
+      } else if (imei && client.authorizedImeis?.has(imei)) {
+        isRoleAuthorized = true;
       }
 
-      // Customers only see their own IMEIs
-      if (imei && client.authorizedImeis?.has(imei)) {
-        authorized.push(client);
+      if (!isRoleAuthorized) continue;
+
+      // 2. Check Spatial (Viewport) Authorization if lat/lng are provided
+      // If client hasn't sent a viewport yet, we broadcast everything as a fallback
+      if (lat !== undefined && lng !== undefined && client.viewport) {
+        const { minLat, maxLat, minLng, maxLng } = client.viewport;
+        const inViewport = lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
+        
+        if (!inViewport) continue;
       }
+
+      authorized.push(client);
     }
 
     return authorized;
