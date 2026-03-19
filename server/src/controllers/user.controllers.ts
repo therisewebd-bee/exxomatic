@@ -1,8 +1,8 @@
 import { Response } from 'express';
-import AsyncHandler from '../utils/asyncHandler.utils.js';
-import { ApiResponse } from '../utils/apiResponse.utils.js';
-import { ApiError } from '../utils/apiError.utils.js';
-import { hashPassword, comparePassword, generateToken } from '../utils/auth.utils.js';
+import AsyncHandler from '../utils/asyncHandler.utils.ts';
+import { ApiResponse } from '../utils/apiResponse.utils.ts';
+import { ApiError } from '../utils/apiError.utils.ts';
+import { hashPassword, comparePassword, generateToken } from '../utils/auth.utils.ts';
 import {
   createUserAccountDb,
   findUserAccountByEmailDb,
@@ -10,21 +10,21 @@ import {
   updateUserAccountDb,
   deleteUserAccountDb,
   findUserAccountsDb,
-} from '../dbQuery/user.dbquery.js';
+} from '../dbQuery/user.dbquery.ts';
 import {
   CreateAccountInput,
   FindUserQueryInput,
   UpdateUserInput,
   UserIdParam,
   LoginAccountInput,
-} from '../dto/user.dto.js';
-import { ValidatedRequest } from '../types/request.js';
+} from '../dto/user.dto.ts';
+import { ValidatedRequest } from '../types/request.ts';
 
 const registerUserHandler = AsyncHandler(async (req: ValidatedRequest<CreateAccountInput>, res: Response) => {
   const { body } = req.validated;
 
   // Check if user already exists
-  const existingUser = await findUserAccountByEmailDb({ query: { email: body.email } });
+  const existingUser = await findUserAccountByEmailDb(body.email);
   if (existingUser) {
     throw new ApiError(409, 'User with this email already exists');
   }
@@ -33,10 +33,8 @@ const registerUserHandler = AsyncHandler(async (req: ValidatedRequest<CreateAcco
   const hashedPassword = await hashPassword(body.password);
 
   const created = await createUserAccountDb({
-    body: {
-      ...body,
-      password: hashedPassword,
-    },
+    ...body,
+    password: hashedPassword,
   });
 
   // Remove password from response
@@ -50,7 +48,7 @@ const registerUserHandler = AsyncHandler(async (req: ValidatedRequest<CreateAcco
 const loginUserHandler = AsyncHandler(async (req: ValidatedRequest<LoginAccountInput>, res: Response) => {
   const { body } = req.validated;
 
-  const user = await findUserAccountByEmailDb({ query: { email: body.email } });
+  const user = await findUserAccountByEmailDb(body.email);
   if (!user) {
     throw new ApiError(401, 'Invalid email or password');
   }
@@ -73,14 +71,14 @@ const loginUserHandler = AsyncHandler(async (req: ValidatedRequest<LoginAccountI
 
   return res
     .status(200)
-    .cookie('accessToken', token, cookieOptions)
+    .cookie('fleet_token', token, cookieOptions)
     .json(new ApiResponse(200, { user: userWithoutPassword, token }, 'Login successful'));
 });
 
 const getUsers = AsyncHandler(async (req: ValidatedRequest<FindUserQueryInput>, res: Response) => {
   const { query } = req.validated;
 
-  const users = await findUserAccountsDb({ query });
+  const users = await findUserAccountsDb(query);
 
   return res.status(200).json(new ApiResponse(200, users, 'Users retrieved successfully'));
 });
@@ -88,7 +86,7 @@ const getUsers = AsyncHandler(async (req: ValidatedRequest<FindUserQueryInput>, 
 const getUser = AsyncHandler(async (req: ValidatedRequest<UserIdParam>, res: Response) => {
   const { params } = req.validated;
 
-  const user = await findUserAccountByIdDb({ params });
+  const user = await findUserAccountByIdDb(params.userId);
   if (!user) {
     throw new ApiError(404, 'User not found');
   }
@@ -103,7 +101,7 @@ const updateUserHandler = AsyncHandler(async (req: ValidatedRequest<UpdateUserIn
     throw new ApiError(400, 'At least one field must be provided for update');
   }
 
-  const updated = await updateUserAccountDb({ params }, { body });
+  const updated = await updateUserAccountDb(params.userId, body);
 
   return res.status(200).json(new ApiResponse(200, updated, 'User updated successfully'));
 });
@@ -111,7 +109,7 @@ const updateUserHandler = AsyncHandler(async (req: ValidatedRequest<UpdateUserIn
 const deleteUserHandler = AsyncHandler(async (req: ValidatedRequest<UserIdParam>, res: Response) => {
   const { params } = req.validated;
 
-  const result = await deleteUserAccountDb({ params });
+  const result = await deleteUserAccountDb(params.userId);
 
   return res.status(200).json(new ApiResponse(200, result, 'User deleted successfully'));
 });

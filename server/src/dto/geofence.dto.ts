@@ -37,9 +37,9 @@ export const findGeofenceQuerySchema = z.object({
   query: z.object({
     name: z.string().optional(),
     isActive: z.coerce.boolean().optional(),
-    imei: z.coerce.string(),
-    lat: z.coerce.number(),
-    lng: z.coerce.number(),
+    imei: z.coerce.string().optional(),
+    lat: z.coerce.number().optional(),
+    lng: z.coerce.number().optional(),
     page: z.coerce.number().min(1).optional(),
     limit: z.coerce.number().min(1).max(100).optional(),
   }),

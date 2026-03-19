@@ -1,12 +1,16 @@
 import http from 'http';
-import startTcpServer from './services/tcp/server.js';
-import logger from './services/logger/logger.js';
-import app from './app.js';
-import { config } from './config/config.js';
-import { wsService } from './services/websocket/socket.js';
+import startTcpServer from './services/tcp/server.ts';
+import logger from './services/logger/logger.ts';
+import app from './app.ts';
+import { config } from './config/config.ts';
+import { wsService } from './services/websocket/socket.ts';
+import { vehicleCache } from './services/tracker/vehicleCache.ts';
 
-const startServers = () => {
+const startServers = async () => {
   try {
+    // 0. Initialize Vehicle Cache
+    await vehicleCache.init();
+
     // 1. Start HTTP Server
     const httpServer = http.createServer(app);
     const PORT = config.port;

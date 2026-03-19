@@ -1,19 +1,19 @@
 import { Response } from 'express';
-import AsyncHandler from '../utils/asyncHandler.utils.js';
-import { ApiResponse } from '../utils/apiResponse.utils.js';
-import { ApiError } from '../utils/apiError.utils.js';
+import AsyncHandler from '../utils/asyncHandler.utils.ts';
+import { ApiResponse } from '../utils/apiResponse.utils.ts';
+import { ApiError } from '../utils/apiError.utils.ts';
 import {
   findLocationLogsDb,
   findLocationLogByIdDb,
   deleteLocationLogDb,
-} from '../dbQuery/location.dbquery.js';
+} from '../dbQuery/location.dbquery.ts';
 import {
   CreateLocationLogInput,
   FindLocationQueryInput,
   LocationIdParam,
-} from '../dto/location.dto.js';
-import { ValidatedRequest } from '../types/request.js';
-import { processTrackerUpdate } from '../services/tracker/tracker.logic.js';
+} from '../dto/location.dto.ts';
+import { ValidatedRequest } from '../types/request.ts';
+import { processTrackerUpdate } from '../services/tracker/tracker.logic.ts';
 
 const logLocationHandler = AsyncHandler(async (req: ValidatedRequest<CreateLocationLogInput>, res: Response) => {
   const { body } = req.validated;
@@ -32,7 +32,7 @@ const logLocationHandler = AsyncHandler(async (req: ValidatedRequest<CreateLocat
 const getHistory = AsyncHandler(async (req: ValidatedRequest<FindLocationQueryInput>, res: Response) => {
   const { query } = req.validated;
 
-  const logs = await findLocationLogsDb({ query });
+  const logs = await findLocationLogsDb(query);
 
   return res
     .status(200)
@@ -42,7 +42,7 @@ const getHistory = AsyncHandler(async (req: ValidatedRequest<FindLocationQueryIn
 const getLocationLog = AsyncHandler(async (req: ValidatedRequest<LocationIdParam>, res: Response) => {
   const { params } = req.validated;
 
-  const log = await findLocationLogByIdDb({ params });
+  const log = await findLocationLogByIdDb(params.locationId);
   if (!log) {
     throw new ApiError(404, 'Location log not found');
   }
@@ -53,7 +53,7 @@ const getLocationLog = AsyncHandler(async (req: ValidatedRequest<LocationIdParam
 const deleteLocationHandler = AsyncHandler(async (req: ValidatedRequest<LocationIdParam>, res: Response) => {
   const { params } = req.validated;
 
-  const result = await deleteLocationLogDb({ params });
+  const result = await deleteLocationLogDb(params.locationId);
 
   return res.status(200).json(new ApiResponse(200, result, 'Location log deleted successfully'));
 });

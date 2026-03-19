@@ -17,7 +17,7 @@ export const createVehicleSchema = z.object({
   body: z.object({
     imei: imeiSchema,
     vechicleNumb: vehicleNumbSchema,
-    customerId: customerIdSchema,
+    customerId: customerIdSchema.optional(), // Injected by controller
     geofenceIds: z.array(z.uuid()).optional(),
   }),
 });

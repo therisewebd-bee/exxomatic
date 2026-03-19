@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import userRouter from './user.routes.js';
-import vehicleRouter from './vehicle.routes.js';
-import locationRouter from './location.routes.js';
-import complianceRouter from './vehicleCompliance.routes.js';
-import geofenceRouter from './geofence.routes.js';
+import userRouter from './user.routes.ts';
+import vehicleRouter from './vehicle.routes.ts';
+import locationRouter from './location.routes.ts';
+import complianceRouter from './vehicleCompliance.routes.ts';
+import geofenceRouter from './geofence.routes.ts';
 
 const router = Router();
 

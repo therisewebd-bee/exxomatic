@@ -1,11 +1,11 @@
-import { prismaAdapter } from './dbInit.js';
+import { prismaAdapter } from './dbInit.ts';
 import {
   CreateGeofenceInput,
   UpdateGeofenceInput,
   FindGeofenceQueryInput,
   GeofenceIdParam,
-} from '../dto/geofence.dto.js';
-import { catchService } from '../utils/utilHandler.js';
+} from '../dto/geofence.dto.ts';
+import { catchService } from '../utils/utilHandler.ts';
 import crypto from 'crypto';
 
 //this function is creaeted to reduce
@@ -17,28 +17,28 @@ const hashGeofence = (zone: object) => {
 };
 
 const createGeofenceDb = catchService(
-  async (geoFenceData: CreateGeofenceInput) => {
-    const { vehicleIds, name, zone, isActive } = geoFenceData.body;
+  async (data: any) => {
+    const { vehicleIds, name, zone, isActive } = data;
     const zoneHash = hashGeofence(zone);
 
     return await prismaAdapter.$transaction(async (tx) => {
-      const existing = await tx.geofence.findUnique({
+      const existing = await tx.geofence.findFirst({
         where: { zoneHash },
       });
 
       //check has in db and find that geoFence data in it
-      if (existing) {
-        if (vehicleIds && vehicleIds.length > 0) {
-          await tx.vehiclesOnGeofences.createMany({
-            data: vehicleIds.map((vId) => ({
-              vehicleId: vId,
-              geofenceId: existing.id,
-            })),
-            skipDuplicates: true,
-          });
+        if (existing) {
+          if (vehicleIds && vehicleIds.length > 0) {
+            await tx.vehiclesOnGeofences.createMany({
+              data: vehicleIds.map((vId: string) => ({
+                vehicleId: vId,
+                geofenceId: existing.id,
+              })),
+              skipDuplicates: true,
+            });
+          }
+          return existing;
         }
-        return existing;
-      }
 
       //create new geo fence in case it's not in db
       const geofence = await tx.geofence.create({
@@ -51,7 +51,7 @@ const createGeofenceDb = catchService(
 
       if (vehicleIds && vehicleIds.length > 0) {
         await tx.vehiclesOnGeofences.createMany({
-          data: vehicleIds.map((vId) => ({
+          data: vehicleIds.map((vId: string) => ({
             vehicleId: vId,
             geofenceId: geofence.id,
           })),
@@ -76,9 +76,8 @@ const createGeofenceDb = catchService(
 );
 
 const updateGeofenceDb = catchService(
-  async (gID: GeofenceIdParam, geoFenceData: UpdateGeofenceInput) => {
-    const { vehicleIds, name, zone, isActive } = geoFenceData.body;
-    const { geofenceId } = gID.params;
+  async (geofenceId: string, data: any) => {
+    const { vehicleIds, name, zone, isActive } = data;
 
     return await prismaAdapter.$transaction(async (tx) => {
       const geofence = await tx.geofence.update({
@@ -105,7 +104,7 @@ const updateGeofenceDb = catchService(
 
         if (vehicleIds.length > 0) {
           await tx.vehiclesOnGeofences.createMany({
-            data: vehicleIds.map((vId) => ({
+            data: vehicleIds.map((vId: string) => ({
               vehicleId: vId,
               geofenceId,
             })),
@@ -122,7 +121,7 @@ const updateGeofenceDb = catchService(
 
 const findGeofenceByIdDb = catchService(
   async (geofenceId: string) => {
-    return await prismaAdapter.geofence.findUnique({
+    return await prismaAdapter.geofence.findFirst({
       where: { id: geofenceId },
       include: {
         vehicles: {

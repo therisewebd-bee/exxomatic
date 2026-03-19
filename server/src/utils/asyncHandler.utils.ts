@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import logger from '../services/logger/logger.js';
+import logger from '../services/logger/logger.ts';
 
 /**
  * Higher Order Function to handle asynchronous express routes

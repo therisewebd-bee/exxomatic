@@ -1,21 +1,21 @@
 import { Response } from 'express';
-import AsyncHandler from '../utils/asyncHandler.utils.js';
-import { ApiResponse } from '../utils/apiResponse.utils.js';
-import { ApiError } from '../utils/apiError.utils.js';
+import AsyncHandler from '../utils/asyncHandler.utils.ts';
+import { ApiResponse } from '../utils/apiResponse.utils.ts';
+import { ApiError } from '../utils/apiError.utils.ts';
 import {
   createVehicleComplianceDb,
   updateVehicleComplianceDb,
   deleteVehicleComplianceDb,
   findVehicleComplianceByIdDb,
   findVehicleCompliancesDb,
-} from '../dbQuery/vehicleCompliance.dbquery.js';
+} from '../dbQuery/vehicleCompliance.dbquery.ts';
 import {
   CreateVehicleComplianceInput,
   UpdateVehicleComplianceInput,
   FindVehicleComplianceQueryInput,
   ComplianceIdParam,
-} from '../dto/vehicleCompliance.dto.js';
-import { ValidatedRequest } from '../types/request.js';
+} from '../dto/vehicleCompliance.dto.ts';
+import { ValidatedRequest } from '../types/request.ts';
 
 const logComplianceHandler = AsyncHandler(async (req: ValidatedRequest<CreateVehicleComplianceInput>, res: Response) => {
   const { body } = req.validated;

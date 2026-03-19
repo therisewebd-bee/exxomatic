@@ -1,12 +1,14 @@
-import logger from '../logger/logger.js';
-import { createLocationLogDb } from '../../dbQuery/location.dbquery.js';
-import { checkWithInGeofenceDb } from '../../dbQuery/geofence.dbquery.js';
-import { wsService } from '../websocket/socket.js';
+import logger from '../logger/logger.ts';
+import { createLocationLogDb } from '../../dbQuery/location.dbquery.ts';
+import { checkWithInGeofenceDb } from '../../dbQuery/geofence.dbquery.ts';
+import { wsService } from '../websocket/socket.ts';
 
 export interface TrackerPayload {
   imei: string;
   lat: number;
   lng: number;
+  speed?: number;
+  ignition?: boolean;
   timestamp?: Date;
 }
 
@@ -26,12 +28,10 @@ export const processTrackerUpdate = async (data: TrackerPayload): Promise<Normal
   try {
     // 1. Persistence - Standardized to lat/lng as per Prisma schema
     const locationLog = await createLocationLogDb({
-      body: {
-        imei,
-        lat,
-        lng,
-        timestamp,
-      } as any, // Cast to any because the CreateLocationLogInput might still use old names in types
+      imei,
+      lat,
+      lng,
+      timestamp,
     });
 
     // 2. Geofence Audit

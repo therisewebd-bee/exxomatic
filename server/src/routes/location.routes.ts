@@ -4,14 +4,14 @@ import {
     getHistory,
     getLocationLog,
     deleteLocationHandler,
-} from '../controllers/location.controllers.js';
-import { validate } from '../middleware/validate.middleware.js';
+} from '../controllers/location.controllers.ts';
+import { validate } from '../middleware/validate.middleware.ts';
 import {
     createLocationLogSchema,
     findLocationQuerySchema,
     locationIdParamSchema,
-} from '../dto/location.dto.js';
-import { verifyAuth } from '../middleware/auth.middleware.js';
+} from '../dto/location.dto.ts';
+import { verifyAuth } from '../middleware/auth.middleware.ts';
 
 const router = Router();
 

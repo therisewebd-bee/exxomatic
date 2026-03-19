@@ -1,12 +1,15 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('Admin', 'Customer');
+CREATE TYPE "userRole" AS ENUM ('Admin', 'Customer');
+
+-- CreateGis
+CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- CreateTable
 CREATE TABLE "VehicleInfo" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "imei" VARCHAR(25) NOT NULL,
     "vechicleNumb" VARCHAR(25) NOT NULL,
-    "customerId" TEXT NOT NULL,
+    "customerId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -36,7 +39,7 @@ CREATE TABLE "User" (
     "name" VARCHAR(50) NOT NULL,
     "email" VARCHAR(100) NOT NULL,
     "password" VARCHAR(80) NOT NULL,
-    "role" "Role" NOT NULL DEFAULT 'Customer',
+    "role" "userRole" NOT NULL DEFAULT 'Customer',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

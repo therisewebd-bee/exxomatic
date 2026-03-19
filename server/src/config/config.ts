@@ -11,4 +11,5 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   cookieSecret: process.env.COOKIE_SECRET || 'your-cookie-secret',
   dbUrl: process.env.DATABASE_URL,
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
 };

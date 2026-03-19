@@ -4,11 +4,9 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
-
-  // preview features to enable if not on v4:
-  previewFeatures = ["postgresqlExtensions"]
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions", "driverAdapters"]
 }
 
 datasource db {
@@ -70,14 +68,14 @@ model User {
 }
 
 model Geofence {
-  id        String                                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String                                      @db.VarChar(50)
-  zone      Unsupported("public.geometry(Point,4326)")?
-  zoneHash  String?                                     @unique @db.VarChar(32)
-  isActive  Boolean                                     @default(true)
-  createdAt DateTime                                    @default(now())
-  updatedAt DateTime                                    @updatedAt
-  vehicles  VehiclesOnGeofences[]                       @relation("GeofenceToJoin")
+  id        String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String                   @db.VarChar(50)
+  zone      Unsupported("geometry")?
+  zoneHash  String?                  @unique @db.VarChar(32)
+  isActive  Boolean                  @default(true)
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+  vehicles  VehiclesOnGeofences[]    @relation("GeofenceToJoin")
 
   @@index([zoneHash])
 }

@@ -1,10 +1,10 @@
-import { prismaAdapter } from './dbInit.js';
+import { prismaAdapter } from './dbInit.ts';
 import {
   CreateLocationLogInput,
   FindLocationQueryInput,
   LocationIdParam,
-} from '../dto/location.dto.js';
-import { catchService } from '../utils/utilHandler.js';
+} from '../dto/location.dto.ts';
+import { catchService } from '../utils/utilHandler.ts';
 
 //LDS here stands for Location Data Schema
 //catchServcie here is a highOrder fucntion
@@ -13,11 +13,9 @@ import { catchService } from '../utils/utilHandler.js';
 //trace out error propley
 
 const createLocationLogDb = catchService(
-  async (locationDataScheam: CreateLocationLogInput) => {
+  async (data: any) => {
     return await prismaAdapter.locationLog.create({
-      data: {
-        ...locationDataScheam.body,
-      },
+      data,
     });
   },
   'DB-Call:Location',
@@ -25,8 +23,8 @@ const createLocationLogDb = catchService(
 );
 
 const findLocationLogsDb = catchService(
-  async (findLDS: FindLocationQueryInput) => {
-    const { imei, startDate, endDate, limit = 100 } = findLDS.query;
+  async (filters: { imei?: string; startDate?: Date; endDate?: Date; limit?: number }) => {
+    const { imei, startDate, endDate, limit = 100 } = filters;
     return await prismaAdapter.locationLog.findMany({
       where: {
         imei,
@@ -46,10 +44,10 @@ const findLocationLogsDb = catchService(
 );
 
 const findLocationLogByIdDb = catchService(
-  async (lID: LocationIdParam) => {
-    return await prismaAdapter.locationLog.findUnique({
+  async (locationId: string) => {
+    return await prismaAdapter.locationLog.findFirst({
       where: {
-        id: lID.params.locationId,
+        id: locationId,
       },
     });
   },
@@ -58,10 +56,10 @@ const findLocationLogByIdDb = catchService(
 );
 
 const deleteLocationLogDb = catchService(
-  async (lID: LocationIdParam) => {
+  async (locationId: string) => {
     return await prismaAdapter.locationLog.delete({
       where: {
-        id: lID.params.locationId,
+        id: locationId,
       },
     });
   },

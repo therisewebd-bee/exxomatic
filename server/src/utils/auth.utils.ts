@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { ApiError } from './apiError.utils.js';
-import { config } from '../config/config.js';
+import { ApiError } from './apiError.utils.ts';
+import { config } from '../config/config.ts';
 
 const SALT_ROUNDS = 10;
 

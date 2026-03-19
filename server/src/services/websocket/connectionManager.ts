@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
-import { verifyToken } from '../../utils/auth.utils.js';
-import logger from '../logger/logger.js';
-import { prismaAdapter } from '../../dbQuery/dbInit.js';
+import { verifyToken } from '../../utils/auth.utils.ts';
+import logger from '../logger/logger.ts';
+import { prismaAdapter } from '../../dbQuery/dbInit.ts';
 
 interface ClientIdentity {
   id: string;
@@ -44,8 +44,8 @@ class ConnectionManager {
       this.clients.add(ws);
       logger.info(`[conn-manager] client authenticated: ${decoded.email} (${decoded.role})`);
       return true;
-    } catch (error) {
-      logger.warn(`[conn-manager] auth failed: ${error}`);
+    } catch (error: any) {
+      logger.warn(`[conn-manager] auth failed: ${error.message || error} | Token received: ${token.substring(0, 15)}...`);
       return false;
     }
   }

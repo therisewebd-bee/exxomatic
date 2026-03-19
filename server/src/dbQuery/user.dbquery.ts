@@ -1,11 +1,11 @@
-import { prismaAdapter } from './dbInit.js';
+import { prismaAdapter } from './dbInit.ts';
 import {
   CreateAccountInput,
   FindUserQueryInput,
   UpdateUserInput,
   UserIdParam,
-} from '../dto/user.dto.js';
-import { catchService } from '../utils/utilHandler.js';
+} from '../dto/user.dto.ts';
+import { catchService } from '../utils/utilHandler.ts';
 
 //UDS here stands for User Data Schema
 //catchServcie here is a highOrder fucntion
@@ -14,11 +14,9 @@ import { catchService } from '../utils/utilHandler.js';
 //trace out error propley
 
 const createUserAccountDb = catchService(
-  async (userDataScheam: CreateAccountInput) => {
+  async (data: any) => {
     return await prismaAdapter.user.create({
-      data: {
-        ...userDataScheam.body,
-      },
+      data,
     });
   },
   'DB-Call:User',
@@ -26,16 +24,17 @@ const createUserAccountDb = catchService(
 );
 
 const findUserAccountByEmailDb = catchService(
-  async (findUSD: FindUserQueryInput) => {
-    return await prismaAdapter.user.findUnique({
+  async (email: string) => {
+    return await prismaAdapter.user.findFirst({
       where: {
-        email: findUSD.query.email || '',
+        email,
       },
       select: {
         id: true,
         email: true,
         password: true,
         role: true,
+        name: true,
       },
     });
   },
@@ -44,10 +43,10 @@ const findUserAccountByEmailDb = catchService(
 );
 
 const findUserAccountByIdDb = catchService(
-  async (uID: UserIdParam) => {
-    return await prismaAdapter.user.findUnique({
+  async (userId: string) => {
+    return await prismaAdapter.user.findFirst({
       where: {
-        id: uID.params.userId,
+        id: userId,
       },
     });
   },
@@ -56,14 +55,12 @@ const findUserAccountByIdDb = catchService(
 );
 
 const updateUserAccountDb = catchService(
-  async (uID: UserIdParam, userDataScheam: UpdateUserInput) => {
+  async (userId: string, data: any) => {
     return await prismaAdapter.user.update({
       where: {
-        id: uID.params.userId,
+        id: userId,
       },
-      data: {
-        ...userDataScheam.body,
-      },
+      data,
     });
   },
   'DB-Call:User',
@@ -71,10 +68,10 @@ const updateUserAccountDb = catchService(
 );
 
 const deleteUserAccountDb = catchService(
-  async (uID: UserIdParam) => {
+  async (userId: string) => {
     return await prismaAdapter.user.delete({
       where: {
-        id: uID.params.userId,
+        id: userId,
       },
     });
   },
@@ -83,8 +80,8 @@ const deleteUserAccountDb = catchService(
 );
 
 const findUserAccountsDb = catchService(
-  async (findUSD: FindUserQueryInput) => {
-    const { email, role, page = 1, limit = 10 } = findUSD.query;
+  async (filters: { email?: string; role?: any; page?: number; limit?: number }) => {
+    const { email, role, page = 1, limit = 10 } = filters;
 
     return await prismaAdapter.user.findMany({
       where: {

@@ -7,9 +7,9 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/VehicleInfo.js';
-export type * from './models/LocationLog.js';
-export type * from './models/User.js';
-export type * from './models/Geofence.js';
-export type * from './models/VehicleCompliance.js';
-export type * from './commonInputTypes.js';
+export type * from './models/VehicleInfo.ts';
+export type * from './models/LocationLog.ts';
+export type * from './models/User.ts';
+export type * from './models/Geofence.ts';
+export type * from './models/VehicleCompliance.ts';
+export type * from './commonInputTypes.ts';

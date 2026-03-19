@@ -5,15 +5,15 @@ import {
     getGeofenceHandler,
     getAllGeofencesHandler,
     checkGeofenceHandler,
-} from '../controllers/geofence.controllers.js';
-import { validate } from '../middleware/validate.middleware.js';
+} from '../controllers/geofence.controllers.ts';
+import { validate } from '../middleware/validate.middleware.ts';
 import {
     createGeofenceSchema,
     updateGeofenceSchema,
     geofenceIdParamSchema,
     findGeofenceQuerySchema,
-} from '../dto/geofence.dto.js';
-import { verifyAuth } from '../middleware/auth.middleware.js';
+} from '../dto/geofence.dto.ts';
+import { verifyAuth } from '../middleware/auth.middleware.ts';
 
 const router = Router();
 

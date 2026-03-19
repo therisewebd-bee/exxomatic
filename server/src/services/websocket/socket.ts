@@ -1,8 +1,8 @@
 import { WebSocketServer } from 'ws';
 import { Server } from 'http';
-import logger from '../logger/logger.js';
-import { SocketResponse, SocketEvent } from '../../utils/socketResponse.utils.js';
-import { connectionManager, AuthenticatedSocket } from './connectionManager.js';
+import logger from '../logger/logger.ts';
+import { SocketResponse, SocketEvent } from '../../utils/socketResponse.utils.ts';
+import { connectionManager, AuthenticatedSocket } from './connectionManager.ts';
 
 class WebSocketService {
   private static instance: WebSocketService;
@@ -25,7 +25,17 @@ class WebSocketService {
 
       // Extract token from query or cookie
       const url = new URL(req.url || '', `http://${req.headers.host}`);
-      const token = url.searchParams.get('token') || this.extractTokenFromCookie(req.headers.cookie);
+      let token = url.searchParams.get('token');
+      
+      // Fallback to cookie if query param is empty/invalid
+      if (!token || token === 'undefined' || token === 'null') {
+        token = this.extractTokenFromCookie(req.headers.cookie);
+      }
+
+      // Final check against literal strings
+      if (token === 'undefined' || token === 'null') {
+        token = null;
+      }
 
       if (!token) {
         logger.warn('[ws] connection rejected: no token');
@@ -84,7 +94,7 @@ class WebSocketService {
 
   private extractTokenFromCookie(cookie?: string): string | null {
     if (!cookie) return null;
-    const match = cookie.match(/accessToken=([^;]+)/);
+    const match = cookie.match(/fleet_token=([^;]+)/);
     return match ? match[1] : null;
   }
 }

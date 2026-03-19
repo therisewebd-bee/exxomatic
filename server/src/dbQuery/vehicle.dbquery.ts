@@ -1,11 +1,11 @@
-import { prismaAdapter } from './dbInit.js';
+import { prismaAdapter } from './dbInit.ts';
 import {
   CreateVehicleInput,
   UpdateVehicleInput,
   FindVehicleQueryInput,
   VehicleIdParam,
-} from '../dto/vehicle.dto.js';
-import { catchService } from '../utils/utilHandler.js';
+} from '../dto/vehicle.dto.ts';
+import { catchService } from '../utils/utilHandler.ts';
 
 //VDS here stands for Vehicle Data Schema
 //catchServcie here is a highOrder fucntion
@@ -14,8 +14,8 @@ import { catchService } from '../utils/utilHandler.js';
 //trace out error propley
 
 const createVehicleDb = catchService(
-  async (vehicleDataScheam: CreateVehicleInput) => {
-    const { geofenceIds, ...body } = vehicleDataScheam.body;
+  async (data: any) => {
+    const { geofenceIds, ...body } = data;
 
     const vehicle = await prismaAdapter.vehicleInfo.create({
       data: {
@@ -25,7 +25,7 @@ const createVehicleDb = catchService(
 
     if (geofenceIds && geofenceIds.length > 0) {
       await prismaAdapter.vehiclesOnGeofences.createMany({
-        data: geofenceIds.map((gId) => ({
+        data: geofenceIds.map((gId: string) => ({
           vehicleId: vehicle.id,
           geofenceId: gId,
         })),
@@ -39,9 +39,8 @@ const createVehicleDb = catchService(
 );
 
 const updateVehicleDb = catchService(
-  async (vID: VehicleIdParam, vehicleDataScheam: UpdateVehicleInput) => {
-    const { geofenceIds, ...body } = vehicleDataScheam.body;
-    const { vehicleId } = vID.params;
+  async (vehicleId: string, data: any) => {
+    const { geofenceIds, ...body } = data;
 
     const vehicle = await prismaAdapter.vehicleInfo.update({
       where: {
@@ -60,7 +59,7 @@ const updateVehicleDb = catchService(
 
       if (geofenceIds.length > 0) {
         await prismaAdapter.vehiclesOnGeofences.createMany({
-          data: geofenceIds.map((gId) => ({
+          data: geofenceIds.map((gId: string) => ({
             vehicleId: vehicleId,
             geofenceId: gId,
           })),
@@ -75,9 +74,7 @@ const updateVehicleDb = catchService(
 );
 
 const deleteVehicleDb = catchService(
-  async (vID: VehicleIdParam) => {
-    const { vehicleId } = vID.params;
-
+  async (vehicleId: string) => {
     // Explicitly delete relations first
     await prismaAdapter.vehiclesOnGeofences.deleteMany({
       where: { vehicleId: vehicleId },
@@ -94,10 +91,8 @@ const deleteVehicleDb = catchService(
 );
 
 const findVehicleByIdDb = catchService(
-  async (vID: VehicleIdParam) => {
-    const { vehicleId } = vID.params;
-
-    return await prismaAdapter.vehicleInfo.findUnique({
+  async (vehicleId: string) => {
+    return await prismaAdapter.vehicleInfo.findFirst({
       where: {
         id: vehicleId,
       },
@@ -115,8 +110,8 @@ const findVehicleByIdDb = catchService(
 );
 
 const findVehiclesDb = catchService(
-  async (findVDS: FindVehicleQueryInput) => {
-    const { customerId, imei, vechicleNumb, page = 1, limit = 10 } = findVDS.query;
+  async (filters: { customerId?: string; imei?: string; vechicleNumb?: string; page?: number; limit?: number }) => {
+    const { customerId, imei, vechicleNumb, page = 1, limit = 10 } = filters;
 
     return await prismaAdapter.vehicleInfo.findMany({
       where: {

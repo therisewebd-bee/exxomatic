@@ -1,5 +1,5 @@
-import logger from '../logger/logger.js';
-import { TrackerPayload, processTrackerUpdate } from '../tracker/tracker.logic.js';
+import logger from '../logger/logger.ts';
+import { TrackerPayload, processTrackerUpdate } from '../tracker/tracker.logic.ts';
 
 /**
  * In-memory buffer to reduce DB overhead for high-frequency trackers.

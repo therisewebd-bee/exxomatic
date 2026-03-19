@@ -3,8 +3,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import helmet from 'helmet';
-import { config } from './config/config.js';
-import mainRouter from './routes/index.js';
+import { config } from './config/config.ts';
+import mainRouter from './routes/index.ts';
 
 const app = express();
 
@@ -15,7 +15,10 @@ app.use(compression());
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 app.use(cookieParser());
-app.use(cors());
+app.use(cors({
+  origin: config.frontendUrl.split(','),
+  credentials: true,
+}));
 app.use(express.static('public'));
 
 // Health check

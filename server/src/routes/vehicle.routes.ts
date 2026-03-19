@@ -5,15 +5,15 @@ import {
     getVehicle,
     updateVehicleHandler,
     deleteVehicleHandler,
-} from '../controllers/vehicle.controllers.js';
-import { validate } from '../middleware/validate.middleware.js';
+} from '../controllers/vehicle.controllers.ts';
+import { validate } from '../middleware/validate.middleware.ts';
 import {
     createVehicleSchema,
     updateVehicleSchema,
     vehicleIdParamSchema,
     findVehicleQuerySchema,
-} from '../dto/vehicle.dto.js';
-import { verifyAuth } from '../middleware/auth.middleware.js';
+} from '../dto/vehicle.dto.ts';
+import { verifyAuth } from '../middleware/auth.middleware.ts';
 
 const router = Router();
 

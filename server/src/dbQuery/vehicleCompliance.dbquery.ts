@@ -1,11 +1,11 @@
-import { prismaAdapter } from './dbInit.js';
+import { prismaAdapter } from './dbInit.ts';
 import {
   CreateVehicleComplianceInput,
   UpdateVehicleComplianceInput,
   FindVehicleComplianceQueryInput,
   ComplianceIdParam,
-} from '../dto/vehicleCompliance.dto.js';
-import { catchService } from '../utils/utilHandler.js';
+} from '../dto/vehicleCompliance.dto.ts';
+import { catchService } from '../utils/utilHandler.ts';
 
 //VCS here stands for VehicleCompliance Data Schema
 //catchServcie here is a highOrder fucntion

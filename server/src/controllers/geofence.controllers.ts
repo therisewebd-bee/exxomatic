@@ -1,26 +1,26 @@
 import { Request, Response } from 'express';
-import AsyncHandler from '../utils/asyncHandler.utils.js';
-import { ApiResponse } from '../utils/apiResponse.utils.js';
-import { ApiError } from '../utils/apiError.utils.js';
+import AsyncHandler from '../utils/asyncHandler.utils.ts';
+import { ApiResponse } from '../utils/apiResponse.utils.ts';
+import { ApiError } from '../utils/apiError.utils.ts';
 import {
   createGeofenceDb,
   updateGeofenceDb,
   findGeofenceByIdDb,
   findAllGeofenceDb,
   checkWithInGeofenceDb,
-} from '../dbQuery/geofence.dbquery.js';
+} from '../dbQuery/geofence.dbquery.ts';
 import {
   CreateGeofenceInput,
   UpdateGeofenceInput,
   FindGeofenceQueryInput,
   GeofenceIdParam,
-} from '../dto/geofence.dto.js';
-import { ValidatedRequest } from '../types/request.js';
+} from '../dto/geofence.dto.ts';
+import { ValidatedRequest } from '../types/request.ts';
 
 const createGeofenceHandler = AsyncHandler(async (req: ValidatedRequest<CreateGeofenceInput>, res: Response) => {
   const { body } = req.validated;
 
-  const created = await createGeofenceDb({ body });
+  const created = await createGeofenceDb(body);
 
   return res.status(201).json(new ApiResponse(201, created, 'Geofence created successfully'));
 });
@@ -28,7 +28,7 @@ const createGeofenceHandler = AsyncHandler(async (req: ValidatedRequest<CreateGe
 const updateGeofenceHandler = AsyncHandler(async (req: ValidatedRequest<UpdateGeofenceInput & GeofenceIdParam>, res: Response) => {
   const { body, params } = req.validated;
 
-  const updated = await updateGeofenceDb({ params }, { body });
+  const updated = await updateGeofenceDb(params.geofenceId, body);
 
   return res.status(200).json(new ApiResponse(200, updated, 'Geofence updated successfully'));
 });

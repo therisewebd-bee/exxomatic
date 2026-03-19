@@ -11,7 +11,7 @@
  */
 
 import * as runtime from '@prisma/client/runtime/client';
-import type * as Prisma from './prismaNamespace.js';
+import type * as Prisma from './prismaNamespace.ts';
 
 const config: runtime.GetPrismaClientConfig = {
   previewFeatures: [],
@@ -58,7 +58,7 @@ config.compilerWasm = {
     return await decodeBase64AsWasm(wasm);
   },
 
-  importName: './query_compiler_fast_bg.js',
+  importName: './query_compiler_fast_bg.ts',
 };
 
 export type LogOptions<ClientOptions extends Prisma.PrismaClientOptions> =
