@@ -748,19 +748,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                 </div>
             )}
             
-            {/* Global Unfocus/Selection Close Button (Always visible when a vehicle is selected) */}
-            {selectedVehicle && (
-                <button
-                    onClick={() => onSelectVehicle(null)}
-                    className="absolute top-4 left-4 z-[1001] bg-white text-gray-800 p-3 rounded-full shadow-2xl hover:bg-red-50 hover:text-red-500 transition-all border border-gray-100 flex items-center gap-2 group"
-                    title="Exit Focus & Show All"
-                >
-                    <MdClose size={24} />
-                    <span className="max-w-0 overflow-hidden group-hover:max-w-[200px] transition-all duration-300 text-sm font-bold whitespace-nowrap">
-                        Exit Focus (Show All)
-                    </span>
-                </button>
-            )}
+
 
             {/* Playback Controls Overlay */}
             {selectedVehicle && historyPath.length > 0 && (
@@ -800,13 +788,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                                         </button>
                                     ))}
                                 </div>
-                                <button 
-                                    onClick={() => onSelectVehicle(null)}
-                                    className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors border border-transparent hover:border-red-100"
-                                    title="Exit Focus & Show All"
-                                >
-                                    <MdClose size={20} />
-                                </button>
+
                             </div>
                         </div>
 
