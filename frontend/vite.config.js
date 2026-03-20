@@ -7,6 +7,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    optimizeDeps: {
+      include: ['recharts'],
+    },
     server: {
       port: 5173,
       proxy: {

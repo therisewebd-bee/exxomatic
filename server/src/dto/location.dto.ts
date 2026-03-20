@@ -47,7 +47,7 @@ export const findLocationQuerySchema = z.object({
     imei: imeiSchema,
     startDate: z.coerce.date().optional(),
     endDate: z.coerce.date().optional(),
-    limit: z.coerce.number().min(1).max(1000).optional(),
+    limit: z.coerce.number().min(1).max(5000).optional(),
   }),
 });
 

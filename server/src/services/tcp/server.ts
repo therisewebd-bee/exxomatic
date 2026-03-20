@@ -10,8 +10,8 @@ import { vehicleCache } from '../tracker/vehicleCache.ts';
 const unknownPings = new Map<string, number>();
 
 const startTcpServer = async (): Promise<void> => {
-  // Initialize the persistence buffer timer
-  startFlushTimer();
+  // Initialize the persistence buffer timer (e.g. 15s)
+  startFlushTimer(config.bufferFlushInterval);
 
   const server = net.createServer((socket) => {
     logger.info(`[tcp] device connected:${socket.remoteAddress}`);

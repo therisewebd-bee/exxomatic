@@ -225,14 +225,18 @@ function FlyToVehicle({ selectedVehicle }) {
             
             if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
                 if (selectedVehicle.id !== lastId.current) {
-                    map.flyTo([lat, lng], 16, { duration: 1.5 });
-                    lastId.current = selectedVehicle.id;
+                    // Use a slight timeout to ensure map is ready and avoid synchronous feedback during render
+                    const timer = setTimeout(() => {
+                        map.flyTo([lat, lng], 16, { duration: 1.5 });
+                        lastId.current = selectedVehicle.id;
+                    }, 100);
+                    return () => clearTimeout(timer);
                 }
             }
         } else {
             lastId.current = null;
         }
-    }, [selectedVehicle, map]);
+    }, [selectedVehicle?.id, selectedVehicle?.lat, selectedVehicle?.lng, map]);
     return null;
 }
 
@@ -325,17 +329,28 @@ function DrawControl({ active, onDrawComplete }) {
 }
 
 // ... previous logic
-
+// Patch Leaflet to suppress 'touchleave' warning from third-party plugins (like leaflet-draw)
+if (typeof L !== 'undefined' && L.DomEvent) {
+    const originalOn = L.DomEvent.on;
+    L.DomEvent.on = function(obj, types, fn, context) {
+        if (typeof types === 'string' && types.includes('touchleave')) {
+            const newTypes = types.split(' ').filter(t => t !== 'touchleave').join(' ');
+            if (!newTypes) return L.DomEvent;
+            return originalOn.call(L.DomEvent, obj, newTypes, fn, context);
+        }
+        return originalOn.apply(L.DomEvent, arguments);
+    };
+}
 
 // Helper to track map bounds and sync with backend
 function BoundsTracker({ onBoundsChange }) {
     const map = useMap();
-
-    // Initialize bounds on mount and moveend/zoomend
     const lastBounds = useRef(null);
+    const debounceTimer = useRef(null);
 
     useEffect(() => {
         if (!map) return;
+        
         const syncBounds = () => {
             if (!map) return;
             const b = map.getBounds();
@@ -350,27 +365,25 @@ function BoundsTracker({ onBoundsChange }) {
             if (lastBounds.current) {
                 const d = Math.abs(lastBounds.current.swLat - newBounds.swLat) + 
                           Math.abs(lastBounds.current.swLng - newBounds.swLng);
-                if (d < 0.00001) return; 
+                if (d < 0.0001) return; // Threshold to ignore micro-jitters
             }
 
             lastBounds.current = newBounds;
             
-            // Asynchronous update to break any potential synchronous re-render loops
-            setTimeout(() => {
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+            debounceTimer.current = setTimeout(() => {
                 onBoundsChange(newBounds);
-                sendViewport({
-                    minLat: sw.lat,
-                    maxLat: ne.lat,
-                    minLng: sw.lng,
-                    maxLng: ne.lng
-                });
-            }, 0);
+                // Viewport sync removed to prevent recursive re-render loop across WS
+            }, 100); 
         };
 
-        syncBounds();
-
+        // Removed the immediate call to syncBounds here to prevent synchronous state update cycles
+        // Instead, we'll let the moveend/zoomend fire naturally or run it once in a trailing sync
         map.on('moveend zoomend', syncBounds);
-        return () => { map.off('moveend zoomend', syncBounds); };
+        return () => { 
+            map.off('moveend zoomend', syncBounds); 
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        };
     }, [map, onBoundsChange]);
 
 
@@ -473,7 +486,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
         if (selectedVehicle?.imei) {
             fetchVehicleHistory(selectedVehicle.imei);
         }
-    }, [selectedVehicle, fetchVehicleHistory]);
+    }, [selectedVehicle?.imei, fetchVehicleHistory]);
 
     // Format geofences for Leaflet map (converting GeoJSON [lng, lat] to Leaflet [lat, lng])
     useEffect(() => {
@@ -534,6 +547,24 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
             >
                 <ZoomControl position="bottomright" />
                 <CachedTileLayer />
+                
+                {/* Floating Clear Focus Tool - Top Center */}
+                {selectedVehicle && (
+                    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1002] pointer-events-none">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectVehicle(null);
+                            }}
+                            className="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-gray-100 group transition-all hover:bg-white hover:scale-105 active:scale-95"
+                        >
+                            <div className="w-2 h-2 rounded-full bg-blue-500 group-hover:animate-pulse"></div>
+                            <span className="text-xs font-bold text-gray-700">Exit Focused View</span>
+                            <MdClose size={16} className="text-gray-400 group-hover:text-red-500 transition-colors" />
+                        </button>
+                    </div>
+                )}
+
                 <BoundsTracker onBoundsChange={setBounds} />
 
                 <FlyToVehicle selectedVehicle={selectedVehicle} />
@@ -556,7 +587,9 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                                 <Popup>
                                     <div className="text-xs font-bold">Playback Position</div>
                                     <div className="text-[10px] text-gray-500">
-                                        {new Date(validHistoryPath[Math.floor(playbackIndex)].timestamp).toLocaleString()}
+                                        {validHistoryPath[Math.floor(playbackIndex)]?.timestamp 
+                                            ? new Date(validHistoryPath[Math.floor(playbackIndex)].timestamp).toLocaleString()
+                                            : 'No data'}
                                     </div>
                                 </Popup>
                             </Marker>
@@ -580,14 +613,10 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                 {/* Vehicle markers */}
                 {visibleVehicles.map((vehicle) => {
                     // Assuming livePositions is available in this scope, e.g., passed as a prop or from a context
-                    const pos = livePositions[vehicle.imei];
-                    const lat = pos ? pos.lat : vehicle.lat;
-                    const lng = pos ? pos.lng : vehicle.lng;
-                    const speed = pos ? pos.speed : 0;
-                    const status = pos ? (speed > 5 ? 'moving' : 'stopped') : 'idle';
-                    const isAlert = pos ? (pos.status === 'ALERT') : false;
+                    const status = vehicle.status;
+                    const isAlert = vehicle.isAlert;
 
-                    if (!lat || !lng) return null;
+                    if (!vehicle.lat || !vehicle.lng) return null;
 
                     const isSelected = selectedVehicle?.id === vehicle.id;
                     const icon = isSelected
@@ -597,7 +626,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                     return (
                         <Marker
                             key={vehicle.id || vehicle.imei}
-                            position={[lat, lng]}
+                            position={[vehicle.lat, vehicle.lng]}
                             icon={icon}
                             eventHandlers={{
                                 click: () => onSelectVehicle(vehicle),
@@ -671,16 +700,12 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                 <div className="absolute right-4 bottom-20 z-[1001] w-80 max-h-[400px] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-brand-purple animate-pulse"></div>
-                            <h3 className="font-bold text-gray-800 text-sm">{selectedVehicle.vechicleNumb || selectedVehicle.imei} History</h3>
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                            <h3 className="font-bold text-gray-800 text-sm">{selectedVehicle.vechicleNumb || selectedVehicle.imei} Analysis</h3>
                         </div>
                         <button 
-                            onClick={() => {
-                                setShowHistoryData(false);
-                                onSelectVehicle(null);
-                            }} 
-                            className="text-gray-400 hover:text-red-500 transition-colors"
-                            title="Exit Focus & Show All"
+                            onClick={() => setShowHistoryData(false)} 
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
                         >
                             <MdClose size={20} />
                         </button>
@@ -722,6 +747,20 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                     </div>
                 </div>
             )}
+            
+            {/* Global Unfocus/Selection Close Button (Always visible when a vehicle is selected) */}
+            {selectedVehicle && (
+                <button
+                    onClick={() => onSelectVehicle(null)}
+                    className="absolute top-4 left-4 z-[1001] bg-white text-gray-800 p-3 rounded-full shadow-2xl hover:bg-red-50 hover:text-red-500 transition-all border border-gray-100 flex items-center gap-2 group"
+                    title="Exit Focus & Show All"
+                >
+                    <MdClose size={24} />
+                    <span className="max-w-0 overflow-hidden group-hover:max-w-[200px] transition-all duration-300 text-sm font-bold whitespace-nowrap">
+                        Exit Focus (Show All)
+                    </span>
+                </button>
+            )}
 
             {/* Playback Controls Overlay */}
             {selectedVehicle && historyPath.length > 0 && (
@@ -742,7 +781,9 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                                 <div className="flex flex-col">
                                     <span className="text-xs font-bold text-gray-800">Movement Playback</span>
                                     <span className="text-[10px] text-gray-500">
-                                        {new Date(historyPath[playbackIndex]?.timestamp).toLocaleTimeString()}
+                                        {historyPath[Math.floor(playbackIndex)]?.timestamp 
+                                            ? new Date(historyPath[Math.floor(playbackIndex)].timestamp).toLocaleTimeString()
+                                            : 'Invalid Date'}
                                     </span>
                                 </div>
                             </div>

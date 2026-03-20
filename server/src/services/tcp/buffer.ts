@@ -40,9 +40,12 @@ export const flushBuffer = async (): Promise<void> => {
     const successCount = results.filter(r => r.status === 'fulfilled').length;
     const failCount = results.length - successCount;
 
-    logger.info(`[buffer] flush complete: ${successCount} success, ${failCount} failed`);
+    if (failCount > 0) {
+      logger.warn(`[buffer] flush partial success: ${successCount} ok, ${failCount} failed`);
+    }
   } catch (error: any) {
     logger.error(`[buffer] critical flush failure: ${error.message}`);
+    // Restore snapshot to buffer if it's not already overwritten
     snapshot.forEach((val, key) => {
       if (!locationBuffer.has(key)) locationBuffer.set(key, val);
     });
@@ -57,9 +60,12 @@ export const startFlushTimer = (intervalMs: number = 120000): void => {
   logger.info(`[buffer] timer started: flushing every ${intervalMs / 1000}s`);
 };
 
-// Shutdown handler
-process.on('SIGTERM', async () => {
-  logger.info('[buffer] SIGTERM: final flush before exit');
+// Shutdown handlers
+const finalFlush = async () => {
+  logger.info('[buffer] process exit: final flush');
   if (flushTimer) clearInterval(flushTimer);
   await flushBuffer();
-});
+};
+
+process.on('SIGTERM', finalFlush);
+process.on('SIGINT', finalFlush);

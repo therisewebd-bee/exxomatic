@@ -9,14 +9,20 @@ export interface TrackerPayload {
   lat: number;
   lng: number;
   speed?: number;
+  altitude?: number;
+  heading?: number;
   ignition?: boolean;
   timestamp?: Date;
 }
+
+export type MotionStatus = 'moving' | 'idle' | 'stopped' | 'offline';
+
 
 export interface NormalizedTrackerResponse {
   location: any;
   geofences: any[];
   status: 'NORMAL' | 'ALERT';
+  motionStatus: MotionStatus;
 }
 
 /**
@@ -46,10 +52,21 @@ export const processLiveUpdate = async (data: TrackerPayload): Promise<void> => 
       }
     }
 
+    const speed = Number(data.speed || 0);
+    const hasIgnition = !!data.ignition;
+    let motionStatus: MotionStatus = 'stopped';
+    
+    if (speed > 3) {
+      motionStatus = 'moving';
+    } else if (hasIgnition) {
+      motionStatus = 'idle';
+    }
+
     const result: NormalizedTrackerResponse = {
-      location: { imei, lat, lng, speed: data.speed, ignition: data.ignition, timestamp: timestamp.toISOString() },
+      location: { imei, lat, lng, speed, ignition: hasIgnition, timestamp: timestamp.toISOString() },
       geofences: insideFences,
       status: isBreached ? 'ALERT' : 'NORMAL',
+      motionStatus
     };
 
     // 2. Immediate Broadcast
@@ -77,7 +94,16 @@ export const processTrackerUpdate = async (data: TrackerPayload): Promise<Normal
 
   try {
     // 1. Persistence
-    const locationLog = await createLocationLogDb({ imei, lat, lng, timestamp });
+    const locationLog = await createLocationLogDb({ 
+      imei, 
+      lat, 
+      lng, 
+      speed: data.speed,
+      ignition: data.ignition,
+      altitude: data.altitude,
+      heading: data.heading,
+      timestamp 
+    });
 
     // 2. Spatial Optimized Geofence Audit
     const lastAudit = vehicleCache.getAuditState(imei);
@@ -95,11 +121,22 @@ export const processTrackerUpdate = async (data: TrackerPayload): Promise<Normal
       vehicleCache.updateAuditState(imei, lat, lng, isBreached ? 'ALERT' : 'NORMAL');
     }
 
+    const speed = Number(data.speed || 0);
+    const hasIgnition = !!data.ignition;
+    let motionStatus: MotionStatus = 'stopped';
+    
+    if (speed > 3) {
+      motionStatus = 'moving';
+    } else if (hasIgnition) {
+      motionStatus = 'idle';
+    }
+
     // 3. Normalization
     const result: NormalizedTrackerResponse = {
       location: locationLog,
       geofences: insideFences,
       status: isBreached ? 'ALERT' : 'NORMAL',
+      motionStatus
     };
 
     // 4. Persistence-triggered broadcasting

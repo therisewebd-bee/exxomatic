@@ -27,3 +27,14 @@ export function turf_destination(center, radius, angleDeg) {
     const lng = center.lng + (radius / (111320 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
     return { lat, lng };
 }
+/**
+ * Calculates speed in km/h between two points.
+ */
+export function calculateSpeed(p1, p2) {
+    if (!p1 || !p2) return 0;
+    const dist = getDistanceFromLatLonInKm(p1.lat, p1.lng, p2.lat, p2.lng);
+    const ms = new Date(p2.timestamp).getTime() - new Date(p1.timestamp).getTime();
+    if (ms <= 0) return 0;
+    const hours = ms / 3600000;
+    return dist / hours;
+}

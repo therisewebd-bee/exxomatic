@@ -4,7 +4,7 @@ import { useVehiclesQuery } from '../hooks/useQueries';
 import { useHistory } from '../context/HistoryContext';
 import { MdHistory, MdSpeed, MdTimer, MdMoving } from 'react-icons/md';
 import AddressCell from './AddressCell';
-import { getDistanceFromLatLonInKm } from '../utils/geoUtils';
+import { getDistanceFromLatLonInKm, calculateSpeed } from '../utils/geoUtils';
 import PanelLayout from './ui/PanelLayout';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
@@ -37,9 +37,12 @@ export default function AnalyticsPanel() {
         let totalKm = 0;
         let idleMinutes = 0;
         let runningMinutes = 0;
+        let stoppedMinutes = 0;
+        let unknownMinutes = 0;
         let maxSpeed = 0;
         let speedSum = 0;
         let speedCount = 0;
+        let runningPts = 0, idlePts = 0, stoppedPts = 0, unknownPts = 0;
 
         for (let i = 0; i < pts.length - 1; i++) {
           const p1 = pts[i];
@@ -47,45 +50,66 @@ export default function AnalyticsPanel() {
           
           const ms = new Date(p2.timestamp).getTime() - new Date(p1.timestamp).getTime();
           const mins = ms / 60000;
-          if (mins > 120) continue;
+          
+
 
           const dist = getDistanceFromLatLonInKm(p1.lat, p1.lng, p2.lat, p2.lng);
           totalKm += dist;
 
-          const speed = Number(p1.speed || 0);
+          // If reported speed is 0 but distance is significant, derive speed
+          let speed = Number(p1.speed || 0);
+          if (speed < 1 && dist > 0.01) {
+             speed = calculateSpeed(p1, p2);
+          }
+
           if (speed > maxSpeed) maxSpeed = speed;
-          if (speed > 5) {
+          if (speed > 3) {
             speedSum += speed;
             speedCount++;
           }
 
-          if (p1.ignition === true && speed < 5) {
-            idleMinutes += mins;
-          } else if (p1.ignition === true && speed >= 5) {
+          const isMoving = speed > 3 || dist > 0.03;
+          const hasIgnition = p1.ignition === true;
+
+          if (isMoving) {
             runningMinutes += mins;
+            runningPts++;
+          } else if (hasIgnition) {
+            idleMinutes += mins;
+            idlePts++;
+          } else {
+            stoppedMinutes += mins;
+            stoppedPts++;
           }
         }
 
-        // Generate data for charts
+        // Calculate chart speed with the same derived logic
         const speedChartData = [];
-        const step = Math.max(1, Math.floor(pts.length / 50)); // max 50 points
-        for (let i = 0; i < pts.length; i += step) {
+        const chartStep = Math.max(1, Math.floor(pts.length / 80)); 
+        for (let i = 0; i < pts.length; i += chartStep) {
+          let speed = Number(pts[i].speed);
+          if (speed < 1 && i < pts.length - 1) {
+            speed = calculateSpeed(pts[i], pts[i+1]);
+          }
           speedChartData.push({
             time: new Date(pts[i].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            speed: Number(pts[i].speed).toFixed(1)
+            speed: parseFloat(Number(speed).toFixed(1))
           });
         }
 
         const pieData = [
-          { name: 'Running', value: Number(runningMinutes.toFixed(0)), color: '#10b981' }, // green
-          { name: 'Idle', value: Number(idleMinutes.toFixed(0)), color: '#f97316' },     // orange
-          { name: 'Stopped', value: Number((1440 - runningMinutes - idleMinutes).toFixed(0)), color: '#ef4444' } // red
+          { name: 'Running', value: Number(runningMinutes.toFixed(0)), points: runningPts, color: '#10b981' }, 
+          { name: 'Idle', value: Number(idleMinutes.toFixed(0)), points: idlePts, color: '#f97316' },     
+          { name: 'Stopped', value: Number(stoppedMinutes.toFixed(0)), points: stoppedPts, color: '#ef4444' } 
         ];
+        
+
 
         setMetrics({ 
           totalKm, 
           idleMinutes, 
           runningMinutes, 
+          stoppedMinutes,
           maxSpeed, 
           avgSpeed: speedCount > 0 ? speedSum / speedCount : 0,
           pointsCount: pts.length,
@@ -230,7 +254,7 @@ export default function AnalyticsPanel() {
               </div>
             </div>
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="font-bold text-gray-800 mb-6">Activity Breakdown (Mins)</h3>
+              <h3 className="font-bold text-gray-800 mb-6">Activity Breakdown (Mins / {metrics.pointsCount} Pts)</h3>
               <div className="h-64 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -240,7 +264,25 @@ export default function AnalyticsPanel() {
                       ))}
                     </Pie>
                     <RechartsTooltip 
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-white p-3 rounded-xl shadow-2xl border border-gray-100 flex flex-col gap-1 min-w-[120px]">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: data.color }}></div>
+                                <span className="font-bold text-gray-800 text-xs uppercase">{data.name}</span>
+                              </div>
+                              <div className="text-gray-600 text-[11px] font-medium">
+                                <span className="text-gray-900 font-bold">{data.value}</span> mins
+                                <span className="mx-1 text-gray-300">|</span>
+                                <span className="text-gray-900 font-bold">{data.points}</span> pts
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                   </PieChart>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { HistoryProvider, useHistory } from './context/HistoryContext';
 import Sidebar from './components/Sidebar';
@@ -116,35 +116,38 @@ function Dashboard() {
   }, [isAuthenticated]);
 
   // Merge API vehicles with live WS positions
-  const registeredVehicles = vehicles.map((v) => {
-    const live = livePositions[v.imei];
-    return {
-      ...v,
-      lat: live?.lat ?? v.lat ?? 0,
-      lng: live?.lng ?? v.lng ?? 0,
-      speed: live?.speed ?? v.speed ?? 0,
-      status: live ? (live.speed > 3 ? 'moving' : 'idle') : 'stopped',
-      isAlert: live ? (live.status === 'ALERT') : false,
-      plate: v.vechicleNumb || v.imei,
-    };
-  });
+  const mergedVehicles = useMemo(() => {
+    const registeredImeis = new Set(vehicles.map(v => v.imei));
+    
+    const registered = vehicles.map((v) => {
+      const live = livePositions[v.imei];
+      return {
+        ...v,
+        lat: live?.lat ?? v.lat ?? 0,
+        lng: live?.lng ?? v.lng ?? 0,
+        speed: live?.speed ?? v.speed ?? 0,
+        // Use backend provided motionStatus if available, otherwise fallback
+        status: live?.motionStatus || (live ? (live.speed > 5 ? 'moving' : 'idle') : 'stopped'),
+        isAlert: live ? (live.status === 'ALERT') : false,
+        plate: v.vechicleNumb || v.imei,
+      };
+    });
 
-  // Also include unregistered devices that are actively sending data
-  const registeredImeis = new Set(vehicles.map(v => v.imei));
-  const liveOnlyVehicles = Object.entries(livePositions)
-    .filter(([imei]) => !registeredImeis.has(imei))
-    .map(([imei, pos]) => ({
-      id: imei,
-      imei,
-      lat: pos.lat,
-      lng: pos.lng,
-      speed: pos.speed || 0,
-      status: pos.speed > 3 ? 'moving' : 'idle',
-      isAlert: pos.status === 'ALERT',
-      plate: imei,
-    }));
+    const liveOnly = Object.entries(livePositions)
+      .filter(([imei]) => !registeredImeis.has(imei))
+      .map(([imei, pos]) => ({
+        id: imei,
+        imei,
+        lat: pos.lat,
+        lng: pos.lng,
+        speed: pos.speed || 0,
+        status: pos.motionStatus || (pos.speed > 5 ? 'moving' : 'idle'),
+        isAlert: pos.status === 'ALERT',
+        plate: imei,
+      }));
 
-  const mergedVehicles = [...registeredVehicles, ...liveOnlyVehicles];
+    return [...registered, ...liveOnly];
+  }, [vehicles, livePositions]);
 
 
 
