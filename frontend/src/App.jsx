@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { HistoryProvider, useHistory } from './context/HistoryContext';
-import AuthOverlay from './components/AuthOverlay';
 import Sidebar from './components/Sidebar';
 import VehicleList from './components/VehicleList';
 import MapView from './components/MapView';
@@ -15,6 +14,8 @@ const AnalyticsPanel = lazy(() => import('./components/AnalyticsPanel'));
 const SettingsPanel = lazy(() => import('./components/SettingsPanel'));
 const NotificationsPanel = lazy(() => import('./components/NotificationsPanel'));
 const VehicleManagementPanel = lazy(() => import('./components/VehicleManagementPanel'));
+const UserManagementPanel = lazy(() => import('./components/UserManagementPanel'));
+const AuthOverlay = lazy(() => import('./components/AuthOverlay'));
 
 const LazyFallback = () => (
   <div className="flex-1 flex items-center justify-center bg-gray-50 h-screen">
@@ -172,7 +173,11 @@ function Dashboard() {
     setDrawnZone(null);
   }, []);
 
-  if (!isAuthenticated) return <AuthOverlay />;
+  if (!isAuthenticated) return (
+    <Suspense fallback={<LazyFallback />}>
+      <AuthOverlay />
+    </Suspense>
+  );
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
@@ -215,6 +220,7 @@ function Dashboard() {
         {activeTab === 'reports' && <ReportsPanel vehicles={mergedVehicles} />}
         {activeTab === 'settings' && <SettingsPanel />}
         {activeTab === 'notifications' && <NotificationsPanel notifications={notifications} />}
+        {activeTab === 'users' && <UserManagementPanel />}
       </Suspense>
     </div>
   );

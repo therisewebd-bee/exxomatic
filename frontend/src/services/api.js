@@ -19,10 +19,13 @@ async function request(endpoint, method = 'GET', body = null) {
   return json;
 }
 
-// ─── Auth ────────────────────────────────────────────
+// ─── Auth / Users ────────────────────────────────────────────
 export const signup = (data) => request('/users/register', 'POST', data);
 export const login  = (data) => request('/users/login', 'POST', data);
 export const updateUser = (id, data) => request(`/users/${id}`, 'PATCH', data);
+export const getUsers = () => request('/users');
+export const createUser = (data) => request('/users', 'POST', data);
+export const deleteUser = (id) => request(`/users/${id}`, 'DELETE');
 
 // ─── Vehicles ────────────────────────────────────────
 export const getVehicles    = ()          => request('/vehicles');

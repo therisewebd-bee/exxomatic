@@ -11,9 +11,11 @@ import {
     MdKeyboardArrowUp,
     MdKeyboardArrowDown,
     MdLogout,
+    MdPeople
 } from 'react-icons/md';
 import { HiStatusOnline } from 'react-icons/hi';
 import UserProfileCard from './UserProfileCard';
+import { useAuth } from '../context/AuthContext';
 
 const navItems = [
     {
@@ -116,6 +118,17 @@ function SidebarItem({ item, activeTab, onTabChange }) {
 }
 
 export default function Sidebar({ activeTab, onTabChange, onLogout }) {
+    const { user } = useAuth();
+
+    const currentNavItems = [...navItems];
+    if (user?.role === 'Admin') {
+        currentNavItems.push({
+            id: 'users',
+            label: 'User Management',
+            icon: <MdPeople size={18} />,
+        });
+    }
+
     return (
         <aside className="w-[180px] min-w-[180px] h-screen bg-sidebar-bg flex flex-col border-r border-white/5">
             {/* Logo */}
@@ -134,7 +147,7 @@ export default function Sidebar({ activeTab, onTabChange, onLogout }) {
 
             {/* Navigation */}
             <nav className="flex-1 px-2 py-2 overflow-y-auto space-y-0.5">
-                {navItems.map((item) => (
+                {currentNavItems.map((item) => (
                     <SidebarItem key={item.id} item={item} activeTab={activeTab} onTabChange={onTabChange} />
                 ))}
             </nav>

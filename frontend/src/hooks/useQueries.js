@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getVehicles, getGeofences, getCompliances, createGeofence, deleteGeofence, createCompliance, createVehicle, updateVehicle, deleteVehicle, updateUser } from '../services/api';
+import { getVehicles, getGeofences, getCompliances, createGeofence, deleteGeofence, createCompliance, createVehicle, updateVehicle, deleteVehicle, updateUser, getUsers, createUser, deleteUser } from '../services/api';
 
 export function useVehiclesQuery(enabled = true) {
   return useQuery({
@@ -98,7 +98,38 @@ export function useDeleteVehicleMutation() {
 }
 
 export function useUpdateUserMutation() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }) => updateUser(id, data)
+    mutationFn: ({ id, data }) => updateUser(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['user'] })
+  });
+}
+
+// ─── Users (Admin) ───────────────
+export function useUsersQuery(enabled = true) {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const res = await getUsers();
+      return res.data || [];
+    },
+    enabled,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useCreateUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => createUser(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] })
+  });
+}
+
+export function useDeleteUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => deleteUser(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] })
   });
 }

@@ -5,7 +5,8 @@ import { useHistory } from '../context/HistoryContext';
 import { MdHistory, MdSpeed, MdTimer, MdMoving } from 'react-icons/md';
 import AddressCell from './AddressCell';
 import { getDistanceFromLatLonInKm } from '../utils/geoUtils';
-
+import PanelLayout from './ui/PanelLayout';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export default function AnalyticsPanel() {
   const [selectedImei, setSelectedImei] = useState('');
@@ -65,6 +66,22 @@ export default function AnalyticsPanel() {
           }
         }
 
+        // Generate data for charts
+        const speedChartData = [];
+        const step = Math.max(1, Math.floor(pts.length / 50)); // max 50 points
+        for (let i = 0; i < pts.length; i += step) {
+          speedChartData.push({
+            time: new Date(pts[i].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            speed: Number(pts[i].speed).toFixed(1)
+          });
+        }
+
+        const pieData = [
+          { name: 'Running', value: Number(runningMinutes.toFixed(0)), color: '#10b981' }, // green
+          { name: 'Idle', value: Number(idleMinutes.toFixed(0)), color: '#f97316' },     // orange
+          { name: 'Stopped', value: Number((1440 - runningMinutes - idleMinutes).toFixed(0)), color: '#ef4444' } // red
+        ];
+
         setMetrics({ 
           totalKm, 
           idleMinutes, 
@@ -72,7 +89,9 @@ export default function AnalyticsPanel() {
           maxSpeed, 
           avgSpeed: speedCount > 0 ? speedSum / speedCount : 0,
           pointsCount: pts.length,
-          rawLogs: pts.reverse() // Newest first for the table
+          rawLogs: pts.reverse(), // Newest first for the table
+          speedChartData,
+          pieData
         });
       } catch (err) {
 
@@ -85,38 +104,35 @@ export default function AnalyticsPanel() {
     return () => { isSubscribed = false; };
   }, [selectedImei, date]);
 
-  return (
-    <div className="flex-1 p-8 overflow-y-auto bg-gray-50 h-screen">
-      <div className="max-w-6xl mx-auto space-y-8 pb-10">
-        
-        {/* Header & Controls */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <MdHistory size={28} className="text-brand-purple" />
-            Vehicle Analytics
-          </h2>
-          
-          <div className="flex gap-4">
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg outline-none focus:border-brand-purple shadow-sm bg-white"
-            />
-            <select
-              value={selectedImei}
-              onChange={(e) => setSelectedImei(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg outline-none focus:border-brand-purple shadow-sm bg-white min-w-[200px]"
-            >
-              <option value="">Select Vehicle...</option>
-              {vehicles.map((v) => (
-                <option key={v.imei} value={v.imei}>{v.vechicleNumb || v.imei}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+  const controlBar = (
+    <div className="flex gap-4">
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        className="px-4 py-2 border border-gray-200 rounded-lg outline-none focus:border-brand-purple shadow-sm bg-white text-sm"
+      />
+      <select
+        value={selectedImei}
+        onChange={(e) => setSelectedImei(e.target.value)}
+        className="px-4 py-2 border border-gray-200 rounded-lg outline-none focus:border-brand-purple shadow-sm bg-white min-w-[200px] text-sm"
+      >
+        <option value="">Select Vehicle...</option>
+        {vehicles.map((v) => (
+          <option key={v.imei} value={v.imei}>{v.vechicleNumb || v.imei}</option>
+        ))}
+      </select>
+    </div>
+  );
 
-        {/* Content */}
+  return (
+    <PanelLayout 
+      icon={<MdHistory size={28} className="text-brand-purple" />} 
+      title="Vehicle Analytics" 
+      action={controlBar} 
+      maxWidth="6xl"
+    >
+      <div className="space-y-8 pb-10">
         {!selectedImei ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-gray-200 shadow-sm">
             <MdSpeed size={48} className="text-gray-300 mb-4" />
@@ -128,9 +144,8 @@ export default function AnalyticsPanel() {
           </div>
         ) : metrics ? (
           <>
+          {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            {/* Odometer Summary */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
               <div>
                 <h3 className="text-gray-500 font-semibold text-xs uppercase tracking-wider mb-2">Distance Moved</h3>
@@ -147,7 +162,6 @@ export default function AnalyticsPanel() {
               </div>
             </div>
 
-            {/* Idling Report */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
               <div>
                 <h3 className="text-gray-500 font-semibold text-xs uppercase tracking-wider mb-2">Idling Time</h3>
@@ -164,7 +178,6 @@ export default function AnalyticsPanel() {
               </div>
             </div>
 
-            {/* Max Speed */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
               <div>
                 <h3 className="text-gray-500 font-semibold text-xs uppercase tracking-wider mb-2">Max Speed</h3>
@@ -181,7 +194,6 @@ export default function AnalyticsPanel() {
               </div>
             </div>
 
-            {/* Avg Speed */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
               <div>
                 <h3 className="text-gray-500 font-semibold text-xs uppercase tracking-wider mb-2">Avg Speed</h3>
@@ -195,6 +207,44 @@ export default function AnalyticsPanel() {
                     {metrics.avgSpeed.toFixed(1)} <span className="text-sm text-gray-400 font-medium">km/h</span>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="font-bold text-gray-800 mb-6">Speed Overview (km/h)</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={metrics.speedChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis dataKey="time" stroke="#9ca3af" fontSize={12} tickMargin={10} minTickGap={30} />
+                    <YAxis stroke="#9ca3af" fontSize={12} tickMargin={10} />
+                    <RechartsTooltip 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Line type="monotone" dataKey="speed" stroke="#6366f1" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="font-bold text-gray-800 mb-6">Activity Breakdown (Mins)</h3>
+              <div className="h-64 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={metrics.pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      {metrics.pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
@@ -246,6 +296,6 @@ export default function AnalyticsPanel() {
         ) : null}
 
       </div>
-    </div>
+    </PanelLayout>
   );
 }
