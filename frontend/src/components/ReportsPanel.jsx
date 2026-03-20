@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useCompliancesQuery, useVehiclesQuery, useCreateComplianceMutation } from '../hooks/useQueries';
+import { useCompliancesQuery, useCreateComplianceMutation, useVehiclesQuery } from '../hooks/useQueries';
+import { checkLiveFuelRate } from '../services/api';
 import { MdAssessment, MdAdd, MdClose, MdLocalGasStation, MdMoney } from 'react-icons/md';
 
-export default function ReportsPanel() {
+export default function ReportsPanel({ vehicles = [] }) {
   const { user } = useAuth();
   const { data: reports = [] } = useCompliancesQuery();
-  const { data: vehicles = [] } = useVehiclesQuery();
   const createMutation = useCreateComplianceMutation();
   const [showModal, setShowModal] = useState(false);
 
@@ -14,17 +14,65 @@ export default function ReportsPanel() {
   const [vehicleId, setVehicleId] = useState('');
   const [fuelQuantity, setFuelQuantity] = useState('');
   const [fuelRate, setFuelRate] = useState('');
+  const [city, setCity] = useState('delhi');
   const [filledBy, setFilledBy] = useState(user?.name || '');
   const [filledAt, setFilledAt] = useState(new Date().toISOString().slice(0, 16));
 
   // Derived state
   const totalCost = (parseFloat(fuelQuantity || 0) * parseFloat(fuelRate || 0)).toFixed(2);
 
+  const handleVehicleChange = async (vid) => {
+    setVehicleId(vid);
+    if (!vid) {
+      setCity('unknown');
+      return;
+    }
+    
+    // Automatically extract exact physical city via Reverse Geocoding
+    const v = vehicles.find(vec => vec.id === vid);
+    if (v && v.lat && v.lng) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${v.lat}&lon=${v.lng}`);
+        const data = await res.json();
+        const detectedCity = data.address?.city || data.address?.town || data.address?.state_district;
+        if (detectedCity) {
+          setCity(detectedCity.toLowerCase().replace(/\s+/g, '-'));
+        } else {
+          setCity('unknown-gps-area');
+        }
+      } catch (err) {
+        console.warn('Silent Geocode Fail', err);
+        setCity('geocode-failed');
+      }
+    } else {
+      setCity('no-gps-data');
+    }
+  };
 
+  const [isFetchingFuel, setIsFetchingFuel] = useState(false);
+  const [detectedAddress, setDetectedAddress] = useState('');
 
-  function fetchLiveFuelRate() {
-    // Simulating Gov API call for fuel rate (e.g. INR per liter)
-    setFuelRate('104.50');
+  async function fetchLiveFuelRate() {
+    if (!vehicleId) {
+      return alert('Please select a Vehicle first! The system needs the vehicle to know which city to scrape fuel prices for.');
+    }
+
+    setIsFetchingFuel(true);
+    try {
+      const res = await checkLiveFuelRate(city);
+      if (res.data?.rate) {
+         setFuelRate(res.data.rate);
+         setDetectedAddress(res.data.city); // display what the backend actually scraped or fell back to
+      } else {
+         alert(`Live price completely unavailable. Check network.`);
+         setFuelRate('94.72');
+         setDetectedAddress('fallback');
+      }
+    } catch (e) {
+      alert('Could not fetch live fuel rate. Trying again later.');
+    } finally {
+      setIsFetchingFuel(false);
+    }
   }
 
   async function handleSave() {
@@ -115,7 +163,7 @@ export default function ReportsPanel() {
             </div>
             <div className="p-6 space-y-4">
               <select
-                value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}
+                value={vehicleId} onChange={(e) => handleVehicleChange(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:border-purple-500 transition text-sm text-gray-700 bg-white"
               >
                 <option value="">Select a Vehicle...</option>
@@ -144,12 +192,13 @@ export default function ReportsPanel() {
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex items-center gap-2 justify-end">
                 <button 
                   onClick={fetchLiveFuelRate}
-                  className="text-xs font-bold text-brand-purple hover:underline"
+                  disabled={isFetchingFuel}
+                  className="text-xs font-bold text-brand-purple hover:underline disabled:opacity-50 flex items-center gap-1"
                 >
-                  Fetch Live Govt Rate
+                  {isFetchingFuel ? 'Scraping...' : 'Fetch Live Rate'}
                 </button>
               </div>
 

@@ -17,11 +17,14 @@ export function HistoryProvider({ children }) {
     const start = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const end = endDate || new Date().toISOString();
     
-    // Composite key for caching different ranges
-    const rangeKey = `${imei}_${start.slice(0, 13)}_${end.slice(0, 13)}`; // Hourly precision for cache keys
+    // Composite key for caching different ranges - use floor to hour for stability
+    const startObj = new Date(start);
+    startObj.setMinutes(0, 0, 0);
+    const endObj = new Date(end);
+    endObj.setMinutes(0, 0, 0);
+    const rangeKey = `${imei}_${startObj.getTime()}_${endObj.getTime()}`;
 
     if (!force && historyCache[rangeKey] && (now - historyCache[rangeKey].timestamp < CACHE_STALE_TIME)) {
-
       return historyCache[rangeKey].data;
     }
 
@@ -36,7 +39,10 @@ export function HistoryProvider({ children }) {
         limit: 1000
       });
 
-      const logs = (res.data || []).filter(loc => loc.lat && loc.lng);
+      // Reverse logs to be [Oldest -> Newest] for correct map drawing and playback sequence
+      const logs = (res.data || [])
+        .filter(loc => loc.lat && loc.lng)
+        .reverse();
       
       setHistoryCache(prev => ({
         ...prev,
@@ -57,7 +63,13 @@ export function HistoryProvider({ children }) {
   const getHistory = useCallback((imei, startDate, endDate) => {
     const start = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const end = endDate || new Date().toISOString();
-    const rangeKey = `${imei}_${start.slice(0, 13)}_${end.slice(0, 13)}`;
+    
+    const startObj = new Date(start);
+    startObj.setMinutes(0, 0, 0);
+    const endObj = new Date(end);
+    endObj.setMinutes(0, 0, 0);
+    const rangeKey = `${imei}_${startObj.getTime()}_${endObj.getTime()}`;
+    
     return historyCache[rangeKey]?.data || [];
   }, [historyCache]);
 

@@ -5,6 +5,7 @@ import {
     getCompliance,
     updateComplianceHandler,
     deleteComplianceHandler,
+    getLiveFuelRate,
 } from '../controllers/vehicleCompliance.controllers.ts';
 import { validate } from '../middleware/validate.middleware.ts';
 import {
@@ -21,6 +22,7 @@ router.use(verifyAuth);
 
 router.post('/', validate(createVehicleComplianceSchema), logComplianceHandler);
 router.get('/', validate(findVehicleComplianceQuerySchema, true), getCompliances);
+router.get('/fuel/live-rate', getLiveFuelRate);
 router.get('/:complianceId', validate(complianceIdParamSchema, true), getCompliance);
 router.patch('/:complianceId', validate(complianceIdParamSchema, true), validate(updateVehicleComplianceSchema), updateComplianceHandler);
 router.delete('/:complianceId', validate(complianceIdParamSchema, true), deleteComplianceHandler);

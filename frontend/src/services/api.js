@@ -48,3 +48,4 @@ export const getCompliances = (params) => {
   return request(`/compliance?${qs}`);
 };
 export const createCompliance = (data) => request('/compliance', 'POST', data);
+export const checkLiveFuelRate = (city = 'delhi') => request(`/compliance/fuel/live-rate?city=${encodeURIComponent(city)}`);

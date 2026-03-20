@@ -1,20 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getLocationHistory } from '../services/api';
 import { useVehiclesQuery } from '../hooks/useQueries';
 import { useHistory } from '../context/HistoryContext';
 import { MdHistory, MdSpeed, MdTimer, MdMoving } from 'react-icons/md';
+import AddressCell from './AddressCell';
+import { getDistanceFromLatLonInKm } from '../utils/geoUtils';
 
-function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Earth radius in km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
 
 export default function AnalyticsPanel() {
   const [selectedImei, setSelectedImei] = useState('');
@@ -216,11 +207,12 @@ export default function AnalyticsPanel() {
             </div>
             <div className="max-h-[500px] overflow-y-auto">
                 <table className="w-full text-left">
-                    <thead className="sticky top-0 bg-white border-b border-gray-200">
+                    <thead className="sticky top-0 bg-white border-b border-gray-200 z-10">
                         <tr>
                             <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Time</th>
                             <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Speed</th>
                             <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Coordinates</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Location (City/State)</th>
                             <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Ignition</th>
                         </tr>
                     </thead>
@@ -236,6 +228,9 @@ export default function AnalyticsPanel() {
                                 <td className="px-6 py-3 text-sm font-mono text-gray-500">
                                     {Number(log.lat).toFixed(4)}, {Number(log.lng).toFixed(4)}
                                 </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                          <AddressCell lat={log.lat} lng={log.lng} className="text-sm font-medium text-gray-700 max-w-[250px]" />
+                        </td>
                                 <td className="px-6 py-3">
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${log.ignition ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                                         {log.ignition ? 'ON' : 'OFF'}

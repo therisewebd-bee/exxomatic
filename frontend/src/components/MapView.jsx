@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet-draw';
@@ -8,6 +8,9 @@ import { getLocationHistory } from '../services/api';
 import { useGeofencesQuery, useCreateVehicleMutation } from '../hooks/useQueries';
 import { getCachedTile, cacheTile } from '../services/tileCache';
 import { sendViewport } from '../services/websocket';
+import { getDistanceFromLatLonInKm, turf_destination } from '../utils/geoUtils';
+import AddressCell from './AddressCell';
+
 
 // Custom TileLayer that caches tiles in IndexedDB
 function CachedTileLayer() {
@@ -137,7 +140,38 @@ function createSelectedIcon(status, isAlert = false) {
     });
 }
 
-// Red marker for unknown devices
+// Highlighted marker (playback or focused)
+function createFocusIcon(status, isAlert = false, colorOverride = null) {
+    const colors = {
+        moving: '#22C55E',
+        stopped: '#64748B',
+        idle: '#F59E0B',
+    };
+    const color = colorOverride || (isAlert ? '#EF4444' : (colors[status] || '#7C3AED'));
+
+    return L.divIcon({
+        className: 'custom-vehicle-marker-focus',
+        html: `
+      <div style="
+        width: 38px; height: 38px;
+        background: ${color};
+        border: 4px solid white;
+        border-radius: 50%;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        display: flex; align-items: center; justify-content: center;
+        ${isAlert ? 'animation: alertPulse 0.8s infinite;' : ''}
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+          <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+        </svg>
+      </div>
+    `,
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
+        popupAnchor: [0, -20],
+    });
+}
+
 function createUnknownIcon() {
     return L.divIcon({
         className: 'unknown-device-marker',
@@ -174,9 +208,10 @@ const statusLabels = {
 
 const statusColors = {
     moving: '#22C55E',
-    stopped: '#EF4444',
+    stopped: '#64748B',
     idle: '#F59E0B',
 };
+
 
 // Component to fly to selected vehicle
 function FlyToVehicle({ selectedVehicle }) {
@@ -184,21 +219,23 @@ function FlyToVehicle({ selectedVehicle }) {
     const lastId = useRef(null);
 
     useEffect(() => {
-        if (selectedVehicle && selectedVehicle.lat && selectedVehicle.lng) {
-            // Only fly if we switched to a DIFFERENT vehicle
-            if (selectedVehicle.id !== lastId.current) {
-                map.flyTo([selectedVehicle.lat, selectedVehicle.lng], 16, {
-                    duration: 1.2,
-                });
-                lastId.current = selectedVehicle.id;
+        if (selectedVehicle) {
+            const lat = Number(selectedVehicle.lat);
+            const lng = Number(selectedVehicle.lng);
+            
+            if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                if (selectedVehicle.id !== lastId.current) {
+                    map.flyTo([lat, lng], 16, { duration: 1.5 });
+                    lastId.current = selectedVehicle.id;
+                }
             }
-        } else if (!selectedVehicle) {
+        } else {
             lastId.current = null;
         }
     }, [selectedVehicle, map]);
-
     return null;
 }
+
 
 // Leaflet.draw integration component — full-featured
 function DrawControl({ active, onDrawComplete }) {
@@ -287,46 +324,59 @@ function DrawControl({ active, onDrawComplete }) {
     return null;
 }
 
-// Simple circle→polygon helper (radius in meters, angle in radians)
-function turf_destination(center, radius, angleDeg) {
-    const angle = angleDeg * Math.PI / 180;
-    const lat = center.lat + (radius / 111320) * Math.cos(angle);
-    const lng = center.lng + (radius / (111320 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
-    return { lat, lng };
-}
+// ... previous logic
+
 
 // Helper to track map bounds and sync with backend
 function BoundsTracker({ onBoundsChange }) {
     const map = useMap();
 
-    // Initialize bounds on mount
+    // Initialize bounds on mount and moveend/zoomend
+    const lastBounds = useRef(null);
+
     useEffect(() => {
-        const b = map.getBounds();
-        onBoundsChange(b);
-        sendViewport({
-            minLat: b.getSouthWest().lat,
-            maxLat: b.getNorthEast().lat,
-            minLng: b.getSouthWest().lng,
-            maxLng: b.getNorthEast().lng
-        });
+        if (!map) return;
+        const syncBounds = () => {
+            if (!map) return;
+            const b = map.getBounds();
+            const sw = b.getSouthWest();
+            const ne = b.getNorthEast();
+            
+            const newBounds = { 
+                swLat: sw.lat, swLng: sw.lng, 
+                neLat: ne.lat, neLng: ne.lng 
+            };
+
+            if (lastBounds.current) {
+                const d = Math.abs(lastBounds.current.swLat - newBounds.swLat) + 
+                          Math.abs(lastBounds.current.swLng - newBounds.swLng);
+                if (d < 0.00001) return; 
+            }
+
+            lastBounds.current = newBounds;
+            
+            // Asynchronous update to break any potential synchronous re-render loops
+            setTimeout(() => {
+                onBoundsChange(newBounds);
+                sendViewport({
+                    minLat: sw.lat,
+                    maxLat: ne.lat,
+                    minLng: sw.lng,
+                    maxLng: ne.lng
+                });
+            }, 0);
+        };
+
+        syncBounds();
+
+        map.on('moveend zoomend', syncBounds);
+        return () => { map.off('moveend zoomend', syncBounds); };
     }, [map, onBoundsChange]);
 
-    // Trigger on move/zoom completion
-    const onInteractionEnd = () => {
-        const b = map.getBounds();
-        onBoundsChange(b);
-        sendViewport({
-            minLat: b.getSouthWest().lat,
-            maxLat: b.getNorthEast().lat,
-            minLng: b.getSouthWest().lng,
-            maxLng: b.getNorthEast().lng
-        });
-    };
 
-    useMapEvents({
-        moveend: onInteractionEnd,
-        zoomend: onInteractionEnd,
-    });
+
+// Removed redundant useMapEvents handler
+
 
     return null;
 }
@@ -337,8 +387,84 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
     const [geofencePolygons, setGeofencePolygons] = useState([]);
     const { fetchVehicleHistory, getHistory } = useHistory();
     const [showHistoryData, setShowHistoryData] = useState(false);
+    
+    // Playback state
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [playbackIndex, setPlaybackIndex] = useState(0);
+    const [playbackSpeed, setPlaybackSpeed] = useState(1);
+    const playbackTimer = useRef(null);
+
     const historyPath = selectedVehicle ? getHistory(selectedVehicle.imei) : [];
-    const unknownIcon = createUnknownIcon();
+
+    // History path sanitation - more resilient to string types from API
+    const validHistoryPath = useMemo(() => {
+        return (historyPath || []).filter(loc => {
+            const lat = Number(loc?.lat);
+            const lng = Number(loc?.lng);
+            return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+        });
+    }, [historyPath]);
+
+    // Interpolated playback position
+    const playbackPos = useMemo(() => {
+        if (validHistoryPath.length === 0) return null;
+        const idx = Math.floor(playbackIndex);
+        const nextIdx = Math.min(idx + 1, validHistoryPath.length - 1);
+        const fraction = playbackIndex - idx;
+
+        const p1 = validHistoryPath[idx];
+        const p2 = validHistoryPath[nextIdx];
+
+        if (!p1 || !p2) return p1 ? [Number(p1.lat), Number(p1.lng)] : null;
+        
+        // Linear interpolation between the two points
+        return [
+            Number(p1.lat) + (Number(p2.lat) - Number(p1.lat)) * fraction,
+            Number(p1.lng) + (Number(p2.lng) - Number(p1.lng)) * fraction
+        ];
+    }, [validHistoryPath, playbackIndex]);
+    
+    // Playback logic - Smooth interpolation using requestAnimationFrame
+    useEffect(() => {
+        if (isPlaying && validHistoryPath.length > 1) {
+            let lastTime = performance.now();
+            let frameId;
+
+            const step = (now) => {
+                const dt = now - lastTime;
+                lastTime = now;
+
+                // Advance playback by 1 index unit per second at 1x speed
+                // This makes the transition between points last 1s at 1x speed
+                const deltaIndex = (dt / 1000) * playbackSpeed;
+
+                setPlaybackIndex(prev => {
+                    const next = prev + deltaIndex;
+                    if (next >= validHistoryPath.length - 1) {
+                        setIsPlaying(false);
+                        return validHistoryPath.length - 1;
+                    }
+                    return next;
+                });
+
+                frameId = requestAnimationFrame(step);
+            };
+
+            frameId = requestAnimationFrame(step);
+            return () => cancelAnimationFrame(frameId);
+        }
+    }, [isPlaying, validHistoryPath, playbackSpeed]);
+
+
+    // Reset playback when vehicle or history changes
+    useEffect(() => {
+        setPlaybackIndex(0);
+        setIsPlaying(false);
+    }, [selectedVehicle?.imei, historyPath.length]);
+
+    const unknownIcon = useRef(createUnknownIcon()).current;
+
+
     const { data: globalGeofences = [] } = useGeofencesQuery();
     const createMutation = useCreateVehicleMutation();
 
@@ -352,34 +478,49 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
     // Format geofences for Leaflet map (converting GeoJSON [lng, lat] to Leaflet [lat, lng])
     useEffect(() => {
         const polys = globalGeofences
-            .filter(g => g.zone && g.zone.coordinates)
+            .filter(g => g.zone && g.zone.coordinates && g.zone.coordinates[0])
             .map(g => ({
                 id: g.id,
                 name: g.name,
-                positions: g.zone.coordinates[0].map(c => [c[1], c[0]])
+                positions: g.zone.coordinates[0].map(c => [Number(c[1]), Number(c[0])])
             }));
         setGeofencePolygons(polys);
     }, [globalGeofences]);
 
+
+    // Map Isolation: If a vehicle is selected, hide ALL other vehicles
+    const displayedVehicles = useMemo(() => {
+        return selectedVehicle 
+            ? vehicles.filter(v => v.id === selectedVehicle.id) 
+            : vehicles;
+    }, [vehicles, selectedVehicle]);
+
     // Viewport filtering (only render markers in view): performance improvement
     const [bounds, setBounds] = useState(null);
 
-    const unknownEntries = Object.entries(unknownDevices);
-    const visibleUnknown = unknownEntries.filter(([, pos]) => {
-        if (!bounds) return true;
-        return bounds.contains([pos.lat, pos.lng]);
-    });
+    const visibleUnknown = useMemo(() => {
+        const unknownEntries = Object.entries(unknownDevices);
+        return unknownEntries.filter(([, pos]) => {
+            if (selectedVehicle) return false; 
+            if (!bounds) return true;
+            return pos.lat >= bounds.swLat && pos.lat <= bounds.neLat &&
+                   pos.lng >= bounds.swLng && pos.lng <= bounds.neLng;
+        });
+    }, [unknownDevices, selectedVehicle, bounds]);
 
-    const visibleVehicles = vehicles.filter(vehicle => {
-        const pos = livePositions[vehicle.imei];
-        const lat = pos ? pos.lat : vehicle.lat;
-        const lng = pos ? pos.lng : vehicle.lng;
-        if (!lat || !lng) return false;
-        if (!bounds) return true;
-        return bounds.contains([lat, lng]);
-    });
+    const visibleVehicles = useMemo(() => {
+        return displayedVehicles.filter(vehicle => {
+            const pos = livePositions[vehicle.imei];
+            const lat = pos ? pos.lat : vehicle.lat;
+            const lng = pos ? pos.lng : vehicle.lng;
+            if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return false;
+            if (!bounds) return true;
+            return lat >= bounds.swLat && lat <= bounds.neLat &&
+                   lng >= bounds.swLng && lng <= bounds.neLng;
+        });
+    }, [displayedVehicles, livePositions, bounds]);
 
-    // Decide center: use first vehicle with valid coords, fallback to Pune
+
     const initialCenter = useRef(center).current;
 
     return (
@@ -398,12 +539,29 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                 <FlyToVehicle selectedVehicle={selectedVehicle} />
                 <DrawControl active={true} onDrawComplete={onDrawComplete} />
 
-                {/* Vehicle History Path */}
-                {historyPath.length > 1 && (
-                    <Polyline
-                        positions={historyPath.map(loc => [loc.lat, loc.lng])}
-                        pathOptions={{ color: '#3B82F6', weight: 4, opacity: 0.8 }}
-                    />
+                {/* Vehicle History Path & Playback Cursor */}
+                {validHistoryPath && validHistoryPath.length > 1 && (
+                    <>
+                        <Polyline
+                            positions={validHistoryPath.map(loc => [Number(loc.lat), Number(loc.lng)])}
+                            pathOptions={{ color: '#3B82F6', weight: 4, opacity: 0.5, dashArray: '10, 10' }}
+                        />
+                        {/* Playback Ghost Vehicle - Interpolated */}
+                        {playbackPos && (
+                            <Marker
+                                position={playbackPos}
+                                icon={createFocusIcon('moving', false, '#3B82F6')}
+                                zIndexOffset={1000}
+                            >
+                                <Popup>
+                                    <div className="text-xs font-bold">Playback Position</div>
+                                    <div className="text-[10px] text-gray-500">
+                                        {new Date(validHistoryPath[Math.floor(playbackIndex)].timestamp).toLocaleString()}
+                                    </div>
+                                </Popup>
+                            </Marker>
+                        )}
+                    </>
                 )}
 
                 {/* Geofence polygons */}
@@ -516,44 +674,118 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                             <div className="w-2 h-2 rounded-full bg-brand-purple animate-pulse"></div>
                             <h3 className="font-bold text-gray-800 text-sm">{selectedVehicle.vechicleNumb || selectedVehicle.imei} History</h3>
                         </div>
-                        <button onClick={() => setShowHistoryData(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <button 
+                            onClick={() => {
+                                setShowHistoryData(false);
+                                onSelectVehicle(null);
+                            }} 
+                            className="text-gray-400 hover:text-red-500 transition-colors"
+                            title="Exit Focus & Show All"
+                        >
                             <MdClose size={20} />
                         </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-2">
                         <table className="w-full text-left text-[11px]">
-                            <thead className="sticky top-0 bg-gray-50 text-gray-500 font-semibold">
-                                <tr>
-                                    <th className="px-2 py-1.5 border-b border-gray-100">Time</th>
-                                    <th className="px-2 py-1.5 border-b border-gray-100">Speed</th>
-                                    <th className="px-2 py-1.5 border-b border-gray-100 text-right">Coords</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {historyPath.length === 0 ? (
-                                    <tr><td colSpan={3} className="text-center py-4 text-gray-400 italic">No history available for last 24h</td></tr>
-                                ) : (
-                                    historyPath.map((loc, idx) => (
-                                        <tr key={idx} className="hover:bg-purple-50 transition-colors border-b border-gray-50">
-                                            <td className="px-2 py-1.5 text-gray-600">
-                                                {new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </td>
-                                            <td className="px-2 py-1.5 font-bold text-brand-purple">
-                                                {loc.speed || 0} km/h
-                                            </td>
-                                            <td className="px-2 py-1.5 text-right text-gray-400">
-                                                {Number(loc.lat).toFixed(4)}, {Number(loc.lng).toFixed(4)}
-                                            </td>
+                                    <thead className="sticky top-0 bg-gray-50 text-gray-500 font-semibold">
+                                        <tr>
+                                            <th className="px-2 py-1.5 border-b border-gray-100">Time</th>
+                                            <th className="px-2 py-1.5 border-b border-gray-100 text-center">Speed</th>
+                                            <th className="px-2 py-1.5 border-b border-gray-100 text-right">Location</th>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
+                                    </thead>
+                                    <tbody>
+                                        {historyPath.length === 0 ? (
+                                            <tr><td colSpan={3} className="text-center py-4 text-gray-400 italic">No history available for last 24h</td></tr>
+                                        ) : (
+                                            [...historyPath].reverse().map((loc, idx) => (
+                                                <tr key={idx} className="hover:bg-purple-50 transition-colors border-b border-gray-50">
+                                                    <td className="px-2 py-1.5 text-gray-600">
+                                                        {new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </td>
+                                                    <td className="px-2 py-1.5 font-bold text-brand-purple text-center">
+                                                        {loc.speed || 0}
+                                                    </td>
+                                                    <td className="px-2 py-1.5 text-right">
+                                                        <AddressCell lat={loc.lat} lng={loc.lng} className="max-w-[120px]" />
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
                         </table>
                     </div>
 
                     <div className="px-4 py-2 bg-purple-50 text-[10px] text-brand-purple italic border-t border-purple-100">
                         Showing last 24 hours of data (max 500 points)
+                    </div>
+                </div>
+            )}
+
+            {/* Playback Controls Overlay */}
+            {selectedVehicle && historyPath.length > 0 && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-[90%] max-w-2xl">
+                    <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={() => setIsPlaying(!isPlaying)}
+                                    className="w-10 h-10 rounded-full bg-brand-purple text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+                                >
+                                    {isPlaying ? (
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                                    ) : (
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                    )}
+                                </button>
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-gray-800">Movement Playback</span>
+                                    <span className="text-[10px] text-gray-500">
+                                        {new Date(historyPath[playbackIndex]?.timestamp).toLocaleTimeString()}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+                                    {[1, 2, 5, 10].map(speed => (
+                                        <button
+                                            key={speed}
+                                            onClick={() => setPlaybackSpeed(speed)}
+                                            className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${playbackSpeed === speed ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            {speed}x
+                                        </button>
+                                    ))}
+                                </div>
+                                <button 
+                                    onClick={() => onSelectVehicle(null)}
+                                    className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                    title="Exit Focus & Show All"
+                                >
+                                    <MdClose size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <input 
+                                type="range" 
+                                min="0" 
+                                max={validHistoryPath.length - 1} 
+                                step="0.01"
+                                value={playbackIndex}
+                                onChange={(e) => {
+                                    setPlaybackIndex(parseFloat(e.target.value));
+                                    setIsPlaying(false);
+                                }}
+                                className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-purple"
+                            />
+                            <span className="text-[10px] font-mono text-gray-400 min-w-[60px] text-right">
+                                {Math.floor(playbackIndex) + 1} / {validHistoryPath.length}
+                            </span>
+                        </div>
                     </div>
                 </div>
             )}
