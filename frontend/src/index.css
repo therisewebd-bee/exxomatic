@@ -38,3 +38,18 @@ html, body, #root {
 .leaflet-default-icon-path {
   background-image: url(https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png);
 }
+
+/* Ensure drawing tools are visible and not hidden behind sidebar/vehicle list */
+.leaflet-top, .leaflet-bottom {
+  z-index: 1000 !important;
+}
+
+.leaflet-draw-toolbar {
+  background: white !important;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+}
+
+.leaflet-control-draw-measure {
+  background: white !important;
+}

@@ -72,6 +72,9 @@ const findVehicleCompliancesDb = catchService(
         vehicleId,
         filledBy,
       },
+      include: {
+        vehicle: true,
+      },
       skip: (page - 1) * limit,
       take: limit,
       orderBy: {

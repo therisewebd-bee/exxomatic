@@ -19,6 +19,7 @@ interface Viewport {
 interface AuthenticatedSocket extends WebSocket {
   identity?: ClientIdentity;
   authorizedImeis?: Set<string>;
+  priorityImeis?: Set<string>; // First 30 vehicles or critical ones
   viewport?: Viewport;
 }
 
@@ -62,6 +63,10 @@ class ConnectionManager {
     this.clients.delete(ws);
   }
 
+  public setPriorityImeis(ws: AuthenticatedSocket, imeis: string[]): void {
+    ws.priorityImeis = new Set(imeis);
+  }
+
   public setViewport(ws: AuthenticatedSocket, bounds: Viewport): void {
     ws.viewport = bounds;
   }
@@ -69,7 +74,7 @@ class ConnectionManager {
   /**
    * Get all clients authorized to see updates for a specific IMEI, optionally filtered by spatial location
    */
-  public getAuthorizedClients(imei?: string, lat?: number, lng?: number): AuthenticatedSocket[] {
+  public getAuthorizedClients(imei?: string, lat?: number, lng?: number, isAlert: boolean = false): AuthenticatedSocket[] {
     const authorized: AuthenticatedSocket[] = [];
 
     for (const client of this.clients) {
@@ -86,8 +91,10 @@ class ConnectionManager {
       if (!isRoleAuthorized) continue;
 
       // 2. Check Spatial (Viewport) Authorization if lat/lng are provided
-      // If client hasn't sent a viewport yet, we broadcast everything as a fallback
-      if (lat !== undefined && lng !== undefined && client.viewport) {
+      // If vehicle is in ALERT state or is a PRIORITY vehicle, we bypass spatial filtering
+      const isPriority = isAlert || (imei && client.priorityImeis?.has(imei));
+
+      if (!isPriority && lat !== undefined && lng !== undefined && client.viewport) {
         const { minLat, maxLat, minLng, maxLng } = client.viewport;
         const inViewport = lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
         

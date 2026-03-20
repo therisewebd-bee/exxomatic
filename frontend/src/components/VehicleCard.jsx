@@ -1,5 +1,5 @@
 import { MdDirectionsCar, MdSpeed, MdArrowForward, MdDelete } from 'react-icons/md';
-import { deleteVehicle } from '../services/api';
+import { useDeleteVehicleMutation } from '../hooks/useQueries';
 
 const statusConfig = {
     moving: { color: 'bg-status-moving', label: 'Moving' },
@@ -11,12 +11,13 @@ export default function VehicleCard({ vehicle, isSelected, onSelect }) {
     const status = statusConfig[vehicle.status] || statusConfig.idle;
     const plate = vehicle.plate || vehicle.vechicleNumb || vehicle.imei;
 
+    const deleteMutation = useDeleteVehicleMutation();
+
     async function handleDelete(e) {
         e.stopPropagation();
         if (!confirm(`Delete vehicle ${plate}?`)) return;
         try {
-            await deleteVehicle(vehicle.id);
-            window.location.reload();
+            await deleteMutation.mutateAsync(vehicle.id);
         } catch (err) {
             alert(err.message || 'Failed to delete');
         }
@@ -29,12 +30,17 @@ export default function VehicleCard({ vehicle, isSelected, onSelect }) {
         bg-white rounded-xl p-4 cursor-pointer
         border-2 transition-all duration-200
         hover:shadow-lg hover:-translate-y-0.5
-        ${isSelected
+        ${vehicle.isAlert ? 'border-red-500 animate-pulse' : (isSelected
                     ? 'border-brand-purple shadow-lg shadow-brand-purple/10'
-                    : 'border-transparent shadow-sm hover:border-brand-purple/30'
+                    : 'border-transparent shadow-sm hover:border-brand-purple/30')
                 }
       `}
         >
+            {vehicle.isAlert && (
+                <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full absolute -top-2 -right-2 shadow-md">
+                    BREACH
+                </div>
+            )}
             {/* Top row: icon + plate + IMEI */}
             <div className="flex items-center gap-2 mb-3">
                 <MdDirectionsCar className="text-sidebar-bg" size={18} />

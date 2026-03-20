@@ -83,11 +83,13 @@ model Geofence {
 model VehiclesOnGeofences {
   vehicleId  String      @db.Uuid
   geofenceId String      @db.Uuid
-  vehicle    VehicleInfo @relation("VehicleToJoin", fields: [vehicleId], references: [id])
-  geofence   Geofence    @relation("GeofenceToJoin", fields: [geofenceId], references: [id])
+  vehicle    VehicleInfo @relation("VehicleToJoin", fields: [vehicleId], references: [id], onDelete: Cascade)
+  geofence   Geofence    @relation("GeofenceToJoin", fields: [geofenceId], references: [id], onDelete: Cascade)
   assignedAt DateTime    @default(now())
 
   @@id([vehicleId, geofenceId])
+  @@index([geofenceId])
+  @@index([vehicleId])
 }
 
 model VehicleCompliance {

@@ -8,6 +8,7 @@ import {
   findGeofenceByIdDb,
   findAllGeofenceDb,
   checkWithInGeofenceDb,
+  deleteGeofenceDb,
 } from '../dbQuery/geofence.dbquery.ts';
 import {
   CreateGeofenceInput,
@@ -57,9 +58,27 @@ const getAllGeofencesHandler = AsyncHandler(async (req: ValidatedRequest<FindGeo
 const checkGeofenceHandler = AsyncHandler(async (req: ValidatedRequest<FindGeofenceQueryInput>, res: Response) => {
   const { query } = req.validated;
 
+  if (!query.imei || query.lat == null || query.lng == null) {
+    throw new ApiError(400, 'imei, lat, and lng are required for geofence check');
+  }
+
   const result = await checkWithInGeofenceDb(query.imei, Number(query.lat), Number(query.lng));
 
   return res.status(200).json(new ApiResponse(200, result, 'Geofence check completed'));
+});
+
+const deleteGeofenceHandler = AsyncHandler(async (req: ValidatedRequest<GeofenceIdParam>, res: Response) => {
+  const { params } = req.validated;
+  const id = params.geofenceId!;
+
+  const geofence = await findGeofenceByIdDb(id);
+  if (!geofence) {
+    throw new ApiError(404, 'Geofence not found');
+  }
+
+  await deleteGeofenceDb(id);
+
+  return res.status(200).json(new ApiResponse(200, null, 'Geofence deleted successfully'));
 });
 
 export {
@@ -68,4 +87,5 @@ export {
   getGeofenceHandler,
   getAllGeofencesHandler,
   checkGeofenceHandler,
+  deleteGeofenceHandler,
 };

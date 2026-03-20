@@ -5,6 +5,7 @@ import {
     getGeofenceHandler,
     getAllGeofencesHandler,
     checkGeofenceHandler,
+    deleteGeofenceHandler,
 } from '../controllers/geofence.controllers.ts';
 import { validate } from '../middleware/validate.middleware.ts';
 import {
@@ -24,5 +25,6 @@ router.get('/', validate(findGeofenceQuerySchema, true), getAllGeofencesHandler)
 router.get('/check', validate(findGeofenceQuerySchema, true), checkGeofenceHandler);
 router.get('/:geofenceId', validate(geofenceIdParamSchema, true), getGeofenceHandler);
 router.patch('/:geofenceId', validate(geofenceIdParamSchema, true), validate(updateGeofenceSchema), updateGeofenceHandler);
+router.delete('/:geofenceId', validate(geofenceIdParamSchema, true), deleteGeofenceHandler);
 
 export default router;

@@ -27,6 +27,7 @@ export const updateUser = (id, data) => request(`/users/${id}`, 'PATCH', data);
 // ─── Vehicles ────────────────────────────────────────
 export const getVehicles    = ()          => request('/vehicles');
 export const createVehicle  = (data)      => request('/vehicles', 'POST', data);
+export const updateVehicle  = (id, data)    => request(`/vehicles/${id}`, 'PATCH', data);
 export const deleteVehicle  = (id)        => request(`/vehicles/${id}`, 'DELETE');
 
 // ─── Locations ───────────────────────────────────────
@@ -39,6 +40,7 @@ export const getLocationHistory = (params) => {
 export const getGeofences   = ()          => request('/geofences');
 export const createGeofence = (data)      => request('/geofences', 'POST', data);
 export const updateGeofence = (id, data)  => request(`/geofences/${id}`, 'PATCH', data);
+export const deleteGeofence = (id)        => request(`/geofences/${id}`, 'DELETE');
 
 // ─── Compliance ──────────────────────────────────────
 export const getCompliances = (params) => {

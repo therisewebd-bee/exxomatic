@@ -3,6 +3,7 @@ import { Server } from 'http';
 import logger from '../logger/logger.ts';
 import { SocketResponse, SocketEvent } from '../../utils/socketResponse.utils.ts';
 import { connectionManager, AuthenticatedSocket } from './connectionManager.ts';
+import { prismaAdapter } from '../../dbQuery/dbInit.ts';
 
 class WebSocketService {
   private static instance: WebSocketService;
@@ -23,21 +24,14 @@ class WebSocketService {
     this.wss.on('connection', async (ws: AuthenticatedSocket, req) => {
       logger.info('[ws] new connection attempt');
 
-      // Extract token from query or cookie
       const url = new URL(req.url || '', `http://${req.headers.host}`);
       let token = url.searchParams.get('token');
       
-      // Fallback to cookie if query param is empty/invalid
       if (!token || token === 'undefined' || token === 'null') {
         token = this.extractTokenFromCookie(req.headers.cookie);
       }
 
-      // Final check against literal strings
-      if (token === 'undefined' || token === 'null') {
-        token = null;
-      }
-
-      if (!token) {
+      if (!token || token === 'undefined' || token === 'null') {
         logger.warn('[ws] connection rejected: no token');
         ws.close(1008, 'Authentication required');
         return;
@@ -47,6 +41,21 @@ class WebSocketService {
       if (!isAuthenticated) {
         ws.close(1008, 'Invalid token');
         return;
+      }
+
+      // Fetch Priority IMEIs (First 30 authorized)
+      if (ws.identity) {
+        try {
+          const priorityVehicles = await prismaAdapter.vehicleInfo.findMany({
+            where: ws.identity.role === 'Customer' ? { customerId: ws.identity.id } : {},
+            select: { imei: true },
+            take: 30,
+            orderBy: { createdAt: 'asc' }
+          });
+          connectionManager.setPriorityImeis(ws, priorityVehicles.map(v => v.imei));
+        } catch (e) {
+          logger.error(`[ws] failed to fetch priority imeis: ${e}`);
+        }
       }
 
       ws.on('message', (message: string) => {
@@ -70,27 +79,17 @@ class WebSocketService {
         logger.error(`[ws] error: ${error.message}`);
       });
 
-      // Send welcome message
       this.sendToClient(ws, SocketResponse.format('welcome', { message: 'Connected to live fleet tracker' }));
     });
 
     logger.info('[ws] server initialized with secure management');
   }
 
-  /**
-   * Broadcast with data isolation and spatial filtering
-   * @param event Event name
-   * @param data Payload
-   * @param imei Mandatory for Customer isolation, optional for global broadcasts
-   * @param lat Optional latitude for spatial filtering
-   * @param lng Optional longitude for spatial filtering
-   */
-  public broadcast<T>(event: string, data: T, imei?: string, lat?: number, lng?: number): void {
-    // Only apply spatial filtering to tracking updates to keep critical alerts like geofence breaches global
-    const filterLat = event === 'tracker:live' ? lat : undefined;
-    const filterLng = event === 'tracker:live' ? lng : undefined;
+  public broadcast<T>(event: string, data: T, imei?: string, lat?: number, lng?: number, isAlert: boolean = false): void {
+    const filterLat = (event === 'tracker:live' && !isAlert) ? lat : undefined;
+    const filterLng = (event === 'tracker:live' && !isAlert) ? lng : undefined;
 
-    const clients = connectionManager.getAuthorizedClients(imei, filterLat, filterLng);
+    const clients = connectionManager.getAuthorizedClients(imei, filterLat, filterLng, isAlert);
     const message = JSON.stringify(SocketResponse.format(event, data));
     
     clients.forEach((client) => {

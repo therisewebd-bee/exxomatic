@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet-draw';
-import { MdLayers } from 'react-icons/md';
-import { getGeofences, createVehicle, getLocationHistory } from '../services/api';
+import { MdLayers, MdAssessment, MdClose, MdHistory } from 'react-icons/md';
+import { useHistory } from '../context/HistoryContext';
+import { getLocationHistory } from '../services/api';
+import { useGeofencesQuery, useCreateVehicleMutation } from '../hooks/useQueries';
 import { getCachedTile, cacheTile } from '../services/tileCache';
 import { sendViewport } from '../services/websocket';
 
@@ -65,13 +67,13 @@ L.Icon.Default.mergeOptions({
 });
 
 // Custom colored vehicle marker icons
-function createVehicleIcon(status) {
+function createVehicleIcon(status, isAlert = false) {
     const colors = {
-        moving: '#22C55E',
-        stopped: '#EF4444',
-        idle: '#F59E0B',
+        moving: '#22C55E', // Green
+        stopped: '#64748B', // Slate Gray (Was Red, caused confusion with alerts)
+        idle: '#F59E0B',    // Amber
     };
-    const color = colors[status] || '#7C3AED';
+    const color = isAlert ? '#EF4444' : (colors[status] || '#7C3AED');
 
     return L.divIcon({
         className: 'custom-vehicle-marker',
@@ -81,13 +83,21 @@ function createVehicleIcon(status) {
         background: ${color};
         border: 3px solid white;
         border-radius: 50%;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        box-shadow: ${isAlert ? '0 0 20px 5px #EF4444' : '0 2px 8px rgba(0,0,0,0.3)'};
         display: flex; align-items: center; justify-content: center;
+        ${isAlert ? 'animation: alertPulse 0.8s infinite;' : ''}
       ">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
           <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
         </svg>
       </div>
+      <style>
+        @keyframes alertPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9); transform: scale(1); }
+            50% { box-shadow: 0 0 25px 15px rgba(239, 68, 68, 0); transform: scale(1.15); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); }
+        }
+      </style>
     `,
         iconSize: [32, 32],
         iconAnchor: [16, 16],
@@ -96,13 +106,13 @@ function createVehicleIcon(status) {
 }
 
 // Highlighted marker (when selected)
-function createSelectedIcon(status) {
+function createSelectedIcon(status, isAlert = false) {
     const colors = {
         moving: '#22C55E',
         stopped: '#EF4444',
         idle: '#F59E0B',
     };
-    const color = colors[status] || '#7C3AED';
+    const color = isAlert ? '#EF4444' : (colors[status] || '#7C3AED');
 
     return L.divIcon({
         className: 'custom-vehicle-marker-selected',
@@ -114,18 +124,12 @@ function createSelectedIcon(status) {
         border-radius: 50%;
         box-shadow: 0 0 0 4px rgba(124,58,237,0.3), 0 4px 12px rgba(0,0,0,0.4);
         display: flex; align-items: center; justify-content: center;
-        animation: pulse 1.5s ease-in-out infinite;
+        animation: pulse 1.5s ease-in-out infinite ${isAlert ? ', alertPulse 1s infinite' : ''};
       ">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
           <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
         </svg>
       </div>
-      <style>
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
-        }
-      </style>
     `,
         iconSize: [42, 42],
         iconAnchor: [21, 21],
@@ -177,12 +181,19 @@ const statusColors = {
 // Component to fly to selected vehicle
 function FlyToVehicle({ selectedVehicle }) {
     const map = useMap();
+    const lastId = useRef(null);
 
     useEffect(() => {
         if (selectedVehicle && selectedVehicle.lat && selectedVehicle.lng) {
-            map.flyTo([selectedVehicle.lat, selectedVehicle.lng], 16, {
-                duration: 1.2,
-            });
+            // Only fly if we switched to a DIFFERENT vehicle
+            if (selectedVehicle.id !== lastId.current) {
+                map.flyTo([selectedVehicle.lat, selectedVehicle.lng], 16, {
+                    duration: 1.2,
+                });
+                lastId.current = selectedVehicle.id;
+            }
+        } else if (!selectedVehicle) {
+            lastId.current = null;
         }
     }, [selectedVehicle, map]);
 
@@ -194,106 +205,47 @@ function DrawControl({ active, onDrawComplete }) {
     const map = useMap();
     const drawnRef = useRef(null);
     const controlRef = useRef(null);
-    const [isDrawing, setIsDrawing] = useState(false);
 
-    // Setup: create the feature group and draw control once
     useEffect(() => {
-        if (!L.Control.Draw) {
-            console.error('[DrawControl] leaflet-draw not loaded!');
+
+        
+        if (!active) {
+            if (controlRef.current) {
+                try { map.removeControl(controlRef.current); } catch (e) {}
+                controlRef.current = null;
+            }
+            if (drawnRef.current) {
+                map.removeLayer(drawnRef.current);
+                drawnRef.current = null;
+            }
             return;
         }
 
+        // 1. Setup Layer
         const drawnItems = new L.FeatureGroup();
         drawnRef.current = drawnItems;
         map.addLayer(drawnItems);
 
+        // 2. Setup Control
         const purpleStyle = { color: '#7C3AED', weight: 2, fillOpacity: 0.15, fillColor: '#7C3AED' };
-
         const drawControl = new L.Control.Draw({
             position: 'topleft',
             draw: {
-                polygon: {
-                    allowIntersection: false,
-                    drawError: { color: '#ef4444', message: 'Edges cannot cross!' },
-                    shapeOptions: purpleStyle
-                },
+                polygon: { allowIntersection: false, shapeOptions: purpleStyle },
                 rectangle: { shapeOptions: purpleStyle },
                 circle: { shapeOptions: purpleStyle },
-                polyline: { shapeOptions: { ...purpleStyle, fill: false } },
-                circlemarker: false,
-                marker: false,
+                polyline: false, circlemarker: false, marker: false,
             },
-            edit: {
-                featureGroup: drawnItems,
-                remove: {},
-                edit: {
-                    selectedPathOptions: {
-                        maintainColor: true,
-                        opacity: 0.3
-                    }
-                }
-            }
+            edit: { featureGroup: drawnItems, remove: {} }
         });
         controlRef.current = drawControl;
+        map.addControl(drawControl);
 
-        // Shape created
-        map.on(L.Draw.Event.CREATED, (e) => {
+        // 3. Setup Events
+        const onCreated = (e) => {
+
             drawnItems.clearLayers();
             drawnItems.addLayer(e.layer);
-            setIsDrawing(false);
-
-            // Convert circle to a polygon approximation for GeoJSON
-            let geometry;
-            if (e.layerType === 'circle') {
-                const center = e.layer.getLatLng();
-                const radius = e.layer.getRadius();
-                const steps = 64;
-                const coords = [];
-                for (let i = 0; i < steps; i++) {
-                    const angle = (i / steps) * 360;
-                    const point = L.GeometryUtil
-                        ? L.GeometryUtil.destination(center, angle, radius)
-                        : turf_destination(center, radius, angle);
-                    coords.push([point.lng, point.lat]);
-                }
-                coords.push(coords[0]); // close ring
-                geometry = { type: 'Polygon', coordinates: [coords] };
-            } else {
-                geometry = e.layer.toGeoJSON().geometry;
-            }
-
-            onDrawComplete?.(geometry);
-        });
-
-        // Track drawing state for cancel button
-        map.on(L.Draw.Event.DRAWSTART, () => setIsDrawing(true));
-        map.on(L.Draw.Event.DRAWSTOP, () => setIsDrawing(false));
-
-        return () => {
-            map.off(L.Draw.Event.CREATED);
-            map.off(L.Draw.Event.DRAWSTART);
-            map.off(L.Draw.Event.DRAWSTOP);
-            try { map.removeControl(drawControl); } catch { }
-            map.removeLayer(drawnItems);
-        };
-    }, [map]);
-
-    // Toggle: show/hide the draw toolbar
-    useEffect(() => {
-        if (!controlRef.current) return;
-        if (active) {
-            controlRef.current.addTo(map);
-        } else {
-            try { map.removeControl(controlRef.current); } catch { }
-            if (drawnRef.current) drawnRef.current.clearLayers();
-        }
-    }, [active, map]);
-
-    // Update onDrawComplete without re-mounting
-    useEffect(() => {
-        const currentHandler = (e) => {
-            drawnRef.current?.clearLayers();
-            drawnRef.current?.addLayer(e.layer);
 
             let geometry;
             if (e.layerType === 'circle') {
@@ -312,25 +264,25 @@ function DrawControl({ active, onDrawComplete }) {
             } else {
                 geometry = e.layer.toGeoJSON().geometry;
             }
-
             onDrawComplete?.(geometry);
         };
 
-        map.off(L.Draw.Event.CREATED);
-        map.on(L.Draw.Event.CREATED, currentHandler);
+        map.on(L.Draw.Event.CREATED, onCreated);
 
-        return () => map.off(L.Draw.Event.CREATED, currentHandler);
-    }, [onDrawComplete, map]);
 
-    // Cancel / Clear button
-    function handleCancel() {
-        if (drawnRef.current) drawnRef.current.clearLayers();
-        setIsDrawing(false);
-        // Programmatically disable any active draw handler
-        map.fire('draw:drawstop');
-    }
+        return () => {
 
-    if (!active) return null;
+            map.off(L.Draw.Event.CREATED, onCreated);
+            if (controlRef.current) {
+                try { map.removeControl(controlRef.current); } catch (e) {}
+                controlRef.current = null;
+            }
+            if (drawnRef.current) {
+                map.removeLayer(drawnRef.current);
+                drawnRef.current = null;
+            }
+        };
+    }, [active, map, onDrawComplete]);
 
     return null;
 }
@@ -342,61 +294,6 @@ function turf_destination(center, radius, angleDeg) {
     const lng = center.lng + (radius / (111320 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
     return { lat, lng };
 }
-
-export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, unknownDevices = {}, drawingActive, onDrawComplete }) {
-    const center = [18.5204, 73.8567]; // Pune
-    const mapRef = useRef(null);
-    const [geofencePolygons, setGeofencePolygons] = useState([]);
-    const [historyPath, setHistoryPath] = useState([]);
-    const [showHistoryData, setShowHistoryData] = useState(false);
-
-    // Load history when vehicle selected
-    useEffect(() => {
-        if (!selectedVehicle?.id) {
-            setHistoryPath([]);
-            return;
-        }
-
-        const endTime = new Date().toISOString();
-        const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // last 24h
-
-        getLocationHistory({
-            imei: selectedVehicle.imei,
-            startDate: startTime,
-            endDate: endTime,
-            limit: 500
-        })
-            .then(res => {
-                const logs = (res.data || [])
-                    .filter(loc => loc.lat && loc.lng);
-                setHistoryPath(logs);
-            })
-            .catch(err => {
-                console.error('Failed to load history', err);
-                setHistoryPath([]);
-            });
-    }, [selectedVehicle]);
-
-    // Load geofence polygons (they come without actual geometry from Prisma, but we try)
-    useEffect(() => {
-        getGeofences()
-            .then((res) => {
-                const polygons = (res.data || [])
-                    .filter((g) => g.zone)
-                    .map((g) => ({
-                        id: g.id,
-                        name: g.name,
-                        positions: g.zone.coordinates?.[0]?.map(([lng, lat]) => [lat, lng]) || [],
-                    }));
-                setGeofencePolygons(polygons);
-            })
-            .catch(() => { });
-    }, []);
-
-    const unknownIcon = createUnknownIcon();
-
-    // --- Viewport Culling Logic ---
-    const [bounds, setBounds] = useState(null);
 
 // Helper to track map bounds and sync with backend
 function BoundsTracker({ onBoundsChange }) {
@@ -434,36 +331,72 @@ function BoundsTracker({ onBoundsChange }) {
     return null;
 }
 
-    // Filter vehicles to only those inside current viewport
-    const visibleVehicles = vehicles.filter(v => {
-        if (!v.lat || !v.lng) return false;
-        if (!bounds) return true; // Show all if bounds not yet loaded
-        return bounds.contains([v.lat, v.lng]);
-    });
+export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, livePositions = {}, unknownDevices = {}, onDrawComplete }) {
+    const center = [18.5204, 73.8567]; // Pune
+    const mapRef = useRef(null);
+    const [geofencePolygons, setGeofencePolygons] = useState([]);
+    const { fetchVehicleHistory, getHistory } = useHistory();
+    const [showHistoryData, setShowHistoryData] = useState(false);
+    const historyPath = selectedVehicle ? getHistory(selectedVehicle.imei) : [];
+    const unknownIcon = createUnknownIcon();
+    const { data: globalGeofences = [] } = useGeofencesQuery();
+    const createMutation = useCreateVehicleMutation();
 
-    const visibleUnknown = Object.entries(unknownDevices).filter(([imei, pos]) => {
+    // Load history when vehicle selected
+    useEffect(() => {
+        if (selectedVehicle?.imei) {
+            fetchVehicleHistory(selectedVehicle.imei);
+        }
+    }, [selectedVehicle, fetchVehicleHistory]);
+
+    // Format geofences for Leaflet map (converting GeoJSON [lng, lat] to Leaflet [lat, lng])
+    useEffect(() => {
+        const polys = globalGeofences
+            .filter(g => g.zone && g.zone.coordinates)
+            .map(g => ({
+                id: g.id,
+                name: g.name,
+                positions: g.zone.coordinates[0].map(c => [c[1], c[0]])
+            }));
+        setGeofencePolygons(polys);
+    }, [globalGeofences]);
+
+    // Viewport filtering (only render markers in view): performance improvement
+    const [bounds, setBounds] = useState(null);
+
+    const unknownEntries = Object.entries(unknownDevices);
+    const visibleUnknown = unknownEntries.filter(([, pos]) => {
         if (!bounds) return true;
         return bounds.contains([pos.lat, pos.lng]);
     });
 
+    const visibleVehicles = vehicles.filter(vehicle => {
+        const pos = livePositions[vehicle.imei];
+        const lat = pos ? pos.lat : vehicle.lat;
+        const lng = pos ? pos.lng : vehicle.lng;
+        if (!lat || !lng) return false;
+        if (!bounds) return true;
+        return bounds.contains([lat, lng]);
+    });
+
     // Decide center: use first vehicle with valid coords, fallback to Pune
-    const firstLive = vehicles.find(v => v.lat && v.lng);
-    const mapCenter = firstLive ? [firstLive.lat, firstLive.lng] : center;
+    const initialCenter = useRef(center).current;
 
     return (
         <div className="flex-1 h-screen relative">
             <MapContainer
-                center={mapCenter}
+                center={initialCenter}
                 zoom={14}
                 className="w-full h-full"
-                zoomControl={true}
+                zoomControl={false}
                 ref={mapRef}
             >
+                <ZoomControl position="bottomright" />
                 <CachedTileLayer />
                 <BoundsTracker onBoundsChange={setBounds} />
 
                 <FlyToVehicle selectedVehicle={selectedVehicle} />
-                <DrawControl active={drawingActive} onDrawComplete={onDrawComplete} />
+                <DrawControl active={true} onDrawComplete={onDrawComplete} />
 
                 {/* Vehicle History Path */}
                 {historyPath.length > 1 && (
@@ -488,16 +421,25 @@ function BoundsTracker({ onBoundsChange }) {
 
                 {/* Vehicle markers */}
                 {visibleVehicles.map((vehicle) => {
-                    if (!vehicle.lat || !vehicle.lng) return null;
+                    // Assuming livePositions is available in this scope, e.g., passed as a prop or from a context
+                    const pos = livePositions[vehicle.imei];
+                    const lat = pos ? pos.lat : vehicle.lat;
+                    const lng = pos ? pos.lng : vehicle.lng;
+                    const speed = pos ? pos.speed : 0;
+                    const status = pos ? (speed > 5 ? 'moving' : 'stopped') : 'idle';
+                    const isAlert = pos ? (pos.status === 'ALERT') : false;
+
+                    if (!lat || !lng) return null;
+
                     const isSelected = selectedVehicle?.id === vehicle.id;
                     const icon = isSelected
-                        ? createSelectedIcon(vehicle.status)
-                        : createVehicleIcon(vehicle.status);
+                        ? createSelectedIcon(status, isAlert)
+                        : createVehicleIcon(status, isAlert);
 
                     return (
                         <Marker
                             key={vehicle.id || vehicle.imei}
-                            position={[vehicle.lat, vehicle.lng]}
+                            position={[lat, lng]}
                             icon={icon}
                             eventHandlers={{
                                 click: () => onSelectVehicle(vehicle),
@@ -505,7 +447,12 @@ function BoundsTracker({ onBoundsChange }) {
                         >
                             <Popup>
                                 <div className="text-sm min-w-[160px]">
-                                    <div className="font-bold text-gray-800 mb-1">{vehicle.plate}</div>
+                                    <div className="font-bold text-gray-800 mb-1">{vehicle.vechicleNumb || vehicle.imei}</div>
+                                    {isAlert && (
+                                        <div className="mb-2 px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-black uppercase rounded border border-red-200 animate-pulse inline-block">
+                                            Geofence Breach
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-1.5 mb-1">
                                         <span
                                             className="w-2 h-2 rounded-full inline-block"
@@ -514,7 +461,7 @@ function BoundsTracker({ onBoundsChange }) {
                                         <span className="text-gray-600">{statusLabels[vehicle.status] || 'Unknown'}</span>
                                     </div>
                                     <div className="text-gray-500 mb-2">Speed: {vehicle.speed || 0} km/h</div>
-                                    <button 
+                                    <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setShowHistoryData(true);
@@ -541,8 +488,8 @@ function BoundsTracker({ onBoundsChange }) {
                                         const num = prompt('Enter vehicle number/name:');
                                         if (!num) return;
                                         try {
-                                            await createVehicle({ imei, vechicleNumb: num });
-                                            alert('Vehicle registered! Refresh to see it.');
+                                            await createMutation.mutateAsync({ imei, vechicleNumb: num });
+                                            alert('Vehicle registered!');
                                         } catch (e) {
                                             alert(e.message || 'Registration failed');
                                         }
@@ -567,13 +514,13 @@ function BoundsTracker({ onBoundsChange }) {
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-brand-purple animate-pulse"></div>
-                            <h3 className="font-bold text-gray-800 text-sm">{selectedVehicle.plate} History</h3>
+                            <h3 className="font-bold text-gray-800 text-sm">{selectedVehicle.vechicleNumb || selectedVehicle.imei} History</h3>
                         </div>
                         <button onClick={() => setShowHistoryData(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                             <MdClose size={20} />
                         </button>
                     </div>
-                    
+
                     <div className="flex-1 overflow-y-auto p-2">
                         <table className="w-full text-left text-[11px]">
                             <thead className="sticky top-0 bg-gray-50 text-gray-500 font-semibold">
@@ -604,7 +551,7 @@ function BoundsTracker({ onBoundsChange }) {
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <div className="px-4 py-2 bg-purple-50 text-[10px] text-brand-purple italic border-t border-purple-100">
                         Showing last 24 hours of data (max 500 points)
                     </div>

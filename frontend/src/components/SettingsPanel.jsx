@@ -1,25 +1,22 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { updateUser } from '../services/api';
+import { useUpdateUserMutation } from '../hooks/useQueries';
 import { MdSettings, MdPerson, MdSecurity } from 'react-icons/md';
 
 export default function SettingsPanel() {
   const { user } = useAuth();
   const [name, setName] = useState(user?.name || '');
-  const [loading, setLoading] = useState(false);
+  const updateMutation = useUpdateUserMutation();
   const [message, setMessage] = useState('');
 
   async function handleSave(e) {
     e.preventDefault();
-    setLoading(true);
     setMessage('');
     try {
-      await updateUser(user.id, { name });
+      await updateMutation.mutateAsync({ id: user.id, data: { name } });
       setMessage('Settings updated successfully. (Requires re-login to update sidebar)');
     } catch (err) {
       setMessage(`Error: ${err.message}`);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -80,10 +77,10 @@ export default function SettingsPanel() {
                 </span>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={updateMutation.isPending}
                   className="bg-brand-purple hover:bg-brand-purple-dark px-8 py-3 rounded-xl text-white font-semibold transition shadow-lg shadow-brand-purple/20 disabled:opacity-50"
                 >
-                  {loading ? 'Saving...' : 'Save Changes'}
+                  {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

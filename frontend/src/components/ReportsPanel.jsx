@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getCompliances, createCompliance } from '../services/api';
-import { getVehicles } from '../services/api';
+import { useCompliancesQuery, useVehiclesQuery, useCreateComplianceMutation } from '../hooks/useQueries';
 import { MdAssessment, MdAdd, MdClose, MdLocalGasStation, MdMoney } from 'react-icons/md';
 
 export default function ReportsPanel() {
   const { user } = useAuth();
-  const [reports, setReports] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
+  const { data: reports = [] } = useCompliancesQuery();
+  const { data: vehicles = [] } = useVehiclesQuery();
+  const createMutation = useCreateComplianceMutation();
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   // Form State
   const [vehicleId, setVehicleId] = useState('');
@@ -21,20 +20,7 @@ export default function ReportsPanel() {
   // Derived state
   const totalCost = (parseFloat(fuelQuantity || 0) * parseFloat(fuelRate || 0)).toFixed(2);
 
-  useEffect(() => {
-    refresh();
-  }, []);
 
-  async function refresh() {
-    try {
-      const rRes = await getCompliances();
-      setReports(rRes.data || []);
-      const vRes = await getVehicles();
-      setVehicles(vRes.data || []);
-    } catch (e) {
-      console.error('Failed to load reports', e);
-    }
-  }
 
   function fetchLiveFuelRate() {
     // Simulating Gov API call for fuel rate (e.g. INR per liter)
@@ -46,9 +32,8 @@ export default function ReportsPanel() {
       return alert('Please fill all required fields');
     }
 
-    setLoading(true);
     try {
-      await createCompliance({
+      await createMutation.mutateAsync({
         vehicleId,
         fuelQuantity: parseFloat(fuelQuantity),
         fuelRate: parseFloat(fuelRate),
@@ -57,14 +42,11 @@ export default function ReportsPanel() {
         filledAt: new Date(filledAt).toISOString(),
       });
       setShowModal(false);
-      refresh();
       // Reset
       setFuelQuantity('');
       setFuelRate('');
     } catch (e) {
       alert(e.message || 'Failed to file report');
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -91,7 +73,7 @@ export default function ReportsPanel() {
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Alert ID</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Vehicle (IMEI)</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Vehicle Name</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Volume (L)</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Rate (₹)</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Total Cost (₹)</th>
@@ -106,7 +88,9 @@ export default function ReportsPanel() {
               {reports.map((r) => (
                 <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50 transition">
                   <td className="px-6 py-4 font-mono text-xs text-brand-purple">{r.id.slice(0, 8).toUpperCase()}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-800">{r.vehicle?.imei || 'Unknown'}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-800">
+                    {r.vehicle?.vechicleNumb || r.vehicle?.imei || 'Unknown'}
+                  </td>
                   <td className="px-6 py-4 font-bold text-gray-700">{Number(r.fuelQuantity).toFixed(2)} L</td>
                   <td className="px-6 py-4 text-gray-600">₹{Number(r.fuelRate).toFixed(2)}</td>
                   <td className="px-6 py-4 font-bold text-green-600">₹{Number(r.totalCost).toFixed(2)}</td>
@@ -191,10 +175,10 @@ export default function ReportsPanel() {
               </div>
 
               <button
-                onClick={handleSave} disabled={loading}
+                onClick={handleSave} disabled={createMutation.isPending}
                 className="w-full py-3 bg-brand-purple hover:bg-brand-purple-dark text-white font-semibold rounded-lg transition disabled:opacity-50 mt-4"
               >
-                {loading ? 'Saving...' : 'Submit Report'}
+                {createMutation.isPending ? 'Saving...' : 'Submit Report'}
               </button>
             </div>
           </div>

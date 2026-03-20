@@ -158,16 +158,19 @@ const findAllGeofenceDb = catchService(
 
 const checkWithInGeofenceDb = catchService(
   async (imei: string, lat: number, lng: number) => {
+    // Return ALL geofences assigned to this vehicle with their current 'isInside' status
     const result = await prismaAdapter.$queryRaw<
       {
         geoId: string;
         name: string;
         isInside: boolean;
+        isActive: boolean;
       }[]
     >`
         SELECT 
             g.id as "geoId",
             g.name as "name",
+            g."isActive" as "isActive",
             ST_Contains(
                 g.zone,
                 ST_SetSRID(ST_MakePoint(${Number(lng)}, ${Number(lat)}), 4326)
@@ -180,10 +183,32 @@ const checkWithInGeofenceDb = catchService(
         AND g.zone IS NOT NULL
     `;
 
-    return result.filter((fence) => fence.isInside);
+    return result;
   },
   'DB-Call Geo',
   'checking in GeoFence'
+);
+
+const deleteGeofenceDb = catchService(
+  async (geofenceId: string) => {
+    return await prismaAdapter.$transaction(async (tx) => {
+      // Check how many vehicles are linked to this geofence
+      const linkedCount = await tx.vehiclesOnGeofences.count({
+        where: { geofenceId },
+      });
+
+      if (linkedCount > 1) {
+        throw new Error(`Cannot delete: this geofence is linked to ${linkedCount} vehicles. Please edit the geofence and unlink vehicles first.`);
+      }
+
+      // CASCADE in schema handles VehiclesOnGeofences cleanup automatically
+      return await tx.geofence.delete({
+        where: { id: geofenceId },
+      });
+    });
+  },
+  'DB-Call Geo',
+  'deleting GeoFence'
 );
 
 export {
@@ -192,5 +217,6 @@ export {
   findGeofenceByIdDb,
   checkWithInGeofenceDb,
   updateGeofenceDb,
+  deleteGeofenceDb,
   hashGeofence,
 };

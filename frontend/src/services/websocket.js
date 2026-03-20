@@ -30,7 +30,6 @@ export function connect() {
 
   // Don't even attempt if no token is available
   if (!url.includes('token=')) {
-    console.warn('[ws] no auth token available, skipping connection');
     scheduleReconnect();
     return;
   }
@@ -38,7 +37,7 @@ export function connect() {
   socket = new WebSocket(url);
 
   socket.onopen = () => {
-    console.log('[ws] connected ✅');
+
     reconnectDelay = 1000;
   };
 
@@ -52,17 +51,17 @@ export function connect() {
         listeners[event].forEach((cb) => cb(data));
       }
     } catch (err) {
-      console.warn('[ws] bad message', err);
+
     }
   };
 
   socket.onclose = (e) => {
-    console.log(`[ws] disconnected (code: ${e.code}), reconnecting...`);
+
     scheduleReconnect();
   };
 
   socket.onerror = (err) => {
-    console.error('[ws] error', err);
+
     // Don't call socket.close() here - onclose will fire automatically
   };
 }

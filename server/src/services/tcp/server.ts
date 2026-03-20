@@ -1,6 +1,6 @@
 import net from 'net';
 import logger from '../logger/logger.ts';
-import { TrackerPayload } from '../tracker/tracker.logic.ts';
+import { TrackerPayload, processLiveUpdate } from '../tracker/tracker.logic.ts';
 import { parseRawSluData } from './dataParser.ts';
 import { bufferLocationUpdate, startFlushTimer } from './buffer.ts';
 import { config } from '../../config/config.ts';
@@ -69,18 +69,8 @@ const startTcpServer = async (): Promise<void> => {
               // 1. Buffer for batch DB persistence (O(1) Map overwrite per IMEI)
               bufferLocationUpdate(payload);
 
-              // 2. Immediate lightweight WS broadcast for live dashboard
-              wsService.broadcast('tracker:live', {
-                location: {
-                  imei: payload.imei,
-                  lat: payload.lat,
-                  lng: payload.lng,
-                  speed: payload.speed,
-                  ignition: payload.ignition,
-                  timestamp: (payload.timestamp || new Date()).toISOString(),
-                },
-                status: 'LIVE_FEED'
-              }, payload.imei, payload.lat, payload.lng);
+              // 2. Immediate Lightweight Broadcast with Geofence evaluation
+              await processLiveUpdate(payload);
             }
           }
         } catch (error: any) {

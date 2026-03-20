@@ -1,32 +1,50 @@
 import { useState } from 'react';
-import { createVehicle, deleteVehicle } from '../services/api';
-import { MdDirectionsCar, MdAdd, MdClose, MdDelete } from 'react-icons/md';
+import { useCreateVehicleMutation, useUpdateVehicleMutation, useDeleteVehicleMutation } from '../hooks/useQueries';
+import { MdDirectionsCar, MdAdd, MdClose, MdDelete, MdEdit } from 'react-icons/md';
 
 export default function VehicleManagementPanel({ vehicles }) {
+  const createMutation = useCreateVehicleMutation();
+  const updateMutation = useUpdateVehicleMutation();
+  const deleteMutation = useDeleteVehicleMutation();
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [imei, setImei] = useState('');
   const [vechicleNumb, setVechicleNumb] = useState('');
+  const [editingId, setEditingId] = useState(null);
 
   async function handleSave() {
     if (!imei || !vechicleNumb) return alert('Both fields are required');
-    setLoading(true);
     try {
-      await createVehicle({ imei, vechicleNumb });
+      if (editingId) {
+        await updateMutation.mutateAsync({ id: editingId, data: { imei, vechicleNumb } });
+      } else {
+        await createMutation.mutateAsync({ imei, vechicleNumb });
+      }
       setShowModal(false);
-      window.location.reload(); // Quick way to refresh
     } catch (e) {
-      alert(e.message || 'Failed to register');
-    } finally {
-      setLoading(false);
+      alert(e.message || 'Failed to save');
     }
+  }
+
+  function openEdit(v) {
+    setEditingId(v.id);
+    setImei(v.imei);
+    setVechicleNumb(v.vechicleNumb);
+    setShowModal(true);
+  }
+
+  function openCreate() {
+    setEditingId(null);
+    setImei('');
+    setVechicleNumb('');
+    setShowModal(true);
   }
 
   async function handleDelete(id) {
     if (!confirm('Delete this vehicle?')) return;
     try {
-      await deleteVehicle(id);
-      window.location.reload();
+      await deleteMutation.mutateAsync(id);
     } catch (e) {
       alert('Failed to delete');
     }
@@ -41,7 +59,7 @@ export default function VehicleManagementPanel({ vehicles }) {
             Active Fleet
           </h2>
           <button
-            onClick={() => { setShowModal(true); setImei(''); setVechicleNumb(''); }}
+            onClick={openCreate}
             className="flex items-center gap-2 bg-brand-purple hover:bg-brand-purple-dark text-white text-sm font-medium px-4 py-2.5 rounded-lg transition shadow-md shadow-brand-purple/20"
           >
             <MdAdd size={18} /> Register Vehicle
@@ -68,12 +86,15 @@ export default function VehicleManagementPanel({ vehicles }) {
                   <td className="px-6 py-4">
                     <div className={`w-3 h-3 rounded-full ${v.status === 'moving' ? 'bg-green-500' : v.status === 'stopped' ? 'bg-red-500' : 'bg-orange-500'}`}></div>
                   </td>
-                  <td className="px-6 py-4 font-bold text-gray-800">{v.plate}</td>
+                  <td className="px-6 py-4 font-bold text-gray-800">{v.vechicleNumb}</td>
                   <td className="px-6 py-4 font-mono text-sm text-gray-500">{v.imei}</td>
                   <td className="px-6 py-4">
                      <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">{v.status}</span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 flex items-center gap-2">
+                    <button onClick={() => openEdit(v)} className="text-brand-purple hover:text-brand-purple-dark transition p-1 bg-purple-50 hover:bg-purple-100 rounded">
+                      <MdEdit size={18} />
+                    </button>
                     <button onClick={() => handleDelete(v.id)} className="text-red-400 hover:text-red-600 transition p-1 bg-red-50 hover:bg-red-100 rounded">
                       <MdDelete size={18} />
                     </button>
@@ -89,27 +110,36 @@ export default function VehicleManagementPanel({ vehicles }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-md border border-gray-200 shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2"><MdAdd /> Register New Tracker</h3>
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                {editingId ? <MdEdit /> : <MdAdd />} 
+                {editingId ? 'Edit Vehicle Info' : 'Register New Tracker'}
+              </h3>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                 <MdClose size={20} />
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <input
-                type="text" placeholder="15-digit Tracker IMEI" value={imei}
-                onChange={(e) => setImei(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:border-purple-500 transition text-sm font-mono"
-              />
-              <input
-                type="text" placeholder="Vehicle Name / License Plate" value={vechicleNumb}
-                onChange={(e) => setVechicleNumb(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:border-purple-500 transition text-sm"
-              />
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Tracker IMEI</label>
+                <input
+                  type="text" placeholder="15-digit Tracker IMEI" value={imei}
+                  onChange={(e) => setImei(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:border-purple-500 transition text-sm font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Vehicle Name / Plate</label>
+                <input
+                  type="text" placeholder="e.g. MH-12-AB-1234" value={vechicleNumb}
+                  onChange={(e) => setVechicleNumb(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:border-purple-500 transition text-sm"
+                />
+              </div>
               <button
-                onClick={handleSave} disabled={loading}
-                className="w-full py-3 bg-brand-purple hover:bg-brand-purple-dark text-white font-semibold rounded-lg transition disabled:opacity-50"
+                onClick={handleSave} disabled={isSaving}
+                className="w-full py-3 bg-brand-purple hover:bg-brand-purple-dark text-white font-semibold rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading ? 'Registering...' : 'Register Vehicle'}
+                {isSaving ? 'Saving...' : editingId ? 'Update Vehicle' : 'Register Vehicle'}
               </button>
             </div>
           </div>

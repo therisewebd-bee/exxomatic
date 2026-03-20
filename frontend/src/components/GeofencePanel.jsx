@@ -1,30 +1,21 @@
 import { useState, useEffect } from 'react';
-import { getGeofences, createGeofence, updateGeofence } from '../services/api';
-import { getVehicles } from '../services/api';
-import { MdFence, MdAdd, MdClose, MdSettings, MdDelete } from 'react-icons/md';
+import { MdFence, MdAdd, MdClose, MdDelete } from 'react-icons/md';
+import { 
+  useGeofencesQuery, 
+  useVehiclesQuery, 
+  useCreateGeofenceMutation, 
+  useDeleteGeofenceMutation 
+} from '../hooks/useQueries';
 
 export default function GeofencePanel({ onDrawRequested, drawnZone, onDrawConsumed }) {
-  const [geofences, setGeofences] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
+  const { data: geofences = [] } = useGeofencesQuery();
+  const { data: vehicles = [] } = useVehiclesQuery();
+  const createMutation = useCreateGeofenceMutation();
+  const deleteMutation = useDeleteGeofenceMutation();
+
   const [showModal, setShowModal] = useState(false);
   const [zoneName, setZoneName] = useState('');
   const [selectedVehicles, setSelectedVehicles] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    refresh();
-  }, []);
-
-  async function refresh() {
-    try {
-      const gRes = await getGeofences();
-      setGeofences(gRes.data || []);
-      const vRes = await getVehicles();
-      setVehicles(vRes.data || []);
-    } catch (e) {
-      console.error('Failed to load geofences', e);
-    }
-  }
 
   useEffect(() => {
     if (drawnZone) {
@@ -35,7 +26,6 @@ export default function GeofencePanel({ onDrawRequested, drawnZone, onDrawConsum
   function openCreateModal() {
     setZoneName('');
     setSelectedVehicles([]);
-    // Switch to MapView to activate drawing
     onDrawRequested?.();
   }
 
@@ -43,20 +33,25 @@ export default function GeofencePanel({ onDrawRequested, drawnZone, onDrawConsum
     if (!zoneName.trim()) return alert('Enter a zone name');
     if (!drawnZone) return alert('Draw a polygon on the map first');
 
-    setLoading(true);
     try {
-      await createGeofence({
+      await createMutation.mutateAsync({
         name: zoneName,
         zone: drawnZone,
         vehicleIds: selectedVehicles.length > 0 ? selectedVehicles : undefined,
       });
       setShowModal(false);
       onDrawConsumed?.();
-      refresh();
     } catch (e) {
       alert(e.message || 'Failed to create geofence');
-    } finally {
-      setLoading(false);
+    }
+  }
+
+  async function handleDelete(id, name) {
+    if (!confirm(`Delete geofence "${name}"? This cannot be undone.`)) return;
+    try {
+      await deleteMutation.mutateAsync(id);
+    } catch (e) {
+      alert(e.message || 'Failed to delete geofence. Note: geofences linked to multiple vehicles cannot be deleted.');
     }
   }
 
@@ -106,8 +101,17 @@ export default function GeofencePanel({ onDrawRequested, drawnZone, onDrawConsum
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <button className="text-gray-400 hover:text-brand-purple transition p-1">
-                      <MdSettings size={18} />
+                    <button
+                      onClick={() => handleDelete(g.id, g.name)}
+                      disabled={deleteMutation.isPending}
+                      className="text-gray-400 hover:text-red-500 transition p-1 disabled:opacity-50"
+                      title="Delete geofence"
+                    >
+                      {deleteMutation.isPending && deleteMutation.variables === g.id ? (
+                        <div className="w-[18px] h-[18px] border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
+                      ) : (
+                        <MdDelete size={18} />
+                      )}
                     </button>
                   </td>
                 </tr>
@@ -160,10 +164,10 @@ export default function GeofencePanel({ onDrawRequested, drawnZone, onDrawConsum
               </div>
 
               <button
-                onClick={handleSave} disabled={loading}
+                onClick={handleSave} disabled={createMutation.isPending}
                 className="w-full py-3 bg-brand-purple hover:bg-brand-purple-dark text-white font-semibold rounded-lg transition disabled:opacity-50"
               >
-                {loading ? 'Saving...' : 'Save Zone'}
+                {createMutation.isPending ? 'Saving...' : 'Save Zone'}
               </button>
             </div>
           </div>

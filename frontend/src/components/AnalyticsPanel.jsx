@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getVehicles, getLocationHistory } from '../services/api';
+import { getLocationHistory } from '../services/api';
+import { useVehiclesQuery } from '../hooks/useQueries';
+import { useHistory } from '../context/HistoryContext';
 import { MdHistory, MdSpeed, MdTimer, MdMoving } from 'react-icons/md';
 
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
@@ -15,16 +17,12 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 }
 
 export default function AnalyticsPanel() {
-  const [vehicles, setVehicles] = useState([]);
   const [selectedImei, setSelectedImei] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  
+  const { fetchVehicleHistory } = useHistory();
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState(null);
-
-  useEffect(() => {
-    getVehicles().then((res) => setVehicles(res.data || [])).catch(console.error);
-  }, []);
+  const { data: vehicles = [] } = useVehiclesQuery();
 
   useEffect(() => {
     if (!selectedImei || !date) return;
@@ -38,19 +36,18 @@ export default function AnalyticsPanel() {
         const end = new Date(date);
         end.setHours(23, 59, 59, 999);
 
-        const res = await getLocationHistory({
-          imei: selectedImei,
-          start: start.toISOString(),
-          end: end.toISOString()
-        });
+        const data = await fetchVehicleHistory(selectedImei, start.toISOString(), end.toISOString());
 
         if (!isSubscribed) return;
 
-        const pts = res.data?.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)) || [];
+        const pts = (data || []).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)) || [];
         
         let totalKm = 0;
         let idleMinutes = 0;
         let runningMinutes = 0;
+        let maxSpeed = 0;
+        let speedSum = 0;
+        let speedCount = 0;
 
         for (let i = 0; i < pts.length - 1; i++) {
           const p1 = pts[i];
@@ -58,16 +55,18 @@ export default function AnalyticsPanel() {
           
           const ms = new Date(p2.timestamp).getTime() - new Date(p1.timestamp).getTime();
           const mins = ms / 60000;
-          
-          // Skip data gaps larger than 2 hours to avoid skewed lines/times
           if (mins > 120) continue;
 
-          // Distance
           const dist = getDistanceFromLatLonInKm(p1.lat, p1.lng, p2.lat, p2.lng);
           totalKm += dist;
 
-          // Idling Logic: IGN ON, Engine ON (assuming IGN=ON means engine is on for this dataset), Speed < 5 km/h
           const speed = Number(p1.speed || 0);
+          if (speed > maxSpeed) maxSpeed = speed;
+          if (speed > 5) {
+            speedSum += speed;
+            speedCount++;
+          }
+
           if (p1.ignition === true && speed < 5) {
             idleMinutes += mins;
           } else if (p1.ignition === true && speed >= 5) {
@@ -75,9 +74,17 @@ export default function AnalyticsPanel() {
           }
         }
 
-        setMetrics({ totalKm, idleMinutes, runningMinutes, pointsCount: pts.length });
+        setMetrics({ 
+          totalKm, 
+          idleMinutes, 
+          runningMinutes, 
+          maxSpeed, 
+          avgSpeed: speedCount > 0 ? speedSum / speedCount : 0,
+          pointsCount: pts.length,
+          rawLogs: pts.reverse() // Newest first for the table
+        });
       } catch (err) {
-        console.error('Failed to load analytics', err);
+
       } finally {
         if(isSubscribed) setLoading(false);
       }
@@ -89,7 +96,7 @@ export default function AnalyticsPanel() {
 
   return (
     <div className="flex-1 p-8 overflow-y-auto bg-gray-50 h-screen">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8 pb-10">
         
         {/* Header & Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -112,7 +119,7 @@ export default function AnalyticsPanel() {
             >
               <option value="">Select Vehicle...</option>
               {vehicles.map((v) => (
-                <option key={v.imei} value={v.imei}>{v.plate || v.imei}</option>
+                <option key={v.imei} value={v.imei}>{v.vechicleNumb || v.imei}</option>
               ))}
             </select>
           </div>
@@ -129,23 +136,22 @@ export default function AnalyticsPanel() {
             <div className="w-8 h-8 rounded-full border-4 border-brand-purple/20 border-t-brand-purple animate-spin"></div>
           </div>
         ) : metrics ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
             {/* Odometer Summary */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
               <div>
-                <h3 className="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-2">Daily Summary Report</h3>
-                <p className="text-gray-400 text-sm mb-6">Total computed running distance for {date}</p>
+                <h3 className="text-gray-500 font-semibold text-xs uppercase tracking-wider mb-2">Distance Moved</h3>
               </div>
-              <div className="flex items-end gap-4">
-                <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
-                  <MdMoving size={32} />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                  <MdMoving size={24} />
                 </div>
                 <div>
-                  <div className="text-4xl font-bold text-gray-800 tracking-tight">
-                    {metrics.totalKm.toFixed(2)} <span className="text-lg text-gray-400 font-medium">km</span>
+                  <div className="text-2xl font-bold text-gray-800 tracking-tight">
+                    {metrics.totalKm.toFixed(2)} <span className="text-sm text-gray-400 font-medium">km</span>
                   </div>
-                  <p className="text-sm text-gray-500 font-medium mt-1">From {metrics.pointsCount} GPS logs</p>
                 </div>
               </div>
             </div>
@@ -153,54 +159,95 @@ export default function AnalyticsPanel() {
             {/* Idling Report */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
               <div>
-                <h3 className="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-2">Vehicle Idling Report</h3>
-                <p className="text-gray-400 text-sm mb-6">Time spent with Engine ON and Speed &lt; 5 km/h</p>
+                <h3 className="text-gray-500 font-semibold text-xs uppercase tracking-wider mb-2">Idling Time</h3>
               </div>
-              
-              <div className="flex items-end gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center">
-                  <MdTimer size={32} />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+                  <MdTimer size={24} />
                 </div>
                 <div>
-                  <div className="text-4xl font-bold text-gray-800 tracking-tight">
-                    {metrics.idleMinutes.toFixed(0)} <span className="text-lg text-gray-400 font-medium">min</span>
+                  <div className="text-2xl font-bold text-gray-800 tracking-tight">
+                    {metrics.idleMinutes.toFixed(0)} <span className="text-sm text-gray-400 font-medium">min</span>
                   </div>
-                  <p className="text-sm text-gray-500 font-medium mt-1">Total Idle Time</p>
                 </div>
-              </div>
-
-              {/* Graphical Format */}
-              <div className="w-full bg-gray-100 rounded-full h-4 flex overflow-hidden">
-                {metrics.runningMinutes + metrics.idleMinutes > 0 ? (
-                  <>
-                    <div 
-                      className="bg-green-500 h-full transition-all duration-1000 relative group"
-                      style={{ width: `${(metrics.runningMinutes / (metrics.runningMinutes + metrics.idleMinutes)) * 100}%` }}
-                    >
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100">
-                        Running {Math.round(metrics.runningMinutes)}m
-                      </div>
-                    </div>
-                    <div 
-                      className="bg-orange-500 h-full transition-all duration-1000 relative group"
-                      style={{ width: `${(metrics.idleMinutes / (metrics.runningMinutes + metrics.idleMinutes)) * 100}%` }}
-                    >
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100">
-                        Idling {Math.round(metrics.idleMinutes)}m
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="w-full bg-gray-200 h-full"></div>
-                )}
-              </div>
-              <div className="flex justify-between text-xs text-gray-400 font-medium mt-2 px-1">
-                <span>Running</span>
-                <span>Idling</span>
               </div>
             </div>
 
+            {/* Max Speed */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 className="text-gray-500 font-semibold text-xs uppercase tracking-wider mb-2">Max Speed</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                  <MdSpeed size={24} />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-800 tracking-tight">
+                    {metrics.maxSpeed.toFixed(1)} <span className="text-sm text-gray-400 font-medium">km/h</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Avg Speed */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 className="text-gray-500 font-semibold text-xs uppercase tracking-wider mb-2">Avg Speed</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-50 text-green-500 flex items-center justify-center shrink-0">
+                  <MdMoving size={24} className="rotate-45" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-800 tracking-tight">
+                    {metrics.avgSpeed.toFixed(1)} <span className="text-sm text-gray-400 font-medium">km/h</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Detailed Path Logs Table */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between">
+                <h3 className="font-bold text-gray-800">Historical Movement Logs</h3>
+                <span className="text-xs text-gray-500 font-medium">{metrics.pointsCount} points captured</span>
+            </div>
+            <div className="max-h-[500px] overflow-y-auto">
+                <table className="w-full text-left">
+                    <thead className="sticky top-0 bg-white border-b border-gray-200">
+                        <tr>
+                            <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Time</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Speed</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Coordinates</th>
+                            <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Ignition</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {metrics.rawLogs.slice(0, 200).map((log, i) => ( // Show first 200 for performance
+                            <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-6 py-3 text-sm text-gray-700">{new Date(log.timestamp).toLocaleTimeString()}</td>
+                                <td className="px-6 py-3 text-sm">
+                                    <span className={`font-bold ${Number(log.speed) > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                        {Number(log.speed).toFixed(1)} km/h
+                                    </span>
+                                </td>
+                                <td className="px-6 py-3 text-sm font-mono text-gray-500">
+                                    {Number(log.lat).toFixed(4)}, {Number(log.lng).toFixed(4)}
+                                </td>
+                                <td className="px-6 py-3">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${log.ignition ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                        {log.ignition ? 'ON' : 'OFF'}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+          </div>
+          </>
         ) : null}
 
       </div>
