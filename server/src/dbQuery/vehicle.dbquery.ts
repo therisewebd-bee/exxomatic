@@ -111,7 +111,7 @@ const findVehicleByIdDb = catchService(
 
 const findVehiclesDb = catchService(
   async (filters: { customerId?: string; imei?: string; vechicleNumb?: string; page?: number; limit?: number }) => {
-    const { customerId, imei, vechicleNumb, page = 1, limit = 10 } = filters;
+    const { customerId, imei, vechicleNumb, page = 1, limit = 100 } = filters;
 
     return await prismaAdapter.vehicleInfo.findMany({
       where: {

@@ -55,18 +55,18 @@ switch (TEST_CASE) {
 
 console.log(`🧪 Activating: ${caseDescription}`);
 
-// Generate unique vehicles spread across the entirety of INDIA bounds
-// India Latitude: roughly 8.0 N to 35.0 N
-// India Longitude: roughly 68.0 E to 97.0 E
-console.log(`🌍 Scattering vehicles randomly across India and neighboring sectors...`);
+// Generate unique vehicles spread across the entirety of the Globe bounds
+// World Latitude: -90.0 to 90.0
+// World Longitude: -180.0 to 180.0
+console.log(`🌍 Scattering vehicles globally across the entire world...`);
 
 const vehicles = [];
 for (let i = 0; i < TOTAL_VEHICLES; i++) {
   const imei = '8607' + String(Math.floor(Math.random() * 90000000000) + 10000000000);
   vehicles.push({
     imei,
-    lat: 8.0 + Math.random() * 27.0,   // Random anywhere between 8 and 35 N
-    lng: 68.0 + Math.random() * 29.0,  // Random anywhere between 68 and 97 E
+    lat: (Math.random() * 180) - 90,     // Random anywhere between -90 and 90
+    lng: (Math.random() * 360) - 180,    // Random anywhere between -180 and 180
     speed: baseSpeed + (Math.random() * 10 - 5),
     heading: Math.random() * 360,
     socketIndex: i % SOCKET_POOL_SIZE   // Assign this device to a dedicated socket in the pool
@@ -123,7 +123,29 @@ function startStreaming() {
   let currentIndex = 0;
   let cycleCount = 1;
   let totalDataSent = 0;
+  let lastDataSent = 0;
   
+  // Real-time Dashboard Updater
+  const dashboardInterval = setInterval(() => {
+    const tps = totalDataSent - lastDataSent;
+    lastDataSent = totalDataSent;
+    const memUse = process.memoryUsage().heapUsed / 1024 / 1024;
+    
+    console.clear();
+    console.log(`\n======================================================`);
+    console.log(` 🚀 FLEET TRACKER STRESS TEST DASHBOARD `);
+    console.log(`======================================================`);
+    console.log(` 🧪 Mode        : ${caseDescription}`);
+    console.log(` 📱 Devices     : ${TOTAL_VEHICLES} Active`);
+    console.log(` 🔌 Sockets     : ${connectedCount} / ${SOCKET_POOL_SIZE}`);
+    console.log(` 📡 Total Sent  : ${totalDataSent.toLocaleString()} packets`);
+    console.log(` ⚡ Throughput  : ${tps} updates / sec`);
+    console.log(` 🧠 Memory      : ${memUse.toFixed(2)} MB`);
+    console.log(` ♻️ Cycle       : ${cycleCount} [${Math.floor((currentIndex/TOTAL_VEHICLES)*100)}%]`);
+    console.log(`======================================================`);
+    console.log(` Press Ctrl+C to stop simulation.\n`);
+  }, 1000);
+
   const sendChunk = () => {
     const now = new Date();
     const fDate = formatDate(now);
@@ -135,19 +157,15 @@ function startStreaming() {
     for (let i = currentIndex; i < end; i++) {
       const v = vehicles[i];
       
-      // Random walk applying the distance test case
       const latDir = Math.random() > 0.5 ? 1 : -1;
       const lngDir = Math.random() > 0.5 ? 1 : -1;
       v.lat += (Math.random() * offsetDegrees * latDir);
       v.lng += (Math.random() * offsetDegrees * lngDir);
       
-      // Speed fluctuation
       const currentSpeed = Math.max(0, v.speed + (Math.random() * 4 - 2)).toFixed(2);
       
-      // Strict $1 assignment payload format
       const packet = `$1,AEPL,0.0.1,NR,2,H,${v.imei},XXXXXXXXXX,1,${fDate},${fTime},${v.lat.toFixed(6)},N,${v.lng.toFixed(6)},E,${currentSpeed},${v.heading.toFixed(2)},10,553.00,1.27,1.00,AIRTEL,1,1,23.20,4.20,0,O,28,404,90,110E,E0EB,,0000,00,000074,9822,*\n`;
       
-      // Send through this device's "simulated" network socket
       const socket = sockets[v.socketIndex];
       if (!socket.destroyed) {
         socket.write(packet);
@@ -155,11 +173,8 @@ function startStreaming() {
       }
     }
     
-    process.stdout.write(`\r📡 [Cycle ${cycleCount}] Global Live Network: Streamed ${totalDataSent} GPS updates across India...`);
-
     currentIndex = end;
     if (currentIndex >= TOTAL_VEHICLES) {
-      // Completed one entire cycle of the 10,000 fleet, restarting
       currentIndex = 0;
       cycleCount++;
     }

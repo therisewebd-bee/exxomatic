@@ -10,7 +10,7 @@ import { vehicleCache } from '../tracker/vehicleCache.ts';
 const unknownPings = new Map<string, number>();
 
 const startTcpServer = async (): Promise<void> => {
-  // Initialize the persistence buffer timer (e.g. 15s)
+  // Initialize the persistence buffer timer (2 minutes)
   startFlushTimer(config.bufferFlushInterval);
 
   const server = net.createServer((socket) => {
@@ -53,7 +53,7 @@ const startTcpServer = async (): Promise<void> => {
               // Throttle WS broadcasts to max 1 every 2 seconds per IMEI
               if (now - lastPing > 2000) {
                 unknownPings.set(payload.imei, now);
-                wsService.broadcast('tracker:live', {
+                wsService.broadcast('tracker:unknown', {
                   location: {
                     imei: payload.imei,
                     lat: payload.lat,
@@ -63,7 +63,7 @@ const startTcpServer = async (): Promise<void> => {
                     timestamp: (payload.timestamp || new Date()).toISOString(),
                   },
                   status: 'UNKNOWN_DEVICE'
-                }, undefined, payload.lat, payload.lng); // Broadcast to Admins with spatial filter
+                }, payload.imei, payload.lat, payload.lng); // Pass IMEI for unique buffer key
               }
             } else {
               // 1. Buffer for batch DB persistence (O(1) Map overwrite per IMEI)

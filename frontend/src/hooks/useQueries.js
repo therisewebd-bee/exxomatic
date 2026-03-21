@@ -5,7 +5,7 @@ export function useVehiclesQuery(enabled = true) {
   return useQuery({
     queryKey: ['vehicles'],
     queryFn: async () => {
-      const res = await getVehicles();
+      const res = await getVehicles({ limit: 100 });
       return res.data || [];
     },
     enabled,

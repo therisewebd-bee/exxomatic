@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
+// Pre-declare `type` to prevent "assignment to undeclared variable" in leaflet-draw strict mode
+if (typeof window !== 'undefined' && !('type' in window)) {
+    window.type = '';
+}
 import 'leaflet-draw';
 import { MdLayers, MdAssessment, MdClose, MdHistory } from 'react-icons/md';
 import { useHistory } from '../context/HistoryContext';
@@ -9,7 +13,10 @@ import { useGeofencesQuery, useCreateVehicleMutation } from '../hooks/useQueries
 import { getCachedTile, cacheTile } from '../services/tileCache';
 import { sendViewport } from '../services/websocket';
 import { getDistanceFromLatLonInKm, turf_destination } from '../utils/geoUtils';
+import { useGeolocation } from '../hooks/useGeolocation';
 import AddressCell from './AddressCell';
+import PlaybackControls from './PlaybackControls';
+import HistoryDataOverlay from './HistoryDataOverlay';
 
 
 // Custom TileLayer that caches tiles in IndexedDB
@@ -345,61 +352,74 @@ if (typeof L !== 'undefined' && L.DomEvent) {
 // Helper to track map bounds and sync with backend
 function BoundsTracker({ onBoundsChange }) {
     const map = useMap();
-    const lastBounds = useRef(null);
     const debounceTimer = useRef(null);
+    const lastSent = useRef(null);
+    const mountedRef = useRef(false);
 
     useEffect(() => {
         if (!map) return;
-        
-        const syncBounds = () => {
-            if (!map) return;
+
+        const computeBounds = () => {
             const b = map.getBounds();
             const sw = b.getSouthWest();
             const ne = b.getNorthEast();
-            
-            const newBounds = { 
-                swLat: sw.lat, swLng: sw.lng, 
-                neLat: ne.lat, neLng: ne.lng 
-            };
-
-            if (lastBounds.current) {
-                const d = Math.abs(lastBounds.current.swLat - newBounds.swLat) + 
-                          Math.abs(lastBounds.current.swLng - newBounds.swLng);
-                if (d < 0.0001) return; // Threshold to ignore micro-jitters
-            }
-
-            lastBounds.current = newBounds;
-            
-            if (debounceTimer.current) clearTimeout(debounceTimer.current);
-            debounceTimer.current = setTimeout(() => {
-                onBoundsChange(newBounds);
-                // Viewport sync removed to prevent recursive re-render loop across WS
-            }, 100); 
+            const zoom = map.getZoom();
+            return { swLat: sw.lat, swLng: sw.lng, neLat: ne.lat, neLng: ne.lng, zoom };
         };
 
-        // Removed the immediate call to syncBounds here to prevent synchronous state update cycles
-        // Instead, we'll let the moveend/zoomend fire naturally or run it once in a trailing sync
-        map.on('moveend zoomend', syncBounds);
-        return () => { 
-            map.off('moveend zoomend', syncBounds); 
+        const commitBounds = (newBounds) => {
+            // Dedup: skip if bounds haven't moved meaningfully
+            const prev = lastSent.current;
+            if (prev) {
+                const dLat = Math.abs(prev.swLat - newBounds.swLat) + Math.abs(prev.neLat - newBounds.neLat);
+                const dLng = Math.abs(prev.swLng - newBounds.swLng) + Math.abs(prev.neLng - newBounds.neLng);
+                if (prev.zoom === newBounds.zoom && dLat + dLng < 0.01) return;
+            }
+            lastSent.current = newBounds;
+            onBoundsChange(newBounds);
+            sendViewport(newBounds);
+        };
+
+        const onMapMove = () => {
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+            debounceTimer.current = setTimeout(() => {
+                commitBounds(computeBounds());
+            }, 300);
+        };
+
+        map.on('moveend', onMapMove);
+
+        // Delayed initial bounds — wait for map to fully render and settle
+        if (!mountedRef.current) {
+            mountedRef.current = true;
+            const initTimer = setTimeout(() => {
+                commitBounds(computeBounds());
+            }, 600);
+            return () => {
+                clearTimeout(initTimer);
+                map.off('moveend', onMapMove);
+                if (debounceTimer.current) clearTimeout(debounceTimer.current);
+            };
+        }
+
+        return () => {
+            map.off('moveend', onMapMove);
             if (debounceTimer.current) clearTimeout(debounceTimer.current);
         };
     }, [map, onBoundsChange]);
 
-
-
-// Removed redundant useMapEvents handler
-
-
     return null;
 }
 
-export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, livePositions = {}, unknownDevices = {}, onDrawComplete }) {
-    const center = [18.5204, 73.8567]; // Pune
+export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, livePositions = {}, unknownDevices = {}, onDrawComplete, isAdmin, onViewportChange }) {
     const mapRef = useRef(null);
     const [geofencePolygons, setGeofencePolygons] = useState([]);
     const { fetchVehicleHistory, getHistory } = useHistory();
     const [showHistoryData, setShowHistoryData] = useState(false);
+
+    // Auto-detect user location via browser GPS or IP fallback
+    const { center } = useGeolocation(mapRef);
+
     
     // Playback state
     const [isPlaying, setIsPlaying] = useState(false);
@@ -510,28 +530,105 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
 
     // Viewport filtering (only render markers in view): performance improvement
     const [bounds, setBounds] = useState(null);
+    // Stable callback that only updates state when bounds materially change
+    const handleBoundsChange = useCallback((newBounds) => {
+        setBounds(prev => {
+            if (!prev) {
+                onViewportChange?.(newBounds);
+                return newBounds;
+            }
+            if (prev.zoom === newBounds.zoom) {
+                const d = Math.abs(prev.swLat - newBounds.swLat) + 
+                          Math.abs(prev.swLng - newBounds.swLng) +
+                          Math.abs(prev.neLat - newBounds.neLat) +
+                          Math.abs(prev.neLng - newBounds.neLng);
+                if (d < 0.001) return prev;
+            }
+            onViewportChange?.(newBounds);
+            return newBounds;
+        });
+    }, [onViewportChange]);
 
     const visibleUnknown = useMemo(() => {
-        const unknownEntries = Object.entries(unknownDevices);
-        return unknownEntries.filter(([, pos]) => {
-            if (selectedVehicle) return false; 
-            if (!bounds) return true;
-            return pos.lat >= bounds.swLat && pos.lat <= bounds.neLat &&
-                   pos.lng >= bounds.swLng && pos.lng <= bounds.neLng;
-        });
-    }, [unknownDevices, selectedVehicle, bounds]);
+        if (selectedVehicle) return [];
+        if (!bounds) return Object.entries(unknownDevices);
+
+        const { swLat, swLng, neLat, neLng, zoom = 14 } = bounds;
+        let gridDensity = 0;
+        if (zoom < 8) gridDensity = isAdmin ? 50 : 30;
+        else if (zoom < 12) gridDensity = isAdmin ? 150 : 100;
+        else if (zoom < 14) gridDensity = isAdmin ? 300 : 0;
+
+        const grid = new Set();
+        const filtered = [];
+        const latRange = neLat - swLat;
+        const lngRange = neLng - swLng;
+
+        for (const [imei, pos] of Object.entries(unknownDevices)) {
+            if (pos.lat < swLat || pos.lat > neLat || pos.lng < swLng || pos.lng > neLng) continue;
+
+            if (gridDensity > 0) {
+                const gx = Math.floor(((pos.lng - swLng) / lngRange) * gridDensity);
+                const gy = Math.floor(((pos.lat - swLat) / latRange) * gridDensity);
+                const key = `${gx}_${gy}`;
+                if (grid.has(key)) continue;
+                grid.add(key);
+            }
+            filtered.push([imei, pos]);
+        }
+        return filtered;
+    }, [unknownDevices, selectedVehicle, bounds, isAdmin]);
 
     const visibleVehicles = useMemo(() => {
-        return displayedVehicles.filter(vehicle => {
+        if (!bounds) return displayedVehicles;
+
+        const { swLat, swLng, neLat, neLng, zoom = 14 } = bounds;
+        
+        // 1. Zoom-based Spatial Thinning (Grid-based Culling)
+        // At high zoom (city/street), show all. At low zoom (global/state), group nearby ones.
+        let gridDensity = 0;
+        if (zoom < 6) gridDensity = isAdmin ? 20 : 10;
+        else if (zoom < 8) gridDensity = isAdmin ? 40 : 25;
+        else if (zoom < 10) gridDensity = isAdmin ? 70 : 45;
+        else if (zoom < 12) gridDensity = isAdmin ? 120 : 80;
+        else if (zoom < 14) gridDensity = isAdmin ? 200 : 150;
+        else if (zoom < 15) gridDensity = isAdmin ? 400 : 0;
+
+        const grid = new Set();
+        const filtered = [];
+        
+        const latRange = neLat - swLat;
+        const lngRange = neLng - swLng;
+
+        for (const vehicle of displayedVehicles) {
             const pos = livePositions[vehicle.imei];
             const lat = pos ? pos.lat : vehicle.lat;
             const lng = pos ? pos.lng : vehicle.lng;
-            if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return false;
-            if (!bounds) return true;
-            return lat >= bounds.swLat && lat <= bounds.neLat &&
-                   lng >= bounds.swLng && lng <= bounds.neLng;
-        });
-    }, [displayedVehicles, livePositions, bounds]);
+
+            if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) continue;
+
+            // Basic Viewport Clipping
+            if (lat < swLat || lat > neLat || lng < swLng || lng > neLng) continue;
+
+            // Selected vehicle and Alerts are ALWAYS shown
+            if (selectedVehicle?.id === vehicle.id || vehicle.isAlert) {
+                filtered.push(vehicle);
+                continue;
+            }
+
+            // Apply Grid Thinning
+            if (gridDensity > 0) {
+                const gx = Math.floor(((lng - swLng) / lngRange) * gridDensity);
+                const gy = Math.floor(((lat - swLat) / latRange) * gridDensity);
+                const key = `${gx}_${gy}`;
+                if (grid.has(key)) continue; // Already have a vehicle in this grid cell
+                grid.add(key);
+            }
+
+            filtered.push(vehicle);
+        }
+        return filtered;
+    }, [displayedVehicles, livePositions, bounds, selectedVehicle, isAdmin]);
 
 
     const initialCenter = useRef(center).current;
@@ -565,7 +662,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                     </div>
                 )}
 
-                <BoundsTracker onBoundsChange={setBounds} />
+                <BoundsTracker onBoundsChange={handleBoundsChange} />
 
                 <FlyToVehicle selectedVehicle={selectedVehicle} />
                 <DrawControl active={true} onDrawComplete={onDrawComplete} />
@@ -577,23 +674,39 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                             positions={validHistoryPath.map(loc => [Number(loc.lat), Number(loc.lng)])}
                             pathOptions={{ color: '#3B82F6', weight: 4, opacity: 0.5, dashArray: '10, 10' }}
                         />
-                        {/* Playback Ghost Vehicle - Interpolated */}
-                        {playbackPos && (
-                            <Marker
-                                position={playbackPos}
-                                icon={createFocusIcon('moving', false, '#3B82F6')}
-                                zIndexOffset={1000}
-                            >
-                                <Popup>
-                                    <div className="text-xs font-bold">Playback Position</div>
-                                    <div className="text-[10px] text-gray-500">
-                                        {validHistoryPath[Math.floor(playbackIndex)]?.timestamp 
-                                            ? new Date(validHistoryPath[Math.floor(playbackIndex)].timestamp).toLocaleString()
-                                            : 'No data'}
-                                    </div>
-                                </Popup>
-                            </Marker>
-                        )}
+                        {/* Playback Ghost Vehicle - Interpolated with status */}
+                        {playbackPos && (() => {
+                            const pt = validHistoryPath[Math.floor(playbackIndex)];
+                            const speed = Number(pt?.speed || 0);
+                            const motionStatus = speed > 3 ? 'moving' : (pt?.ignition ? 'idle' : 'stopped');
+                            const statusLabel = { moving: 'Moving', idle: 'Idle', stopped: 'Stopped' };
+                            const statusDot = { moving: '#22c55e', idle: '#f59e0b', stopped: '#ef4444' };
+                            return (
+                                <Marker
+                                    position={playbackPos}
+                                    icon={createFocusIcon(motionStatus, false, '#3B82F6')}
+                                    zIndexOffset={1000}
+                                >
+                                    <Popup>
+                                        <div className="text-xs min-w-[140px]">
+                                            <div className="font-bold mb-1">Playback Position</div>
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: statusDot[motionStatus] }}></span>
+                                                <span className="font-medium">{statusLabel[motionStatus]}</span>
+                                                <span className="text-gray-400">•</span>
+                                                <span className="font-bold">{speed} km/h</span>
+                                            </div>
+                                            <div className="text-[10px] text-gray-500">
+                                                {pt?.timestamp
+                                                    ? new Date(pt.timestamp).toLocaleString()
+                                                    : 'No data'}
+                                            </div>
+                                            {pt && <AddressCell lat={pt.lat} lng={pt.lng} className="text-[10px] text-gray-400 mt-1" />}
+                                        </div>
+                                    </Popup>
+                                </Marker>
+                            );
+                        })()}
                     </>
                 )}
 
@@ -664,153 +777,72 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                 })}
 
                 {/* Unknown device markers */}
-                {visibleUnknown.map(([imei, pos]) => (
-                    <Marker key={`unknown-${imei}`} position={[pos.lat, pos.lng]} icon={unknownIcon}>
-                        <Popup>
-                            <div className="text-sm text-center">
-                                <b style={{ color: '#EF4444' }}>⚠️ Unregistered Device</b><br />
-                                <b>IMEI: {imei}</b><br />
-                                <button
-                                    onClick={async () => {
-                                        const num = prompt('Enter vehicle number/name:');
-                                        if (!num) return;
-                                        try {
-                                            await createMutation.mutateAsync({ imei, vechicleNumb: num });
-                                            alert('Vehicle registered!');
-                                        } catch (e) {
-                                            alert(e.message || 'Registration failed');
-                                        }
-                                    }}
-                                    style={{
-                                        marginTop: '6px', padding: '4px 10px', fontSize: '11px',
-                                        background: '#EF4444', border: 'none', borderRadius: '4px',
-                                        color: 'white', cursor: 'pointer'
-                                    }}
-                                >
-                                    Quick Register
-                                </button>
-                            </div>
-                        </Popup>
-                    </Marker>
-                ))}
+                {visibleUnknown.map(([imei, pos]) => {
+                    const speed = pos.speed || 0;
+                    const status = speed > 3 ? 'moving' : (pos.ignition ? 'idle' : 'stopped');
+                    return (
+                        <Marker key={`unknown-${imei}`} position={[pos.lat, pos.lng]} icon={createVehicleIcon(status, false)}>
+                            <Popup>
+                                <div className="text-sm min-w-[180px]">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200">
+                                            Unregistered
+                                        </span>
+                                    </div>
+                                    <div className="font-bold text-gray-800 mb-1 font-mono text-xs">IMEI: {imei}</div>
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <span
+                                            className="w-2 h-2 rounded-full inline-block"
+                                            style={{ backgroundColor: statusColors[status] }}
+                                        ></span>
+                                        <span className="text-gray-600">{statusLabels[status] || 'Unknown'}</span>
+                                    </div>
+                                    <div className="text-gray-500 mb-2">Speed: {speed} km/h</div>
+                                    <button
+                                        onClick={async () => {
+                                            const num = prompt('Enter vehicle number/name:');
+                                            if (!num) return;
+                                            try {
+                                                await createMutation.mutateAsync({ imei, vechicleNumb: num });
+                                                alert('Vehicle registered!');
+                                            } catch (e) {
+                                                alert(e.message || 'Registration failed');
+                                            }
+                                        }}
+                                        className="w-full py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded flex items-center justify-center gap-1 transition-colors"
+                                    >
+                                        Quick Register
+                                    </button>
+                                </div>
+                            </Popup>
+                        </Marker>
+                    );
+                })}
             </MapContainer>
 
             {/* History Data Table Overlay */}
             {showHistoryData && selectedVehicle && (
-                <div className="absolute right-4 bottom-20 z-[1001] w-80 max-h-[400px] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
-                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                            <h3 className="font-bold text-gray-800 text-sm">{selectedVehicle.vechicleNumb || selectedVehicle.imei} Analysis</h3>
-                        </div>
-                        <button 
-                            onClick={() => setShowHistoryData(false)} 
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            <MdClose size={20} />
-                        </button>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-2">
-                        <table className="w-full text-left text-[11px]">
-                                    <thead className="sticky top-0 bg-gray-50 text-gray-500 font-semibold">
-                                        <tr>
-                                            <th className="px-2 py-1.5 border-b border-gray-100">Time</th>
-                                            <th className="px-2 py-1.5 border-b border-gray-100 text-center">Speed</th>
-                                            <th className="px-2 py-1.5 border-b border-gray-100 text-right">Location</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {historyPath.length === 0 ? (
-                                            <tr><td colSpan={3} className="text-center py-4 text-gray-400 italic">No history available for last 24h</td></tr>
-                                        ) : (
-                                            [...historyPath].reverse().map((loc, idx) => (
-                                                <tr key={idx} className="hover:bg-purple-50 transition-colors border-b border-gray-50">
-                                                    <td className="px-2 py-1.5 text-gray-600">
-                                                        {new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </td>
-                                                    <td className="px-2 py-1.5 font-bold text-brand-purple text-center">
-                                                        {loc.speed || 0}
-                                                    </td>
-                                                    <td className="px-2 py-1.5 text-right">
-                                                        <AddressCell lat={loc.lat} lng={loc.lng} className="max-w-[120px]" />
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                        </table>
-                    </div>
-
-                    <div className="px-4 py-2 bg-purple-50 text-[10px] text-brand-purple italic border-t border-purple-100">
-                        Showing last 24 hours of data (max 500 points)
-                    </div>
-                </div>
+                <HistoryDataOverlay
+                    vehicle={selectedVehicle}
+                    historyPath={historyPath}
+                    onClose={() => setShowHistoryData(false)}
+                />
             )}
             
 
 
             {/* Playback Controls Overlay */}
             {selectedVehicle && historyPath.length > 0 && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-[90%] max-w-2xl">
-                    <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <button 
-                                    onClick={() => setIsPlaying(!isPlaying)}
-                                    className="w-10 h-10 rounded-full bg-brand-purple text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
-                                >
-                                    {isPlaying ? (
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                                    ) : (
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                                    )}
-                                </button>
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-gray-800">Movement Playback</span>
-                                    <span className="text-[10px] text-gray-500">
-                                        {historyPath[Math.floor(playbackIndex)]?.timestamp 
-                                            ? new Date(historyPath[Math.floor(playbackIndex)].timestamp).toLocaleTimeString()
-                                            : 'Invalid Date'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-                                    {[1, 2, 5, 10].map(speed => (
-                                        <button
-                                            key={speed}
-                                            onClick={() => setPlaybackSpeed(speed)}
-                                            className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${playbackSpeed === speed ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500 hover:text-gray-700'}`}
-                                        >
-                                            {speed}x
-                                        </button>
-                                    ))}
-                                </div>
-
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <input 
-                                type="range" 
-                                min="0" 
-                                max={validHistoryPath.length - 1} 
-                                step="0.01"
-                                value={playbackIndex}
-                                onChange={(e) => {
-                                    setPlaybackIndex(parseFloat(e.target.value));
-                                    setIsPlaying(false);
-                                }}
-                                className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-purple"
-                            />
-                            <span className="text-[10px] font-mono text-gray-400 min-w-[60px] text-right">
-                                {Math.floor(playbackIndex) + 1} / {validHistoryPath.length}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                <PlaybackControls
+                    isPlaying={isPlaying}
+                    onTogglePlay={() => setIsPlaying(!isPlaying)}
+                    playbackIndex={playbackIndex}
+                    onSeek={(val) => { setPlaybackIndex(val); setIsPlaying(false); }}
+                    playbackSpeed={playbackSpeed}
+                    onSpeedChange={setPlaybackSpeed}
+                    historyPath={historyPath}
+                    validHistoryPath={validHistoryPath}
+                />
             )}
 
             {/* Layers button */}

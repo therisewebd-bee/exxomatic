@@ -28,7 +28,10 @@ export const createUser = (data) => request('/users', 'POST', data);
 export const deleteUser = (id) => request(`/users/${id}`, 'DELETE');
 
 // ─── Vehicles ────────────────────────────────────────
-export const getVehicles    = ()          => request('/vehicles');
+export const getVehicles    = (params = {})  => {
+  const qs = new URLSearchParams(params).toString();
+  return request(qs ? `/vehicles?${qs}` : '/vehicles');
+};
 export const createVehicle  = (data)      => request('/vehicles', 'POST', data);
 export const updateVehicle  = (id, data)    => request(`/vehicles/${id}`, 'PATCH', data);
 export const deleteVehicle  = (id)        => request(`/vehicles/${id}`, 'DELETE');

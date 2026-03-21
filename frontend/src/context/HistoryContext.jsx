@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { getLocationHistory } from '../services/api';
+import { getDistanceFromLatLonInKm, enrichLocationHistory } from '../utils/geoUtils';
 
 const HistoryContext = createContext();
 const EMPTY_ARRAY = [];
@@ -51,22 +52,28 @@ export function HistoryProvider({ children }) {
         limit: 5000
       });
 
+
+
       const logs = (res.data || [])
         .filter(loc => loc.lat && loc.lng)
         .reverse();
-      
+
+      // Use shared utility to enrich points with derived speed and motion status
+      const enriched = enrichLocationHistory(logs);
+
       // Process logs to create speedChartData
-      const speedChartData = logs.map(loc => ({
+      const speedChartData = enriched.map(loc => ({
         time: new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        speed: parseFloat(Number(loc.speed).toFixed(1))
+        speed: parseFloat(Number(loc.speed).toFixed(1)),
+        status: loc.motionStatus
       }));
 
       setHistoryCache(prev => ({
         ...prev,
-        [rangeKey]: { data: logs, speedChartData: speedChartData, timestamp: Date.now() }
+        [rangeKey]: { data: enriched, speedChartData, timestamp: Date.now() }
       }));
 
-      return logs;
+      return enriched;
     } catch (err) {
       setError('Failed to load history');
       return [];
@@ -89,20 +96,32 @@ export function HistoryProvider({ children }) {
     
     return historyCache[rangeKey]?.data || EMPTY_ARRAY;
   }, [historyCache]); 
- // getHistory can still depend on cache as it's not used in lifecycle effects typically
+
+  // Get cached speed chart data (shared between Playback and Analytics)
+  const getSpeedChartData = useCallback((imei, startDate, endDate) => {
+    const start = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const end = endDate || new Date().toISOString();
+    const startObj = new Date(start);
+    startObj.setMinutes(0, 0, 0);
+    const endObj = new Date(end);
+    endObj.setMinutes(0, 0, 0);
+    const rangeKey = `${imei}_${startObj.getTime()}_${endObj.getTime()}`;
+    return historyCache[rangeKey]?.speedChartData || EMPTY_ARRAY;
+  }, [historyCache]);
 
   const clearHistory = useCallback((imei) => {
-    // ...
+    // clear specific imei from cache
   }, []);
 
   const value = useMemo(() => ({
     historyCache,
     fetchVehicleHistory,
     getHistory,
+    getSpeedChartData,
     clearHistory,
     loading,
     error
-  }), [historyCache, fetchVehicleHistory, getHistory, clearHistory, loading, error]);
+  }), [historyCache, fetchVehicleHistory, getHistory, getSpeedChartData, clearHistory, loading, error]);
 
   return (
     <HistoryContext.Provider value={value}>

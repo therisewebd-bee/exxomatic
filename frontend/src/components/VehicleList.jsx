@@ -1,13 +1,23 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { MdSearch, MdKeyboardArrowDown } from 'react-icons/md';
 import VehicleCard from './VehicleCard';
 
-const filterOptions = ['All Vehicles', 'Moving', 'Stopped', 'Idle'];
+const filterOptions = ['All Vehicles', 'Registered', 'Moving', 'Stopped', 'Idle', 'Unregistered'];
 
 export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All Vehicles');
     const [dropdownOpen, setDropdownOpen] = useState(false);
+
+    // Count badges
+    const counts = useMemo(() => ({
+        'All Vehicles': vehicles.length,
+        'Registered': vehicles.filter(v => !v.isUnregistered).length,
+        'Moving': vehicles.filter(v => v.status === 'moving').length,
+        'Stopped': vehicles.filter(v => v.status === 'stopped').length,
+        'Idle': vehicles.filter(v => v.status === 'idle').length,
+        'Unregistered': vehicles.filter(v => v.isUnregistered).length,
+    }), [vehicles]);
 
     const filteredVehicles = vehicles.filter((v) => {
         const plate = v.plate || v.vechicleNumb || v.imei || '';
@@ -17,12 +27,27 @@ export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle
             plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
             imei.includes(searchQuery);
 
-        const matchesFilter =
-            statusFilter === 'All Vehicles' ||
-            v.status === statusFilter.toLowerCase();
+        let matchesFilter = true;
+        if (statusFilter === 'Registered') {
+            matchesFilter = !v.isUnregistered;
+        } else if (statusFilter === 'Unregistered') {
+            matchesFilter = !!v.isUnregistered;
+        } else if (statusFilter !== 'All Vehicles') {
+            matchesFilter = v.status === statusFilter.toLowerCase();
+        }
 
         return matchesSearch && matchesFilter;
     });
+
+    const PAGE_SIZE = 30;
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+    // Reset visible count when filter/search changes
+    const resetKey = `${statusFilter}-${searchQuery}`;
+    useEffect(() => { setVisibleCount(PAGE_SIZE); }, [resetKey]);
+
+    const displayedVehicles = filteredVehicles.slice(0, visibleCount);
+    const hasMore = visibleCount < filteredVehicles.length;
 
     return (
         <div className="w-[380px] min-w-[380px] h-screen bg-gray-50 flex flex-col border-r border-gray-200">
@@ -50,7 +75,10 @@ export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle
                         onClick={() => setDropdownOpen(!dropdownOpen)}
                         className="w-full flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 shadow-sm hover:border-brand-purple/40 transition-colors"
                     >
-                        {statusFilter}
+                        <span className="flex items-center gap-2">
+                            {statusFilter}
+                            <span className="text-[10px] bg-brand-purple/10 text-brand-purple font-bold px-1.5 py-0.5 rounded-full">{counts[statusFilter] || 0}</span>
+                        </span>
                         <MdKeyboardArrowDown size={20} className="text-gray-400" />
                     </button>
 
@@ -63,12 +91,13 @@ export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle
                                         setStatusFilter(option);
                                         setDropdownOpen(false);
                                     }}
-                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-purple/5 transition-colors ${statusFilter === option
+                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-purple/5 transition-colors flex items-center justify-between ${statusFilter === option
                                             ? 'text-brand-purple font-medium bg-brand-purple/5'
                                             : 'text-gray-700'
                                         }`}
                                 >
                                     {option}
+                                    <span className="text-[10px] bg-gray-100 text-gray-500 font-bold px-1.5 py-0.5 rounded-full">{counts[option] || 0}</span>
                                 </button>
                             ))}
                         </div>
@@ -76,9 +105,9 @@ export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle
                 </div>
             </div>
 
-            {/* Vehicle Cards */}
+            {/* Vehicle Cards — progressive rendering */}
             <div className="flex-1 overflow-y-auto px-5 py-2 space-y-3">
-                {filteredVehicles.map((vehicle) => (
+                {displayedVehicles.map((vehicle) => (
                     <VehicleCard
                         key={vehicle.id || vehicle.imei}
                         vehicle={vehicle}
@@ -86,6 +115,15 @@ export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle
                         onSelect={onSelectVehicle}
                     />
                 ))}
+
+                {hasMore && (
+                    <button
+                        onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                        className="w-full py-3 text-sm font-medium text-brand-purple bg-brand-purple/5 hover:bg-brand-purple/10 rounded-xl transition-colors border border-brand-purple/20"
+                    >
+                        Show More ({filteredVehicles.length - visibleCount} remaining)
+                    </button>
+                )}
 
                 {filteredVehicles.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 text-gray-400">

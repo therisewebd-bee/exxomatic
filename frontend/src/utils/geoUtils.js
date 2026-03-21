@@ -38,3 +38,27 @@ export function calculateSpeed(p1, p2) {
     const hours = ms / 3600000;
     return dist / hours;
 }
+
+/**
+ * Enriches an array of location logs with derived speed and motion status.
+ * Logs MUST be sorted chronologically (oldest first) for accurate speed derivation.
+ */
+export function enrichLocationHistory(logs) {
+    return logs.map((loc, i) => {
+        let speed = Number(loc.speed || 0);
+        
+        // Derive speed if 0 but moving
+        if (speed <= 1 && i < logs.length - 1) {
+            const next = logs[i + 1];
+            const dist = getDistanceFromLatLonInKm(loc.lat, loc.lng, next.lat, next.lng);
+            if (dist > 0.01) {
+                const ms = new Date(next.timestamp).getTime() - new Date(loc.timestamp).getTime();
+                const hours = ms / 3600000;
+                if (hours > 0) speed = dist / hours;
+            }
+        }
+        
+        const motionStatus = speed > 3 ? 'moving' : (loc.ignition === true ? 'idle' : 'stopped');
+        return { ...loc, motionStatus, speed };
+    });
+}

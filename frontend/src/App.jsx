@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
+import { useState, useCallback, useMemo, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { HistoryProvider, useHistory } from './context/HistoryContext';
 import Sidebar from './components/Sidebar';
@@ -6,7 +6,7 @@ import VehicleList from './components/VehicleList';
 import MapView from './components/MapView';
 import GeofencePanel from './components/GeofencePanel';
 import { useVehiclesQuery } from './hooks/useQueries';
-import * as ws from './services/websocket';
+import { useWebSocketVehicles } from './hooks/useWebSocketVehicles';
 
 // Lazy loaded panels to reduce initial bundle size
 const ReportsPanel = lazy(() => import('./components/ReportsPanel'));
@@ -27,112 +27,63 @@ const LazyFallback = () => (
 );
 
 function Dashboard() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('liveMap');
   const { data: vehicles = [] } = useVehiclesQuery(isAuthenticated);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [livePositions, setLivePositions] = useState({});
-  const [unknownDevices, setUnknownDevices] = useState({});
-  const [notifications, setNotifications] = useState([]);
   const [drawingActive, setDrawingActive] = useState(false);
   const [drawnZone, setDrawnZone] = useState(null);
 
-  // Subscribe to WebSocket events
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    let liveBuffer = {};
-    let unknownBuffer = {};
-    let bufferTimer = null;
-
-    const flushBuffers = () => {
-      if (Object.keys(liveBuffer).length > 0) {
-        setLivePositions(prev => ({ ...prev, ...liveBuffer }));
-        liveBuffer = {};
-      }
-      if (Object.keys(unknownBuffer).length > 0) {
-        setUnknownDevices(prev => ({ ...prev, ...unknownBuffer }));
-        unknownBuffer = {};
-      }
-    };
-
-    function handleLive(data) {
-      const loc = data.location;
-      if (!loc) return;
-      liveBuffer[loc.imei] = { 
-        lat: loc.lat, 
-        lng: loc.lng, 
-        speed: loc.speed || 0, 
-        ignition: loc.ignition, 
-        timestamp: loc.timestamp,
-        status: data.status // Capture NORMAL or ALERT
-      };
-    }
-
-    function handleUnknown(data) {
-      const loc = data.location;
-      if (!loc) return;
-      // We also handle 'unknown' devices broadcasting as live payload per recent backend changes
-      if (data.status === 'UNKNOWN_DEVICE') {
-        unknownBuffer[loc.imei] = { lat: loc.lat, lng: loc.lng, speed: loc.speed || 0, timestamp: loc.timestamp, status: data.status };
-      } else {
-        liveBuffer[loc.imei] = { 
-          lat: loc.lat, 
-          lng: loc.lng, 
-          speed: loc.speed || 0, 
-          ignition: loc.ignition, 
-          timestamp: loc.timestamp,
-          status: data.status 
-        };
-      }
-    }
-
-    // Flush updates to React twice a second (500ms) to prevent UI freezing
-    bufferTimer = setInterval(flushBuffers, 500);
-
-    function handleBreach(data) {
-      setNotifications((prev) => [
-        {
-          id: Date.now().toString() + Math.random(),
-          title: 'Geofence Breach',
-          message: `Vehicle ${data.imei} ${data.action} ${data.geofence?.name || 'zone'}`,
-          timestamp: new Date().toISOString(),
-          ...data,
-        },
-        ...prev,
-      ]);
-    }
-
-    ws.on('tracker:live', handleLive);
-    ws.on('tracker:unknown', handleUnknown);
-    ws.on('geofence:breach', handleBreach);
-
-    return () => {
-      clearInterval(bufferTimer);
-      ws.off('tracker:live', handleLive);
-      ws.off('tracker:unknown', handleUnknown);
-      ws.off('geofence:breach', handleBreach);
-    };
-  }, [isAuthenticated]);
+  // WebSocket vehicle tracking — all batching, eviction, and events handled by the hook
+  const { livePositions, unknownDevices, notifications, handleViewportChange } = useWebSocketVehicles(isAuthenticated, isAdmin);
 
   // Merge API vehicles with live WS positions
   const mergedVehicles = useMemo(() => {
     const registeredImeis = new Set(vehicles.map(v => v.imei));
+    const nowTime = Date.now();
     
     const registered = vehicles.map((v) => {
       const live = livePositions[v.imei];
+      const liveAge = live?.timestamp ? (nowTime - new Date(live.timestamp).getTime()) : Infinity;
+      const isLiveFresh = liveAge < 120000; // 2 minutes
+
+      let currentStatus = v.status;
+      if (isLiveFresh && live) {
+         currentStatus = live.motionStatus || (live.speed > 5 ? 'moving' : 'idle');
+      } else if (currentStatus === 'online') {
+         currentStatus = v.speed > 5 ? 'moving' : 'idle';
+      }
+
       return {
         ...v,
-        lat: live?.lat ?? v.lat ?? 0,
-        lng: live?.lng ?? v.lng ?? 0,
-        speed: live?.speed ?? v.speed ?? 0,
-        // Use backend provided motionStatus if available, otherwise fallback
-        status: live?.motionStatus || (live ? (live.speed > 5 ? 'moving' : 'idle') : 'stopped'),
-        isAlert: live ? (live.status === 'ALERT') : false,
+        lat: isLiveFresh ? live.lat : v.lat ?? 0,
+        lng: isLiveFresh ? live.lng : v.lng ?? 0,
+        speed: currentStatus === 'offline' ? 0 : (isLiveFresh ? live.speed : v.speed ?? 0),
+        status: currentStatus,
+        isAlert: isLiveFresh ? (live.status === 'ALERT') : false,
         plate: v.vechicleNumb || v.imei,
+        isUnregistered: false,
       };
     });
 
+    // For Admin: merge unknown devices into fleet list so they appear in VehicleList
+    const unknownAsList = isAdmin
+      ? Object.entries(unknownDevices)
+          .filter(([imei, pos]) => (nowTime - new Date(pos.timestamp||0).getTime()) < 120000) // hide stale unknowns
+          .map(([imei, pos]) => ({
+          id: `unregistered-${imei}`,
+          imei,
+          lat: pos.lat,
+          lng: pos.lng,
+          speed: pos.speed || 0,
+          status: pos.motionStatus || (pos.speed > 5 ? 'moving' : 'idle'),
+          isAlert: false,
+          plate: `Unregistered (${imei.slice(-6)})`,
+          isUnregistered: true,
+        }))
+      : [];
+
+    // Also include "live-only" registered devices that aren't from REST but arrived via WS
     const liveOnly = Object.entries(livePositions)
       .filter(([imei]) => !registeredImeis.has(imei))
       .map(([imei, pos]) => ({
@@ -144,10 +95,11 @@ function Dashboard() {
         status: pos.motionStatus || (pos.speed > 5 ? 'moving' : 'idle'),
         isAlert: pos.status === 'ALERT',
         plate: imei,
+        isUnregistered: false,
       }));
 
-    return [...registered, ...liveOnly];
-  }, [vehicles, livePositions]);
+    return [...registered, ...liveOnly, ...unknownAsList];
+  }, [vehicles, livePositions, unknownDevices, isAdmin]);
 
 
 
@@ -200,6 +152,8 @@ function Dashboard() {
             onSelectVehicle={setSelectedVehicle}
             unknownDevices={unknownDevices}
             onDrawComplete={handleDrawComplete}
+            isAdmin={isAdmin}
+            onViewportChange={handleViewportChange}
           />
         </>
       )}

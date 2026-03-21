@@ -8,6 +8,8 @@ import { prismaAdapter } from '../../dbQuery/dbInit.ts';
 class WebSocketService {
   private static instance: WebSocketService;
   private wss: WebSocketServer | null = null;
+  private broadcastBuffer: Map<string, { data: any; lat?: number; lng?: number; isAlert: boolean }> = new Map();
+  private batchTimer: NodeJS.Timeout | null = null;
 
   private constructor() {}
 
@@ -43,18 +45,56 @@ class WebSocketService {
         return;
       }
 
-      // Fetch Priority IMEIs (First 30 authorized)
+      // Fetch Priority IMEIs (First 30 authorized) and send their last known positions
       if (ws.identity) {
         try {
-          const priorityVehicles = await prismaAdapter.vehicleInfo.findMany({
+          const queryOptions: any = {
             where: ws.identity.role === 'Customer' ? { customerId: ws.identity.id } : {},
             select: { imei: true },
-            take: 30,
-            orderBy: { createdAt: 'asc' }
-          });
-          connectionManager.setPriorityImeis(ws, priorityVehicles.map(v => v.imei));
+            orderBy: { createdAt: 'asc' as const }
+          };
+          // Customers get 30 priority vehicles, Admins get all
+          if (ws.identity.role === 'Customer') {
+            queryOptions.take = 30;
+          }
+          const priorityVehicles = await prismaAdapter.vehicleInfo.findMany(queryOptions);
+          
+          const priorityImeis = priorityVehicles.map(v => v.imei);
+          connectionManager.setPriorityImeis(ws, priorityImeis);
+
+          // Initial Load: Fetch latest position for each priority vehicle
+          const latestLogs = await Promise.all(
+            priorityImeis.map(imei => 
+              prismaAdapter.locationLog.findFirst({
+                where: { imei },
+                orderBy: { timestamp: 'desc' }
+              })
+            )
+          );
+
+          const initialBatch = latestLogs
+            .filter(log => log !== null)
+            .map(log => ({
+              location: {
+                imei: log!.imei,
+                lat: Number(log!.lat),
+                lng: Number(log!.lng),
+                speed: Number(log!.speed || 0),
+                ignition: log!.ignition,
+                timestamp: log!.timestamp.toISOString(),
+                altitude: log!.altitude ? Number(log!.altitude) : undefined,
+                heading: log!.heading ? Number(log!.heading) : undefined
+              },
+              status: 'NORMAL',
+              motionStatus: Number(log!.speed || 0) > 3 ? 'moving' : (log!.ignition ? 'idle' : 'stopped')
+            }));
+
+          if (initialBatch.length > 0) {
+            this.sendToClient(ws, SocketResponse.format('tracker:live:batch', initialBatch));
+            logger.info(`[ws] sent initial batch of ${initialBatch.length} vehicles to ${ws.identity.email}`);
+          }
         } catch (e) {
-          logger.error(`[ws] failed to fetch priority imeis: ${e}`);
+          logger.error(`[ws] failed to perform initial priority load: ${e}`);
         }
       }
 
@@ -83,11 +123,51 @@ class WebSocketService {
     });
 
     logger.info('[ws] server initialized with secure management');
+    this.startBatchTimer();
+  }
+
+  private startBatchTimer(): void {
+    if (this.batchTimer) return;
+    this.batchTimer = setInterval(() => {
+      this.flushBroadcasts();
+    }, 250); // 250ms batching interval for snappy updates
+  }
+
+  private flushBroadcasts(): void {
+    if (this.broadcastBuffer.size === 0) return;
+
+    // 1. Prepare batched updates
+    const updates = Array.from(this.broadcastBuffer.entries());
+    this.broadcastBuffer.clear();
+
+    const allClients = connectionManager.activeClients; 
+    
+    for (const client of allClients) {
+      if (client.readyState !== 1) continue;
+
+      // Filter updates this specific client is interested in
+      const clientBatch = updates
+        .filter(([imei, meta]) => 
+          connectionManager.isInterestedInUpdate(client, imei, meta.lat, meta.lng, meta.isAlert)
+        )
+        .map(([_, meta]) => meta.data);
+
+      if (clientBatch.length > 0) {
+        client.send(JSON.stringify(SocketResponse.format('tracker:live:batch', clientBatch)));
+      }
+    }
   }
 
   public broadcast<T>(event: string, data: T, imei?: string, lat?: number, lng?: number, isAlert: boolean = false): void {
-    const filterLat = (event === 'tracker:live' && !isAlert) ? lat : undefined;
-    const filterLng = (event === 'tracker:live' && !isAlert) ? lng : undefined;
+    if ((event === 'tracker:live' || event === 'tracker:unknown') && !isAlert) {
+      // Buffer standard updates (99% of traffic)
+      this.broadcastBuffer.set(imei || `unknown_${Date.now()}`, { data: { ...data, batchEvent: event }, lat, lng, isAlert });
+      return;
+    }
+
+    // Immediate broadcast for alerts and other events
+    const filterLat = (event === 'tracker:live') ? lat : undefined;
+    const filterLng = (event === 'tracker:live') ? lng : undefined;
 
     const clients = connectionManager.getAuthorizedClients(imei, filterLat, filterLng, isAlert);
     const message = JSON.stringify(SocketResponse.format(event, data));

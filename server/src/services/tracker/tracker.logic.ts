@@ -63,7 +63,14 @@ export const processLiveUpdate = async (data: TrackerPayload): Promise<void> => 
     }
 
     const result: NormalizedTrackerResponse = {
-      location: { imei, lat, lng, speed, ignition: hasIgnition, timestamp: timestamp.toISOString() },
+      location: { 
+        imei, 
+        lat: Number(lat), 
+        lng: Number(lng), 
+        speed: Number(speed), 
+        ignition: hasIgnition, 
+        timestamp: timestamp.toISOString() 
+      },
       geofences: insideFences,
       status: isBreached ? 'ALERT' : 'NORMAL',
       motionStatus
@@ -133,7 +140,16 @@ export const processTrackerUpdate = async (data: TrackerPayload): Promise<Normal
 
     // 3. Normalization
     const result: NormalizedTrackerResponse = {
-      location: locationLog,
+      location: {
+        imei: locationLog.imei,
+        lat: Number(locationLog.lat),
+        lng: Number(locationLog.lng),
+        speed: Number(locationLog.speed || 0),
+        ignition: locationLog.ignition,
+        timestamp: locationLog.timestamp,
+        altitude: locationLog.altitude ? Number(locationLog.altitude) : undefined,
+        heading: locationLog.heading ? Number(locationLog.heading) : undefined
+      },
       geofences: insideFences,
       status: isBreached ? 'ALERT' : 'NORMAL',
       motionStatus

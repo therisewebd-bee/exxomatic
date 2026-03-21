@@ -27,6 +27,10 @@ class ConnectionManager {
   private static instance: ConnectionManager;
   private clients: Set<AuthenticatedSocket> = new Set();
 
+  public get activeClients(): AuthenticatedSocket[] {
+    return Array.from(this.clients);
+  }
+
   private constructor() {}
 
   public static getInstance(): ConnectionManager {
@@ -67,8 +71,14 @@ class ConnectionManager {
     ws.priorityImeis = new Set(imeis);
   }
 
-  public setViewport(ws: AuthenticatedSocket, bounds: Viewport): void {
-    ws.viewport = bounds;
+  public setViewport(ws: AuthenticatedSocket, bounds: any): void {
+    // Normalize: frontend sends {swLat, swLng, neLat, neLng}, we store as {minLat, minLng, maxLat, maxLng}
+    ws.viewport = {
+      minLat: bounds.minLat ?? bounds.swLat,
+      minLng: bounds.minLng ?? bounds.swLng,
+      maxLat: bounds.maxLat ?? bounds.neLat,
+      maxLng: bounds.maxLng ?? bounds.neLng,
+    };
   }
 
   /**
@@ -78,33 +88,54 @@ class ConnectionManager {
     const authorized: AuthenticatedSocket[] = [];
 
     for (const client of this.clients) {
-      if (!client.identity) continue;
-
-      // 1. Check Identity/Role Authorization
-      let isRoleAuthorized = false;
-      if (client.identity.role === 'Admin') {
-        isRoleAuthorized = true;
-      } else if (imei && client.authorizedImeis?.has(imei)) {
-        isRoleAuthorized = true;
+      if (this.isInterestedInUpdate(client, imei, lat, lng, isAlert)) {
+        authorized.push(client);
       }
-
-      if (!isRoleAuthorized) continue;
-
-      // 2. Check Spatial (Viewport) Authorization if lat/lng are provided
-      // If vehicle is in ALERT state or is a PRIORITY vehicle, we bypass spatial filtering
-      const isPriority = isAlert || (imei && client.priorityImeis?.has(imei));
-
-      if (!isPriority && lat !== undefined && lng !== undefined && client.viewport) {
-        const { minLat, maxLat, minLng, maxLng } = client.viewport;
-        const inViewport = lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
-        
-        if (!inViewport) continue;
-      }
-
-      authorized.push(client);
     }
 
     return authorized;
+  }
+
+  /**
+   * More efficient check for a single client and update pair
+   */
+  public isInterestedInUpdate(client: AuthenticatedSocket, imei?: string, lat?: number, lng?: number, isAlert: boolean = false): boolean {
+    if (!client.identity) return false;
+
+    // 1. Check Identity/Role Authorization
+    let isRoleAuthorized = false;
+    if (client.identity.role === 'Admin') {
+      isRoleAuthorized = true;
+    } else if (imei && client.authorizedImeis?.has(imei)) {
+      isRoleAuthorized = true;
+    }
+
+    if (!isRoleAuthorized) return false;
+
+    // 2. Check Spatial (Viewport) Authorization if lat/lng are provided
+    // Alerts and priority vehicles always bypass spatial filtering
+    const alwaysSend = isAlert || (imei && client.priorityImeis?.has(imei));
+
+    if (alwaysSend) return true;
+
+    // Apply viewport filtering for ALL roles (including Admin) to handle 100K+ vehicles
+    // Without this, Admin would receive every single vehicle update and crash the frontend
+    if (lat !== undefined && lng !== undefined && client.viewport) {
+      const { minLat, maxLat, minLng, maxLng } = client.viewport;
+      
+      // For Admin, use a 2x expanded viewport buffer to show nearby vehicles
+      // For Customers, use exact viewport
+      const isAdminRole = client.identity.role === 'Admin';
+      const bufferLat = isAdminRole ? (maxLat - minLat) * 0.5 : 0;
+      const bufferLng = isAdminRole ? (maxLng - minLng) * 0.5 : 0;
+
+      const inViewport = lat >= (minLat - bufferLat) && lat <= (maxLat + bufferLat) && 
+                         lng >= (minLng - bufferLng) && lng <= (maxLng + bufferLng);
+      
+      if (!inViewport) return false;
+    }
+
+    return true;
   }
 }
 
