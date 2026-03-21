@@ -62,15 +62,12 @@ class WebSocketService {
           const priorityImeis = priorityVehicles.map(v => v.imei);
           connectionManager.setPriorityImeis(ws, priorityImeis);
 
-          // Initial Load: Fetch latest position for each priority vehicle
-          const latestLogs = await Promise.all(
-            priorityImeis.map(imei => 
-              prismaAdapter.locationLog.findFirst({
-                where: { imei },
-                orderBy: { timestamp: 'desc' }
-              })
-            )
-          );
+          // Initial Load: Fetch latest position for all priority vehicles natively in 1 query
+          const latestLogs = await prismaAdapter.locationLog.findMany({
+            where: { imei: { in: priorityImeis } },
+            distinct: ['imei'],
+            orderBy: [{ imei: 'asc' }, { timestamp: 'desc' }]
+          });
 
           const initialBatch = latestLogs
             .filter(log => log !== null)

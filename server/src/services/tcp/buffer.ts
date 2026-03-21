@@ -1,5 +1,5 @@
 import logger from '../logger/logger.ts';
-import { TrackerPayload, processTrackerUpdate } from '../tracker/tracker.logic.ts';
+import { TrackerPayload, processTrackerUpdate, processTrackerUpdateBatch } from '../tracker/tracker.logic.ts';
 
 /**
  * In-memory buffer to reduce DB overhead for high-frequency trackers.
@@ -33,16 +33,10 @@ export const flushBuffer = async (): Promise<void> => {
   const updates = Array.from(snapshot.values());
   
   try {
-    const results = await Promise.allSettled(
-      updates.map((payload) => processTrackerUpdate(payload))
-    );
+    // Pass the entire thousands-long array into the Vectorized Processor
+    await processTrackerUpdateBatch(updates);
 
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
-    const failCount = results.length - successCount;
-
-    if (failCount > 0) {
-      logger.warn(`[buffer] flush partial success: ${successCount} ok, ${failCount} failed`);
-    }
+    logger.debug(`[buffer] flush success: ${updates.length} vehicles persisted via bulk transaction`);
   } catch (error: any) {
     logger.error(`[buffer] critical flush failure: ${error.message}`);
     // Restore snapshot to buffer if it's not already overwritten

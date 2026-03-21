@@ -29,8 +29,8 @@ let offsetDegrees = 0;
 let baseSpeed = 0;
 let caseDescription = '';
 // Scale throughput linearly with the stress multiplier
-let dispatchIntervalMs = Math.max(5, 50 / STRESS_MULTIPLIER); 
-const CHUNK_SIZE = Math.floor(50 * STRESS_MULTIPLIER); 
+let dispatchIntervalMs = Math.max(5, 50 / STRESS_MULTIPLIER);
+const CHUNK_SIZE = Math.floor(50 * STRESS_MULTIPLIER);
 
 // 1 km is roughly 0.008983 degrees
 switch (TEST_CASE) {
@@ -126,13 +126,13 @@ function startStreaming() {
   let cycleCount = 1;
   let totalDataSent = 0;
   let lastDataSent = 0;
-  
+
   // Real-time Dashboard Updater
   const dashboardInterval = setInterval(() => {
     const tps = totalDataSent - lastDataSent;
     lastDataSent = totalDataSent;
     const memUse = process.memoryUsage().heapUsed / 1024 / 1024;
-    
+
     console.clear();
     console.log(`\n======================================================`);
     console.log(` 🚀 FLEET TRACKER STRESS TEST DASHBOARD `);
@@ -143,7 +143,7 @@ function startStreaming() {
     console.log(` 📡 Total Sent  : ${totalDataSent.toLocaleString()} packets`);
     console.log(` ⚡ Throughput  : ${tps} updates / sec`);
     console.log(` 🧠 Memory      : ${memUse.toFixed(2)} MB`);
-    console.log(` ♻️ Cycle       : ${cycleCount} [${Math.floor((currentIndex/TOTAL_VEHICLES)*100)}%]`);
+    console.log(` ♻️ Cycle       : ${cycleCount} [${Math.floor((currentIndex / TOTAL_VEHICLES) * 100)}%]`);
     console.log(`======================================================`);
     console.log(` Press Ctrl+C to stop simulation.\n`);
   }, 1000);
@@ -154,27 +154,27 @@ function startStreaming() {
     const fTime = formatTime(now);
 
     const end = Math.min(currentIndex + CHUNK_SIZE, TOTAL_VEHICLES);
-    
+
     // Distribute packets across their dedicated sockets
     for (let i = currentIndex; i < end; i++) {
       const v = vehicles[i];
-      
+
       const latDir = Math.random() > 0.5 ? 1 : -1;
       const lngDir = Math.random() > 0.5 ? 1 : -1;
       v.lat += (Math.random() * offsetDegrees * latDir);
       v.lng += (Math.random() * offsetDegrees * lngDir);
-      
+
       const currentSpeed = Math.max(0, v.speed + (Math.random() * 4 - 2)).toFixed(2);
-      
+
       const packet = `$1,AEPL,0.0.1,NR,2,H,${v.imei},XXXXXXXXXX,1,${fDate},${fTime},${v.lat.toFixed(6)},N,${v.lng.toFixed(6)},E,${currentSpeed},${v.heading.toFixed(2)},10,553.00,1.27,1.00,AIRTEL,1,1,23.20,4.20,0,O,28,404,90,110E,E0EB,,0000,00,000074,9822,*\n`;
-      
+
       const socket = sockets[v.socketIndex];
       if (!socket.destroyed) {
         socket.write(packet);
         totalDataSent++;
       }
     }
-    
+
     currentIndex = end;
     if (currentIndex >= TOTAL_VEHICLES) {
       currentIndex = 0;

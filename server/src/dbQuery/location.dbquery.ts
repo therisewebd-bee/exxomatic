@@ -22,6 +22,16 @@ const createLocationLogDb = catchService(
   'Create Location Log'
 );
 
+const createLocationLogsBatchDb = catchService(
+  async (data: any[]) => {
+    return await prismaAdapter.locationLog.createMany({
+      data,
+    });
+  },
+  'DB-Call:Location',
+  'Create Location Logs Batch'
+);
+
 const findLocationLogsDb = catchService(
   async (filters: { imei?: string; startDate?: Date; endDate?: Date; limit?: number }) => {
     const { imei, startDate, endDate, limit = 100 } = filters;
@@ -67,4 +77,10 @@ const deleteLocationLogDb = catchService(
   'Delete Location Log'
 );
 
-export { createLocationLogDb, findLocationLogsDb, findLocationLogByIdDb, deleteLocationLogDb };
+export { 
+  createLocationLogDb, 
+  createLocationLogsBatchDb, 
+  findLocationLogsDb, 
+  findLocationLogByIdDb, 
+  deleteLocationLogDb 
+};
