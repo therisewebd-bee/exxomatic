@@ -12,23 +12,25 @@ const net = require('net');
 
 const TEST_CASE = process.argv[2] || '2';
 const TOTAL_VEHICLES = parseInt(process.argv[3] || '10000', 10);
+const STRESS_MULTIPLIER = parseInt(process.argv[4] || '1', 10);
 const SERVER_HOST = 'localhost';
 const SERVER_PORT = 5000;
 
 // To avoid Operating System "EMFILE" errors (max open files), 
-// we will pool the 10,000 devices across a max of 200 distinct TCP sockets.
-// To the backend, this still perfectly mimics thousands of disparate IoT networks.
+// we will pool the devices across a max of 200 distinct TCP sockets.
 const SOCKET_POOL_SIZE = Math.min(TOTAL_VEHICLES, 200);
 
 console.log(`\n🚀 Initializing Vast-Scale Hardware Network...`);
 console.log(`📱 Unique Real-time Devices: ${TOTAL_VEHICLES}`);
 console.log(`🔌 Simulated Network Sockets: ${SOCKET_POOL_SIZE} distinct TCP connections`);
+console.log(`🔥 STRESS MULTIPLIER: ${STRESS_MULTIPLIER}x (Throughput Amp)`);
 
 let offsetDegrees = 0;
 let baseSpeed = 0;
 let caseDescription = '';
-let dispatchIntervalMs = 50; 
-const CHUNK_SIZE = 50; 
+// Scale throughput linearly with the stress multiplier
+let dispatchIntervalMs = Math.max(5, 50 / STRESS_MULTIPLIER); 
+const CHUNK_SIZE = Math.floor(50 * STRESS_MULTIPLIER); 
 
 // 1 km is roughly 0.008983 degrees
 switch (TEST_CASE) {

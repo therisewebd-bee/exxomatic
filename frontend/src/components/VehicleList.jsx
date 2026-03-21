@@ -4,7 +4,7 @@ import VehicleCard from './VehicleCard';
 
 const filterOptions = ['All Vehicles', 'Registered', 'Moving', 'Stopped', 'Idle', 'Unregistered'];
 
-export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle }) {
+export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle, totalLiveCount = 0 }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All Vehicles');
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -54,7 +54,15 @@ export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle
             {/* Header */}
             <div className="px-5 pt-5 pb-3">
                 <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-xl font-bold text-gray-800">Vehicles List</h1>
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-800">Vehicles List</h1>
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">
+                                Global Activity: {totalLiveCount.toLocaleString()} Live
+                            </span>
+                        </div>
+                    </div>
 
                     {/* Search */}
                     <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">

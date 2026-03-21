@@ -13,7 +13,9 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
   const [livePositions, setLivePositions] = useState({});
   const [unknownDevices, setUnknownDevices] = useState({});
   const [notifications, setNotifications] = useState([]);
+  const [totalLiveCount, setTotalLiveCount] = useState(0);
 
+  const activeImeisRef = useRef(new Map());
   const viewportRef = useRef(null);
   const evictCounter = useRef(0);
   const MAX_LIVE_ENTRIES = 2000;
@@ -33,6 +35,17 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
     let bufferTimer;
 
     const flushBuffers = () => {
+      const nowTime = Date.now();
+      let count = 0;
+      for (const [imei, timestamp] of activeImeisRef.current.entries()) {
+        if (nowTime - timestamp > 120000) {
+          activeImeisRef.current.delete(imei);
+        } else {
+          count++;
+        }
+      }
+      setTotalLiveCount(count);
+
       if (Object.keys(liveBuffer).length > 0) {
         setLivePositions(prev => {
           const merged = { ...prev, ...liveBuffer };
@@ -95,6 +108,9 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
       items.forEach(item => {
         const loc = item.location;
         if (!loc) return;
+        
+        activeImeisRef.current.set(loc.imei, Date.now());
+
         const isUnknown = item.status === 'UNKNOWN_DEVICE' || item.batchEvent === 'tracker:unknown';
         const update = {
           lat: loc.lat,
@@ -142,5 +158,5 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
     };
   }, [isAuthenticated]);
 
-  return { livePositions, unknownDevices, notifications, viewportRef, handleViewportChange };
+  return { livePositions, unknownDevices, notifications, viewportRef, handleViewportChange, totalLiveCount };
 }

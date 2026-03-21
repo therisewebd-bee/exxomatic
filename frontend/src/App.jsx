@@ -35,7 +35,7 @@ function Dashboard() {
   const [drawnZone, setDrawnZone] = useState(null);
 
   // WebSocket vehicle tracking — all batching, eviction, and events handled by the hook
-  const { livePositions, unknownDevices, notifications, handleViewportChange } = useWebSocketVehicles(isAuthenticated, isAdmin);
+  const { livePositions, unknownDevices, notifications, handleViewportChange, totalLiveCount } = useWebSocketVehicles(isAuthenticated, isAdmin);
 
   // Merge API vehicles with live WS positions
   const mergedVehicles = useMemo(() => {
@@ -144,6 +144,7 @@ function Dashboard() {
             vehicles={mergedVehicles}
             selectedVehicle={selectedVehicle}
             onSelectVehicle={handleSelectVehicle}
+            totalLiveCount={totalLiveCount}
           />
           <MapView
             vehicles={mergedVehicles}

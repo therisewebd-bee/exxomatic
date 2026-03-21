@@ -549,56 +549,72 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
         });
     }, [onViewportChange]);
 
-    const visibleUnknown = useMemo(() => {
-        if (selectedVehicle) return [];
-        if (!bounds) return Object.entries(unknownDevices);
+    // 1. Dynamic Grid Clustering Algorithm
+    const { visibleUnknown, visibleVehicles } = useMemo(() => {
+        if (!bounds) return { visibleUnknown: [], visibleVehicles: displayedVehicles };
 
         const { swLat, swLng, neLat, neLng, zoom = 14 } = bounds;
-        let gridDensity = 0;
-        if (zoom < 8) gridDensity = isAdmin ? 50 : 30;
-        else if (zoom < 12) gridDensity = isAdmin ? 150 : 100;
-        else if (zoom < 14) gridDensity = isAdmin ? 300 : 0;
+        
+        // --- Unknown Devices Clustering ---
+        let unknownDensity = 0;
+        if (zoom < 8) unknownDensity = isAdmin ? 50 : 30;
+        else if (zoom < 12) unknownDensity = isAdmin ? 150 : 100;
+        else if (zoom < 14) unknownDensity = isAdmin ? 300 : 0;
 
-        const grid = new Set();
-        const filtered = [];
+        const uClusters = new Map();
+        const unkFiltered = [];
         const latRange = neLat - swLat;
         const lngRange = neLng - swLng;
 
-        for (const [imei, pos] of Object.entries(unknownDevices)) {
-            if (pos.lat < swLat || pos.lat > neLat || pos.lng < swLng || pos.lng > neLng) continue;
+        if (!selectedVehicle) {
+            for (const [imei, pos] of Object.entries(unknownDevices)) {
+                if (pos.lat < swLat || pos.lat > neLat || pos.lng < swLng || pos.lng > neLng) continue;
 
-            if (gridDensity > 0) {
-                const gx = Math.floor(((pos.lng - swLng) / lngRange) * gridDensity);
-                const gy = Math.floor(((pos.lat - swLat) / latRange) * gridDensity);
-                const key = `${gx}_${gy}`;
-                if (grid.has(key)) continue;
-                grid.add(key);
+                if (unknownDensity > 0) {
+                    const gx = Math.floor(((pos.lng - swLng) / lngRange) * unknownDensity);
+                    const gy = Math.floor(((pos.lat - swLat) / latRange) * unknownDensity);
+                    const key = `${gx}_${gy}`;
+                    
+                    if (uClusters.has(key)) {
+                        const c = uClusters.get(key);
+                        c.count++;
+                        c.latSum += pos.lat;
+                        c.lngSum += pos.lng;
+                    } else {
+                        uClusters.set(key, { isCluster: true, count: 1, latSum: pos.lat, lngSum: pos.lng, vehicle: [imei, pos], isUnknown: true });
+                    }
+                } else {
+                    unkFiltered.push([imei, pos]);
+                }
             }
-            filtered.push([imei, pos]);
+            
+            for (const [key, c] of uClusters.entries()) {
+                if (c.count === 1) {
+                    unkFiltered.push(c.vehicle);
+                } else {
+                    unkFiltered.push({
+                        isCluster: true,
+                        count: c.count,
+                        lat: c.latSum / c.count,
+                        lng: c.lngSum / c.count,
+                        id: `ucluster-${key}`,
+                        isUnknown: true
+                    });
+                }
+            }
         }
-        return filtered;
-    }, [unknownDevices, selectedVehicle, bounds, isAdmin]);
 
-    const visibleVehicles = useMemo(() => {
-        if (!bounds) return displayedVehicles;
+        // --- Registered Vehicles Clustering ---
+        let vDensity = 0;
+        if (zoom < 6) vDensity = isAdmin ? 20 : 10;
+        else if (zoom < 8) vDensity = isAdmin ? 40 : 25;
+        else if (zoom < 10) vDensity = isAdmin ? 70 : 45;
+        else if (zoom < 12) vDensity = isAdmin ? 120 : 80;
+        else if (zoom < 14) vDensity = isAdmin ? 200 : 150;
+        else if (zoom < 15) vDensity = isAdmin ? 400 : 0;
 
-        const { swLat, swLng, neLat, neLng, zoom = 14 } = bounds;
-        
-        // 1. Zoom-based Spatial Thinning (Grid-based Culling)
-        // At high zoom (city/street), show all. At low zoom (global/state), group nearby ones.
-        let gridDensity = 0;
-        if (zoom < 6) gridDensity = isAdmin ? 20 : 10;
-        else if (zoom < 8) gridDensity = isAdmin ? 40 : 25;
-        else if (zoom < 10) gridDensity = isAdmin ? 70 : 45;
-        else if (zoom < 12) gridDensity = isAdmin ? 120 : 80;
-        else if (zoom < 14) gridDensity = isAdmin ? 200 : 150;
-        else if (zoom < 15) gridDensity = isAdmin ? 400 : 0;
-
-        const grid = new Set();
-        const filtered = [];
-        
-        const latRange = neLat - swLat;
-        const lngRange = neLng - swLng;
+        const vClusters = new Map();
+        const vFiltered = [];
 
         for (const vehicle of displayedVehicles) {
             const pos = livePositions[vehicle.imei];
@@ -606,29 +622,50 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
             const lng = pos ? pos.lng : vehicle.lng;
 
             if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) continue;
-
-            // Basic Viewport Clipping
             if (lat < swLat || lat > neLat || lng < swLng || lng > neLng) continue;
 
-            // Selected vehicle and Alerts are ALWAYS shown
             if (selectedVehicle?.id === vehicle.id || vehicle.isAlert) {
-                filtered.push(vehicle);
+                vFiltered.push(vehicle);
                 continue;
             }
 
-            // Apply Grid Thinning
-            if (gridDensity > 0) {
-                const gx = Math.floor(((lng - swLng) / lngRange) * gridDensity);
-                const gy = Math.floor(((lat - swLat) / latRange) * gridDensity);
+            if (vDensity > 0) {
+                const gx = Math.floor(((lng - swLng) / lngRange) * vDensity);
+                const gy = Math.floor(((lat - swLat) / latRange) * vDensity);
                 const key = `${gx}_${gy}`;
-                if (grid.has(key)) continue; // Already have a vehicle in this grid cell
-                grid.add(key);
+                
+                if (vClusters.has(key)) {
+                    const c = vClusters.get(key);
+                    c.count++;
+                    c.latSum += lat;
+                    c.lngSum += lng;
+                } else {
+                    vClusters.set(key, { isCluster: true, count: 1, latSum: lat, lngSum: lng, vehicle });
+                }
+            } else {
+                vFiltered.push(vehicle);
             }
-
-            filtered.push(vehicle);
         }
-        return filtered;
-    }, [displayedVehicles, livePositions, bounds, selectedVehicle, isAdmin]);
+
+        for (const [key, c] of vClusters.entries()) {
+            if (c.count === 1) {
+                vFiltered.push(c.vehicle);
+            } else {
+                vFiltered.push({
+                    isCluster: true,
+                    count: c.count,
+                    lat: c.latSum / c.count,
+                    lng: c.lngSum / c.count,
+                    id: `cluster-${key}`,
+                    isUnknown: false
+                });
+            }
+        }
+
+        return { visibleUnknown: unkFiltered, visibleVehicles: vFiltered };
+    }, [bounds, displayedVehicles, livePositions, unknownDevices, selectedVehicle, isAdmin]);
+
+
 
 
     const initialCenter = useRef(center).current;
@@ -725,6 +762,28 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
 
                 {/* Vehicle markers */}
                 {visibleVehicles.map((vehicle) => {
+                    if (vehicle.isCluster) {
+                        return (
+                            <Marker
+                                key={vehicle.id}
+                                position={[vehicle.lat, vehicle.lng]}
+                                icon={L.divIcon({
+                                    className: 'custom-cluster-icon',
+                                    html: `<div class="bg-brand-purple text-white shadow-xl flex items-center justify-center font-bold border-[3px] border-white transform transition-transform hover:scale-110 ${vehicle.count > 1000 ? 'w-12 h-12 text-[12px]' : vehicle.count > 100 ? 'w-10 h-10 text-[11px]' : 'w-8 h-8 text-[11px]'}" style="border-radius: 50%;">
+                                             ${vehicle.count > 999 ? (vehicle.count/1000).toFixed(1)+'k' : vehicle.count}
+                                           </div>`,
+                                    iconSize: [40, 40],
+                                    iconAnchor: [20, 20],
+                                })}
+                                eventHandlers={{
+                                     click: (e) => {
+                                         mapRef.current?.setView(e.latlng, (bounds?.zoom || 14) + 2, { animate: true });
+                                     }
+                                }}
+                            />
+                        );
+                    }
+
                     // Assuming livePositions is available in this scope, e.g., passed as a prop or from a context
                     const status = vehicle.status;
                     const isAlert = vehicle.isAlert;
@@ -777,7 +836,30 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                 })}
 
                 {/* Unknown device markers */}
-                {visibleUnknown.map(([imei, pos]) => {
+                {visibleUnknown.map((item) => {
+                    if (item.isCluster) {
+                        return (
+                            <Marker
+                                key={item.id}
+                                position={[item.lat, item.lng]}
+                                icon={L.divIcon({
+                                    className: 'custom-cluster-icon',
+                                    html: `<div class="bg-gray-600 text-white shadow-xl flex items-center justify-center font-bold border-[3px] border-white transform transition-transform hover:scale-110 ${item.count > 1000 ? 'w-12 h-12 text-[12px]' : item.count > 100 ? 'w-10 h-10 text-[11px]' : 'w-8 h-8 text-[11px]'}" style="border-radius: 50%;">
+                                             ${item.count > 999 ? (item.count/1000).toFixed(1)+'k' : item.count}
+                                           </div>`,
+                                    iconSize: [40, 40],
+                                    iconAnchor: [20, 20],
+                                })}
+                                eventHandlers={{
+                                     click: (e) => {
+                                         mapRef.current?.setView(e.latlng, (bounds?.zoom || 14) + 2, { animate: true });
+                                     }
+                                }}
+                            />
+                        );
+                    }
+
+                    const [imei, pos] = item;
                     const speed = pos.speed || 0;
                     const status = speed > 3 ? 'moving' : (pos.ignition ? 'idle' : 'stopped');
                     return (
