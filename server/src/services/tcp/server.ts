@@ -16,18 +16,21 @@ const startTcpServer = async (): Promise<void> => {
   const server = net.createServer((socket) => {
     logger.info(`[tcp] device connected:${socket.remoteAddress}`);
 
+    let dataBuffer = '';
+    
     socket.on('data', async (data: Buffer) => {
-      const rawData = data.toString().trim();
+      dataBuffer += data.toString();
       
-      // Handle multiple packets in a single TCP data event (newline-delimited)
-      const lines = rawData.split('\n').filter(l => l.trim());
-      
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
+      let newlineIndex: number;
+      while ((newlineIndex = dataBuffer.indexOf('\n')) !== -1) {
+        const line = dataBuffer.substring(0, newlineIndex).trim();
+        dataBuffer = dataBuffer.substring(newlineIndex + 1);
+        
+        if (!line) continue;
 
         try {
           let payload: TrackerPayload | null = null;
+          const trimmed = line.trim();
 
           if (trimmed.startsWith('$')) {
             payload = parseRawSluData(trimmed);
@@ -63,13 +66,10 @@ const startTcpServer = async (): Promise<void> => {
                     timestamp: (payload.timestamp || new Date()).toISOString(),
                   },
                   status: 'UNKNOWN_DEVICE'
-                }, payload.imei, payload.lat, payload.lng); // Pass IMEI for unique buffer key
+                }, payload.imei, payload.lat, payload.lng);
               }
             } else {
-              // 1. Buffer for batch DB persistence (O(1) Map overwrite per IMEI)
               bufferLocationUpdate(payload);
-
-              // 2. Immediate Lightweight Broadcast with Geofence evaluation
               await processLiveUpdate(payload);
             }
           }
