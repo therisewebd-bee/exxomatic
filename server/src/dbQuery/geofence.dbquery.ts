@@ -6,7 +6,9 @@ import {
   GeofenceIdParam,
 } from '../dto/geofence.dto.ts';
 import { catchService } from '../utils/utilHandler.ts';
+import { vehicleCache } from '../services/tracker/vehicleCache.ts';
 import crypto from 'crypto';
+
 
 //this function is creaeted to reduce
 //the duplication of geo fence
@@ -68,7 +70,17 @@ const createGeofenceDb = catchService(
             WHERE "id" = ${geofence.id}::uuid
         `;
 
+      // Sync cache: force audit on all linked vehicles
+      if (vehicleIds && vehicleIds.length > 0) {
+        const vehicles = await tx.vehicleInfo.findMany({
+          where: { id: { in: vehicleIds } },
+          select: { imei: true }
+        });
+        vehicles.forEach(v => vehicleCache.forceAudit(v.imei));
+      }
+
       return geofence;
+
     });
   },
   'DB-Call Geo',
@@ -112,7 +124,17 @@ const updateGeofenceDb = catchService(
         }
       }
 
+      // Sync cache: force audit on all linked vehicles
+      if (vehicleIds && vehicleIds.length > 0) {
+        const vehicles = await tx.vehicleInfo.findMany({
+          where: { id: { in: vehicleIds } },
+          select: { imei: true }
+        });
+        vehicles.forEach(v => vehicleCache.forceAudit(v.imei));
+      }
+
       return geofence;
+
     });
   },
   'DB-Call Geo',

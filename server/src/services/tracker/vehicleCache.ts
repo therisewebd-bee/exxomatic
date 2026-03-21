@@ -109,8 +109,22 @@ class VehicleCache {
     return R * c;
   }
 
-  public addVehicle(imei: string): void { this.registeredImeis.add(imei); }
-  public removeVehicle(imei: string): void { this.registeredImeis.delete(imei); this.auditStates.delete(imei); }
+  /**
+   * Forces a geofence audit on the next incoming ping for this vehicle.
+   * Useful when geofence assignments change.
+   */
+  public forceAudit(imei: string): void {
+    this.auditStates.delete(imei);
+  }
+
+  public addVehicle(imei: string): void { 
+    this.registeredImeis.add(imei); 
+  }
+
+  public removeVehicle(imei: string): void { 
+    this.registeredImeis.delete(imei); 
+    this.auditStates.delete(imei); 
+  }
 }
 
 export const vehicleCache = VehicleCache.getInstance();
