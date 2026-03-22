@@ -10,7 +10,13 @@ let reconnectTimer = null;
 let reconnectDelay = 1000;
 
 function getWsUrl() {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+  let apiUrl = import.meta.env.VITE_API_URL || '/api';
+  
+  // If the URL is relative (starts with /), prepend fixed origin
+  if (apiUrl.startsWith('/')) {
+    apiUrl = `${window.location.protocol}//${window.location.host}${apiUrl}`;
+  }
+
   // If the API URL has /api, we should strip it for the WebSocket upgrade path 
   // unless the backend is specifically configured for it. Usually it's at the root.
   const wsBase = apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '');

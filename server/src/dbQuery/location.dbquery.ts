@@ -77,10 +77,10 @@ const deleteLocationLogDb = catchService(
   'Delete Location Log'
 );
 
-export { 
-  createLocationLogDb, 
-  createLocationLogsBatchDb, 
-  findLocationLogsDb, 
-  findLocationLogByIdDb, 
-  deleteLocationLogDb 
+export {
+  createLocationLogDb,
+  createLocationLogsBatchDb,
+  findLocationLogsDb,
+  findLocationLogByIdDb,
+  deleteLocationLogDb
 };

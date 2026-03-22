@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { login as apiLogin, signup as apiSignup } from '../services/api';
 import * as ws from '../services/websocket';
 
@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
-  async function login(email, password) {
+  const login = useCallback(async (email, password) => {
     const res = await apiLogin({ email, password });
     const { user: u, token: t } = res.data;
     setUser(u);
@@ -39,21 +39,21 @@ export function AuthProvider({ children }) {
     localStorage.setItem('fleet_user', JSON.stringify(u));
     localStorage.setItem('fleet_token_val', t);
     return u;
-  }
+  }, []);
 
-  async function signup(name, email, password, role = 'Customer') {
+  const signup = useCallback(async (name, email, password, role = 'Customer') => {
     await apiSignup({ name, email, password, role });
     // Auto-login after signup
     return login(email, password);
-  }
+  }, [login]);
 
-  function logout() {
+  const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('fleet_user');
     localStorage.removeItem('fleet_token_val');
     ws.disconnect();
-  }
+  }, []);
 
   const value = useMemo(() => ({
     user,

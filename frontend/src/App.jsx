@@ -30,7 +30,7 @@ function Dashboard() {
   const { isAuthenticated, logout, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('liveMap');
   const { data: vehicles = [] } = useVehiclesQuery(isAuthenticated);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [selection, setSelection] = useState({ id: null, ts: 0 });
   const [drawingActive, setDrawingActive] = useState(false);
   const [drawnZone, setDrawnZone] = useState(null);
 
@@ -90,10 +90,13 @@ function Dashboard() {
     return registered;
   }, [vehicles, livePositions, unknownDevices, isAdmin]);
 
-
+  const selectedVehicle = useMemo(() => {
+    if (!selection.id) return null;
+    return mergedVehicles.find(v => v.id === selection.id) || null;
+  }, [mergedVehicles, selection.id]);
 
   const handleSelectVehicle = useCallback((vehicle) => {
-    setSelectedVehicle(vehicle);
+    setSelection({ id: vehicle?.id || null, ts: Date.now() });
     setActiveTab('liveMap');
   }, []);
 
@@ -140,7 +143,8 @@ function Dashboard() {
             vehicles={mergedVehicles}
             livePositions={livePositions}
             selectedVehicle={selectedVehicle}
-            onSelectVehicle={setSelectedVehicle}
+            selectionTime={selection.ts}
+            onSelectVehicle={handleSelectVehicle}
             unknownDevices={unknownDevices}
             onDrawComplete={handleDrawComplete}
             isAdmin={isAdmin}

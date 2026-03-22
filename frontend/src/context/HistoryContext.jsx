@@ -18,14 +18,13 @@ export function HistoryProvider({ children }) {
   // Support flexible date ranges and caching
   const fetchVehicleHistory = useCallback(async (imei, startDate, endDate, force = false) => {
     if (!imei) return [];
-    
+    const isDefaultRange = !startDate && !endDate;
     // Normalize range to hour-level to improve cache hits for "today" views
     const start = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const end = endDate || new Date().toISOString();
     
-    const startTs = Math.floor(new Date(start).getTime() / 1800000); // 30-min buckets
-    const endTs = Math.floor(new Date(end).getTime() / 1800000);
-    const rangeKey = `${imei}_${startTs}_${endTs}`;
+    // Use the IMEI as the cache key for default requests to prevent bucket shift bugs
+    const rangeKey = isDefaultRange ? imei : `${imei}_${Math.floor(new Date(start).getTime() / 1800000)}_${Math.floor(new Date(end).getTime() / 1800000)}`;
 
     // 1. Check in-memory cache first
     const cached = cacheRef.current[rangeKey];
@@ -41,12 +40,17 @@ export function HistoryProvider({ children }) {
     setError(null);
 
     try {
-      const res = await getLocationHistory({
+      const apiParams = {
         imei,
-        startDate: start,
-        endDate: end,
         limit: 5000
-      });
+      };
+      
+      if (!isDefaultRange) {
+        apiParams.startDate = start;
+        apiParams.endDate = end;
+      }
+
+      const res = await getLocationHistory(apiParams);
 
       const logs = (res.data || [])
         .filter(loc => loc.lat && loc.lng)
@@ -79,24 +83,29 @@ export function HistoryProvider({ children }) {
 
   // Helper to get cached data for a specific range without re-fetching
   const getHistory = useCallback((imei, startDate, endDate) => {
+    const isDefaultRange = !startDate && !endDate;
+    const currentCache = cacheRef.current;
+    if (isDefaultRange && currentCache[imei]) return currentCache[imei].data;
+    
     const start = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const end = endDate || new Date().toISOString();
-    const startTs = Math.floor(new Date(start).getTime() / 1800000);
-    const endTs = Math.floor(new Date(end).getTime() / 1800000);
-    const rangeKey = `${imei}_${startTs}_${endTs}`;
+    const rangeKey = `${imei}_${Math.floor(new Date(start).getTime() / 1800000)}_${Math.floor(new Date(end).getTime() / 1800000)}`;
     
-    return historyCache[rangeKey]?.data || EMPTY_ARRAY;
-  }, [historyCache]); 
+    return currentCache[rangeKey]?.data || EMPTY_ARRAY;
+  }, []); 
 
   // Get cached speed chart data (shared between Playback and Analytics)
   const getSpeedChartData = useCallback((imei, startDate, endDate) => {
+    const isDefaultRange = !startDate && !endDate;
+    const currentCache = cacheRef.current;
+    if (isDefaultRange && currentCache[imei]) return currentCache[imei].speedChartData;
+
     const start = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const end = endDate || new Date().toISOString();
-    const startTs = Math.floor(new Date(start).getTime() / 1800000);
-    const endTs = Math.floor(new Date(end).getTime() / 1800000);
-    const rangeKey = `${imei}_${startTs}_${endTs}`;
-    return historyCache[rangeKey]?.speedChartData || EMPTY_ARRAY;
-  }, [historyCache]);
+    const rangeKey = `${imei}_${Math.floor(new Date(start).getTime() / 1800000)}_${Math.floor(new Date(end).getTime() / 1800000)}`;
+    
+    return currentCache[rangeKey]?.speedChartData || EMPTY_ARRAY;
+  }, []);
 
   const clearHistory = useCallback((imei) => {
     // clear specific imei from cache
