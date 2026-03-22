@@ -11,6 +11,8 @@ import pg from 'pg';
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
+  max: 50, // Added for high-concurrency WebSocket connections
+  idleTimeoutMillis: 30000
 });
 
 const adapter = new PrismaPg(pool as any);

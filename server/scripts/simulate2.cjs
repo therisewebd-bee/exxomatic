@@ -9,7 +9,7 @@ const net = require('net');
  */
 
 const DEVICE_COUNT = parseInt(process.argv[2] || '100', 10);
-const SERVER_HOST = process.argv[3] || 'localhost';
+const SERVER_HOST = process.argv[3] || '54.205.0.61';
 const SERVER_PORT = parseInt(process.argv[4] || '5000', 10);
 
 // Real data points near Pune
@@ -40,10 +40,10 @@ for (let i = 0; i < DEVICE_COUNT; i++) {
 let interval = null;
 
 function fmtDate(d) {
-  return String(d.getDate()).padStart(2,'0') + String(d.getMonth()+1).padStart(2,'0') + d.getFullYear();
+  return String(d.getDate()).padStart(2, '0') + String(d.getMonth() + 1).padStart(2, '0') + d.getFullYear();
 }
 function fmtTime(d) {
-  return String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0') + String(d.getSeconds()).padStart(2,'0');
+  return String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + String(d.getSeconds()).padStart(2, '0');
 }
 
 function connect() {
@@ -68,7 +68,7 @@ function connect() {
         dev.lng += (Math.random() - 0.5) * 0.0005;
         const speed = (Math.random() * 60).toFixed(2);
 
-        buf += `$1,AEPL,0.0.1,NR,2,H,${dev.imei},XXXXXXXXXX,1,${d},${t},${dev.lat.toFixed(6)},N,${dev.lng.toFixed(6)},E,${speed},${(Math.random()*360).toFixed(2)},10,553.00,1.27,1.00,AIRTEL,1,1,23.20,4.20,0,O,28,404,90,110E,E0EB,,0000,00,000074,9822,*\n`;
+        buf += `$1,AEPL,0.0.1,NR,2,H,${dev.imei},XXXXXXXXXX,1,${d},${t},${dev.lat.toFixed(6)},N,${dev.lng.toFixed(6)},E,${speed},${(Math.random() * 360).toFixed(2)},10,553.00,1.27,1.00,AIRTEL,1,1,23.20,4.20,0,O,28,404,90,110E,E0EB,,0000,00,000074,9822,*\n`;
       }
 
       client.write(buf);

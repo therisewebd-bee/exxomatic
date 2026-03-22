@@ -9,13 +9,23 @@ interface AuditState {
   lastNotificationTime?: number;
 }
 
+const MAX_AUDIT_ENTRIES = 50_000;
+const AUDIT_GC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const STALE_AUDIT_AGE_MS = 30 * 60 * 1000; // 30 minutes
+
+// ~1km in degrees at equator (conservative estimate)
+const BBOX_THRESHOLD_DEG = 0.009;
+
 class VehicleCache {
   private static instance: VehicleCache;
   private registeredImeis: Set<string> = new Set();
   private auditStates: Map<string, AuditState> = new Map();
   private loaded: boolean = false;
 
-  private constructor() {}
+  private constructor() {
+    // Periodic GC for auditStates — evict stale entries
+    setInterval(() => this.gcAuditStates(), AUDIT_GC_INTERVAL_MS);
+  }
 
   public static getInstance(): VehicleCache {
     if (!VehicleCache.instance) {
@@ -40,25 +50,29 @@ class VehicleCache {
   }
 
   /**
-   * Determine if a geofence audit is required based on distance (1km) AND time (5m)
-   * The first ping after server start always triggers an audit ("comes alive")
+   * Determine if a geofence audit is required.
+   * Logic: Distance checked FIRST — if moved >1km, always audit.
+   * Time throttle (5m) only applies if vehicle hasn't moved significantly.
    */
   public shouldAudit(imei: string, lat: number, lng: number): boolean {
     const last = this.auditStates.get(imei);
     if (!last) return true; // Initial audit when vehicle "comes alive"
-    
-    const now = Date.now();
-    const timeSinceLastAudit = now - last.timestamp;
-    const minInterval = 5 * 60 * 1000; // 5 minutes throttle
 
-    // If it's been less than 5 minutes since the last audit, we suppress unless it's critical
-    if (timeSinceLastAudit < minInterval) {
-        return false;
+    // Fast bounding box pre-check (avoids expensive Haversine for nearby points)
+    const dLat = Math.abs(lat - last.lat);
+    const dLng = Math.abs(lng - last.lng);
+
+    if (dLat > BBOX_THRESHOLD_DEG || dLng > BBOX_THRESHOLD_DEG) {
+      // Moved significantly — verify with Haversine
+      const dist = this.calculateDistance(last.lat, last.lng, lat, lng);
+      if (dist > 1.0) return true; // >1km movement always triggers audit
     }
 
-    // Check distance from last AUDIT location
-    const dist = this.calculateDistance(last.lat, last.lng, lat, lng);
-    return dist > 1.0; // 1.0 km threshold
+    // If vehicle hasn't moved much, apply time-based throttle
+    const now = Date.now();
+    const timeSinceLastAudit = now - last.timestamp;
+    const minInterval = 5 * 60 * 1000;
+    return timeSinceLastAudit >= minInterval;
   }
 
   /**
@@ -66,11 +80,11 @@ class VehicleCache {
    */
   public shouldNotify(imei: string): boolean {
     const last = this.auditStates.get(imei);
-    if (!last || last.status === 'NORMAL') return true; // Notify on first transition to ALERT
+    if (!last || last.status === 'NORMAL') return true;
 
     const now = Date.now();
     const lastNotify = last.lastNotificationTime || 0;
-    const cooldown = 30 * 60 * 1000; // 30 minutes
+    const cooldown = 30 * 60 * 1000;
 
     return (now - lastNotify) > cooldown;
   }
@@ -86,7 +100,8 @@ class VehicleCache {
       lng, 
       status, 
       timestamp: Date.now(),
-      lastNotificationTime: status === 'ALERT' ? (existing?.lastNotificationTime || 0) : 0
+      // Preserve notification cooldown across transitions to prevent spam on brief exits
+      lastNotificationTime: existing?.lastNotificationTime || 0
     });
   }
 
@@ -94,12 +109,14 @@ class VehicleCache {
     const existing = this.auditStates.get(imei);
     if (existing) {
       existing.lastNotificationTime = Date.now();
-      this.auditStates.set(imei, existing);
     }
   }
 
+  /**
+   * Fast bounding box + Haversine distance calculation
+   */
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -110,9 +127,20 @@ class VehicleCache {
   }
 
   /**
-   * Forces a geofence audit on the next incoming ping for this vehicle.
-   * Useful when geofence assignments change.
+   * Periodic GC: evict stale audit entries for unregistered or dormant vehicles
    */
+  private gcAuditStates(): void {
+    if (this.auditStates.size <= MAX_AUDIT_ENTRIES) return;
+
+    const cutoff = Date.now() - STALE_AUDIT_AGE_MS;
+    for (const [imei, state] of this.auditStates) {
+      if (!this.registeredImeis.has(imei) || state.timestamp < cutoff) {
+        this.auditStates.delete(imei);
+      }
+    }
+    logger.debug(`[cache-gc] auditStates trimmed to ${this.auditStates.size}`);
+  }
+
   public forceAudit(imei: string): void {
     this.auditStates.delete(imei);
   }
@@ -128,3 +156,4 @@ class VehicleCache {
 }
 
 export const vehicleCache = VehicleCache.getInstance();
+

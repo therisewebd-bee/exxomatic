@@ -394,7 +394,7 @@ function BoundsTracker({ onBoundsChange }) {
             mountedRef.current = true;
             const initTimer = setTimeout(() => {
                 commitBounds(computeBounds());
-            }, 600);
+            }, 100);
             return () => {
                 clearTimeout(initTimer);
                 map.off('moveend', onMapMove);
@@ -497,6 +497,18 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
 
     const unknownIcon = useRef(createUnknownIcon()).current;
 
+    // Memoized icon cache: avoid creating new divIcon objects on every render
+    const iconCache = useMemo(() => {
+      const cache = {};
+      for (const status of ['moving', 'stopped', 'idle']) {
+        cache[`${status}:false`] = createVehicleIcon(status, false);
+        cache[`${status}:true`] = createVehicleIcon(status, true);
+        cache[`selected:${status}:false`] = createSelectedIcon(status, false);
+        cache[`selected:${status}:true`] = createSelectedIcon(status, true);
+      }
+      return cache;
+    }, []);
+
 
     const { data: globalGeofences = [] } = useGeofencesQuery();
     const createMutation = useCreateVehicleMutation();
@@ -551,7 +563,7 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
 
     // 1. Dynamic Grid Clustering Algorithm
     const { visibleUnknown, visibleVehicles } = useMemo(() => {
-        if (!bounds) return { visibleUnknown: [], visibleVehicles: displayedVehicles };
+        if (!bounds) return { visibleUnknown: [], visibleVehicles: displayedVehicles.slice(0, 100) };
 
         const { swLat, swLng, neLat, neLng, zoom = 14 } = bounds;
         
@@ -784,16 +796,16 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
                         );
                     }
 
-                    // Assuming livePositions is available in this scope, e.g., passed as a prop or from a context
                     const status = vehicle.status;
                     const isAlert = vehicle.isAlert;
 
                     if (!vehicle.lat || !vehicle.lng) return null;
 
                     const isSelected = selectedVehicle?.id === vehicle.id;
-                    const icon = isSelected
-                        ? createSelectedIcon(status, isAlert)
-                        : createVehicleIcon(status, isAlert);
+                    const cacheKey = isSelected
+                        ? `selected:${status}:${!!isAlert}`
+                        : `${status}:${!!isAlert}`;
+                    const icon = iconCache[cacheKey] || iconCache['stopped:false'];
 
                     return (
                         <Marker

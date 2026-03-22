@@ -79,13 +79,14 @@ if (isMainThread) {
   };
 
   const startStreaming = () => {
+    const THROTTLE_MS = 50; // Delay between batches to prevent 100% CPU lockup
     let sentInCycle = 0;
 
     const sendBatch = () => {
       let batchBuffer = '';
-      const batchSize = 100; // Packets per socket write
+      const workloadPerTick = 500; // Reduced from 2000 for smoother execution
 
-      for (let i = 0; i < 2000; i++) { // Workload per tick
+      for (let i = 0; i < workloadPerTick; i++) {
         const id = startId + (Math.floor(Math.random() * count));
         const imei = '86' + String(id).padStart(13, '0');
 
@@ -109,7 +110,7 @@ if (isMainThread) {
 
       parentPort.postMessage({ type: 'stats', count: sentInCycle });
       sentInCycle = 0;
-      setImmediate(sendBatch);
+      setTimeout(sendBatch, THROTTLE_MS);
     };
 
     sendBatch();

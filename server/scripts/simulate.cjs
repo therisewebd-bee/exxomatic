@@ -13,7 +13,7 @@ const net = require('net');
 const TEST_CASE = process.argv[2] || '2';
 const TOTAL_VEHICLES = parseInt(process.argv[3] || '10000', 10);
 const STRESS_MULTIPLIER = parseInt(process.argv[4] || '1', 10);
-const SERVER_HOST = 'localhost';
+const SERVER_HOST = '54.205.0.61';
 const SERVER_PORT = 5000;
 
 // To avoid Operating System "EMFILE" errors (max open files), 
@@ -158,6 +158,13 @@ function startStreaming() {
     // Distribute packets across their dedicated sockets
     for (let i = currentIndex; i < end; i++) {
       const v = vehicles[i];
+      const socket = sockets[v.socketIndex];
+
+      // Simple backpressure: skip sending if socket is congested
+      // In a real tracker, the device would buffer or drop.
+      if (socket.destroyed || socket.writableLength > 1024 * 64) {
+        continue; 
+      }
 
       const latDir = Math.random() > 0.5 ? 1 : -1;
       const lngDir = Math.random() > 0.5 ? 1 : -1;
@@ -165,14 +172,10 @@ function startStreaming() {
       v.lng += (Math.random() * offsetDegrees * lngDir);
 
       const currentSpeed = Math.max(0, v.speed + (Math.random() * 4 - 2)).toFixed(2);
-
       const packet = `$1,AEPL,0.0.1,NR,2,H,${v.imei},XXXXXXXXXX,1,${fDate},${fTime},${v.lat.toFixed(6)},N,${v.lng.toFixed(6)},E,${currentSpeed},${v.heading.toFixed(2)},10,553.00,1.27,1.00,AIRTEL,1,1,23.20,4.20,0,O,28,404,90,110E,E0EB,,0000,00,000074,9822,*\n`;
 
-      const socket = sockets[v.socketIndex];
-      if (!socket.destroyed) {
-        socket.write(packet);
-        totalDataSent++;
-      }
+      socket.write(packet);
+      totalDataSent++;
     }
 
     currentIndex = end;

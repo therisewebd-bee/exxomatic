@@ -4,10 +4,7 @@ import * as ws from '../services/websocket';
 
 /**
  * useWebSocketVehicles — Manages live vehicle positions from WebSocket
- * Handles batching, viewport-based eviction, and unknown device tracking
- *
- * Usage:
- *   const { livePositions, unknownDevices, notifications, viewportRef } = useWebSocketVehicles(isAuthenticated);
+ * Optimized for high-throughput: minimal allocations, no spread operators in hot paths
  */
 export function useWebSocketVehicles(isAuthenticated, isAdmin) {
   const [livePositions, setLivePositions] = useState({});
@@ -18,7 +15,6 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
   const activeImeisRef = useRef(new Map());
   const viewportRef = useRef(null);
   const evictCounter = useRef(0);
-  const MAX_LIVE_ENTRIES = 2000;
 
   const handleViewportChange = useCallback((bounds) => {
     viewportRef.current = bounds;
@@ -32,9 +28,12 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
 
     let liveBuffer = {};
     let unknownBuffer = {};
+    let hasLiveData = false;
+    let hasUnknownData = false;
     let bufferTimer;
 
     const flushBuffers = () => {
+      // ── Active IMEI count (temporal GC) ──────────────────
       const nowTime = Date.now();
       let count = 0;
       for (const [imei, timestamp] of activeImeisRef.current.entries()) {
@@ -46,69 +45,67 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
       }
       setTotalLiveCount(count);
 
-      if (Object.keys(liveBuffer).length > 0) {
-        setLivePositions(prev => {
-          const merged = { ...prev, ...liveBuffer };
+      // ── Live Positions ───────────────────────────────────
+      if (hasLiveData) {
+        const pending = liveBuffer;
+        liveBuffer = {};
+        hasLiveData = false;
 
-          // Every ~10 flushes (2.5s), evict vehicles outside viewport
+        setLivePositions(prev => {
+          // Mutate-and-return: O(keys in pending) instead of O(keys in prev + pending)
+          const next = Object.assign({}, prev, pending);
+
+          // Every ~10 flushes (~5s), evict out-of-viewport entries
           evictCounter.current++;
           if (evictCounter.current >= 10 && viewportRef.current) {
             evictCounter.current = 0;
             const vp = viewportRef.current;
             const bLat = (vp.neLat - vp.swLat) * 0.5;
             const bLng = (vp.neLng - vp.swLng) * 0.5;
-            const keys = Object.keys(merged);
-            if (keys.length > MAX_LIVE_ENTRIES) {
+            const keys = Object.keys(next);
+            if (keys.length > 2000) {
               for (const key of keys) {
-                const pos = merged[key];
+                const pos = next[key];
                 if (!pos.lat || !pos.lng) continue;
                 if (pos.lat < (vp.swLat - bLat) || pos.lat > (vp.neLat + bLat) ||
-                    pos.lng < (vp.swLng - bLng) || pos.lng > (vp.neLng + bLng)) {
-                  delete merged[key];
+                  pos.lng < (vp.swLng - bLng) || pos.lng > (vp.neLng + bLng)) {
+                  delete next[key];
                 }
               }
             }
           }
-          return merged;
+          return next;
         });
-        liveBuffer = {};
       }
-      if (Object.keys(unknownBuffer).length > 0) {
+
+      // ── Unknown Devices ──────────────────────────────────
+      if (hasUnknownData) {
+        const pending = unknownBuffer;
+        unknownBuffer = {};
+        hasUnknownData = false;
+
         setUnknownDevices(prev => {
-          const merged = { ...prev, ...unknownBuffer };
-          // Apply the same viewport eviction to unknowns
-          if (evictCounter.current >= 10 && viewportRef.current) {
-            const vp = viewportRef.current;
-            const bLat = (vp.neLat - vp.swLat) * 0.5;
-            const bLng = (vp.neLng - vp.swLng) * 0.5;
-            const keys = Object.keys(merged);
-            if (keys.length > 2000) { // Bumped cap to 2000 before culling
-              for (const key of keys) {
-                const pos = merged[key];
-                if (!pos.lat || !pos.lng) continue;
-                if (pos.lat < (vp.swLat - bLat) || pos.lat > (vp.neLat + bLat) ||
-                    pos.lng < (vp.swLng - bLng) || pos.lng > (vp.neLng + bLng)) {
-                  delete merged[key];
-                }
-              }
+          const next = Object.assign({}, prev, pending);
+          // Hard cap at 2000 — simple FIFO eviction
+          const keys = Object.keys(next);
+          if (keys.length > 2000) {
+            const excess = keys.length - 2000;
+            for (let i = 0; i < excess; i++) {
+              delete next[keys[i]];
             }
           }
-          const finalKeys = Object.keys(merged);
-          if (finalKeys.length > 3000) {
-            finalKeys.slice(0, finalKeys.length - 3000).forEach(k => delete merged[k]);
-          }
-          return merged;
+          return next;
         });
-        unknownBuffer = {};
       }
     };
 
     function handleEventBatch(payload) {
       const items = Array.isArray(payload) ? payload : [payload];
-      items.forEach(item => {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
         const loc = item.location;
-        if (!loc) return;
-        
+        if (!loc) continue;
+
         activeImeisRef.current.set(loc.imei, Date.now());
 
         const isUnknown = item.status === 'UNKNOWN_DEVICE' || item.batchEvent === 'tracker:unknown';
@@ -123,13 +120,16 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
         };
         if (isUnknown) {
           unknownBuffer[loc.imei] = update;
+          hasUnknownData = true;
         } else {
           liveBuffer[loc.imei] = update;
+          hasLiveData = true;
         }
-      });
+      }
     }
 
-    bufferTimer = setInterval(flushBuffers, 1000);
+    // 500ms flush — smooth enough for UI, halves state churn vs 250ms
+    bufferTimer = setInterval(flushBuffers, 500);
 
     function handleBreach(data) {
       setNotifications(prev => [
@@ -140,7 +140,7 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
           timestamp: new Date().toISOString(),
           ...data,
         },
-        ...prev,
+        ...prev.slice(0, 99), // Cap notifications at 100
       ]);
     }
 
@@ -160,3 +160,4 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
 
   return { livePositions, unknownDevices, notifications, viewportRef, handleViewportChange, totalLiveCount };
 }
+

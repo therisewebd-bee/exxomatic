@@ -37,17 +37,16 @@ function Dashboard() {
   // WebSocket vehicle tracking — all batching, eviction, and events handled by the hook
   const { livePositions, unknownDevices, notifications, handleViewportChange, totalLiveCount } = useWebSocketVehicles(isAuthenticated, isAdmin);
 
-  // Merge API vehicles with live WS positions
+  // Merge API vehicles with live WS positions — optimized to avoid O(n log n) sort
   const mergedVehicles = useMemo(() => {
-    const registeredImeis = new Set(vehicles.map(v => v.imei));
     const nowTime = Date.now();
     
     const registered = vehicles.map((v) => {
       const live = livePositions[v.imei];
       const liveAge = live?.timestamp ? (nowTime - new Date(live.timestamp).getTime()) : Infinity;
-      const isLiveFresh = liveAge < 120000; // 2 minutes
+      const isLiveFresh = liveAge < 120000;
 
-      let currentStatus = v.status || 'stopped'; // Default for newly registered vehicles
+      let currentStatus = v.status || 'stopped';
       if (isLiveFresh && live) {
          currentStatus = live.motionStatus || (live.speed > 5 ? 'moving' : 'idle');
       } else if (currentStatus === 'online') {
@@ -66,11 +65,14 @@ function Dashboard() {
       };
     });
 
-    // For Admin: merge unknown devices into fleet list so they appear in VehicleList
-    const unknownAsList = isAdmin
-      ? Object.entries(unknownDevices)
-          .filter(([imei, pos]) => (nowTime - new Date(pos.timestamp||0).getTime()) < 120000) // hide stale unknowns
-          .map(([imei, pos]) => ({
+    // For Admin: merge unknown devices — simple cap, no sort
+    if (isAdmin) {
+      let count = 0;
+      for (const imei in unknownDevices) {
+        if (count >= 500) break;
+        const pos = unknownDevices[imei];
+        if (!pos.timestamp || (nowTime - new Date(pos.timestamp).getTime()) > 120000) continue;
+        registered.push({
           id: `unregistered-${imei}`,
           imei,
           lat: pos.lat,
@@ -80,33 +82,21 @@ function Dashboard() {
           isAlert: false,
           plate: `Unregistered (${imei.slice(-6)})`,
           isUnregistered: true,
-        }))
-      : [];
+        });
+        count++;
+      }
+    }
 
-    // Also include "live-only" registered devices that aren't from REST but arrived via WS
-    const liveOnly = Object.entries(livePositions)
-      .filter(([imei]) => !registeredImeis.has(imei))
-      .map(([imei, pos]) => ({
-        id: imei,
-        imei,
-        lat: pos.lat,
-        lng: pos.lng,
-        speed: pos.speed || 0,
-        status: pos.motionStatus || (pos.speed > 5 ? 'moving' : 'idle'),
-        isAlert: pos.status === 'ALERT',
-        plate: imei,
-        isUnregistered: false,
-      }));
-
-    return [...registered, ...liveOnly, ...unknownAsList];
+    return registered;
   }, [vehicles, livePositions, unknownDevices, isAdmin]);
 
 
 
-  const handleSelectVehicle = (vehicle) => {
+  const handleSelectVehicle = useCallback((vehicle) => {
     setSelectedVehicle(vehicle);
     setActiveTab('liveMap');
-  };
+  }, []);
+
 
   // Geofence drawing callbacks
   const handleDrawRequested = useCallback(() => {

@@ -5,6 +5,7 @@ import app from './app.ts';
 import { config } from './config/config.ts';
 import { wsService } from './services/websocket/socket.ts';
 import { vehicleCache } from './services/tracker/vehicleCache.ts';
+import { startRetentionCron } from './services/retention/retention.ts';
 
 const startServers = async () => {
   try {
@@ -23,9 +24,11 @@ const startServers = async () => {
     logger.info('WebSocket Server initialized');
 
     // 2. Start TCP Server (Tracker Communication)
-    // Now uses config.tcpPort (default 5001)
     startTcpServer();
     logger.info('TCP Server started for tracker communication');
+
+    // 3. Start Location Log Retention Cron
+    startRetentionCron();
 
   } catch (error) {
     logger.error('Failed to start servers:', error);
@@ -34,3 +37,4 @@ const startServers = async () => {
 };
 
 startServers();
+

@@ -1,5 +1,5 @@
 import logger from '../logger/logger.ts';
-import { TrackerPayload, processTrackerUpdate, processTrackerUpdateBatch } from '../tracker/tracker.logic.ts';
+import { TrackerPayload, processTrackerUpdateBatch } from '../tracker/tracker.logic.ts';
 
 /**
  * In-memory buffer to reduce DB overhead for high-frequency trackers.
@@ -9,6 +9,8 @@ import { TrackerPayload, processTrackerUpdate, processTrackerUpdateBatch } from 
 let locationBuffer = new Map<string, TrackerPayload>();
 let isFlushing = false;
 let flushTimer: ReturnType<typeof setInterval> | null = null;
+
+const FLUSH_TIMEOUT_MS = 30_000; // 30s safety net
 
 /**
  * Add an update to the buffer. 
@@ -25,24 +27,31 @@ export const flushBuffer = async (): Promise<void> => {
   if (isFlushing || locationBuffer.size === 0) return;
 
   isFlushing = true;
-  const snapshot = new Map(locationBuffer);
-  locationBuffer.clear();
+
+  // Zero-cost reference swap instead of new Map(locationBuffer) copy
+  const snapshot = locationBuffer;
+  locationBuffer = new Map();
 
   logger.info(`[buffer] flushing ${snapshot.size} vehicle updates`);
 
   const updates = Array.from(snapshot.values());
   
   try {
-    // Pass the entire thousands-long array into the Vectorized Processor
-    await processTrackerUpdateBatch(updates);
+    // Timeout guard: if processTrackerUpdateBatch hangs, force-unlock after 30s
+    await Promise.race([
+      processTrackerUpdateBatch(updates),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('flush timeout after 30s')), FLUSH_TIMEOUT_MS)
+      )
+    ]);
 
     logger.debug(`[buffer] flush success: ${updates.length} vehicles persisted via bulk transaction`);
   } catch (error: any) {
     logger.error(`[buffer] critical flush failure: ${error.message}`);
-    // Restore snapshot to buffer if it's not already overwritten
-    snapshot.forEach((val, key) => {
+    // Restore only entries that haven't been re-buffered during the flush window
+    for (const [key, val] of snapshot) {
       if (!locationBuffer.has(key)) locationBuffer.set(key, val);
-    });
+    }
   } finally {
     isFlushing = false;
   }

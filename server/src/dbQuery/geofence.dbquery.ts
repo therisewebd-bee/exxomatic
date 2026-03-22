@@ -214,12 +214,48 @@ const checkWithInGeofenceDb = catchService(
   'checking in GeoFence'
 );
 
+const GEOFENCE_BATCH_CHUNK_SIZE = 1000;
+
 const checkWithInGeofenceBatchDb = catchService(
   async (points: { imei: string; lat: number; lng: number }[]) => {
     if (points.length === 0) return [];
 
-    // Return ALL geofences assigned to these vehicles with their 'isInside' status
-    // Uses json_to_recordset to natively unpack the JS array in Postgres memory
+    // Chunk large batches to avoid PostgreSQL query timeouts
+    if (points.length > GEOFENCE_BATCH_CHUNK_SIZE) {
+      const allResults: any[] = [];
+      for (let i = 0; i < points.length; i += GEOFENCE_BATCH_CHUNK_SIZE) {
+        const chunk = points.slice(i, i + GEOFENCE_BATCH_CHUNK_SIZE);
+        const chunkResults = await prismaAdapter.$queryRaw<
+          {
+            imei: string;
+            geoId: string;
+            name: string;
+            isInside: boolean;
+            isActive: boolean;
+          }[]
+        >`
+            SELECT 
+                pts.imei,
+                g.id as "geoId",
+                g.name as "name",
+                g."isActive" as "isActive",
+                ST_Contains(
+                    g.zone,
+                    ST_SetSRID(ST_MakePoint(pts.lng::float, pts.lat::float), 4326)
+                ) AS "isInside"
+            FROM json_to_recordset(${JSON.stringify(chunk)}::json) as pts(imei text, lat float, lng float)
+            INNER JOIN "VehicleInfo" v ON v.imei = pts.imei
+            INNER JOIN "VehiclesOnGeofences" vg ON vg."vehicleId" = v.id
+            INNER JOIN "Geofence" g ON g.id = vg."geofenceId"
+            WHERE g."isActive" = true 
+            AND g.zone IS NOT NULL
+        `;
+        allResults.push(...chunkResults);
+      }
+      return allResults;
+    }
+
+    // Small batch — single query
     const result = await prismaAdapter.$queryRaw<
       {
         imei: string;
@@ -251,6 +287,7 @@ const checkWithInGeofenceBatchDb = catchService(
   'DB-Call Geo',
   'checking in GeoFence Batch'
 );
+
 
 const deleteGeofenceDb = catchService(
   async (geofenceId: string) => {

@@ -16,6 +16,7 @@ export default function VehicleCard({ vehicle, isSelected, onSelect }) {
     const deleteMutation = useDeleteVehicleMutation();
     const createMutation = useCreateVehicleMutation();
     const [registering, setRegistering] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [regPlate, setRegPlate] = useState('');
 
     async function handleDelete(e) {
@@ -31,18 +32,22 @@ export default function VehicleCard({ vehicle, isSelected, onSelect }) {
     async function handleQuickRegister(e) {
         e.stopPropagation();
         if (registering) {
-            if (!regPlate.trim()) return;
+            if (!regPlate.trim() || isSubmitting) return;
             try {
+                setIsSubmitting(true);
                 await createMutation.mutateAsync({ imei: vehicle.imei, vechicleNumb: regPlate.trim() });
                 setRegistering(false);
                 setRegPlate('');
             } catch (err) {
                 alert(err.message || 'Registration failed');
+            } finally {
+                setIsSubmitting(false);
             }
             return;
         }
         setRegistering(true);
     }
+
 
     return (
         <div

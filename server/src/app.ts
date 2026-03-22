@@ -31,7 +31,9 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
-app.use('/api', mainRouter);
+import { preventDuplicateRequests } from './middlewares/preventDuplicateRequests.ts';
+
+app.use('/api', preventDuplicateRequests, mainRouter);
 
 // Error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

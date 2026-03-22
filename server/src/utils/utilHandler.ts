@@ -22,14 +22,22 @@ export function catchService<T extends unknown[], R>(
       logger.info(`[${service}]-[${operation}] success`);
       return result;
     } catch (error: any) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      const statusCode = error?.statusCode ?? 500;
+      let err = error instanceof Error ? error : new Error(String(error));
+      let statusCode = error?.statusCode ?? 500;
 
       // --- Prisma-specific details ---
       const prismaCode = error?.code;            // e.g. P2002, P2025
       const prismaMeta = error?.meta;            // { target: ['email'] }
       const prismaClientVersion = error?.clientVersion;
       const prismaErrorName = error?.constructor?.name; // PrismaClientKnownRequestError
+
+      // Map Prisma P2002 to a graceful 409 Conflict
+      if (prismaCode === 'P2002') {
+        statusCode = 409;
+        const targetField = prismaMeta?.driverAdapterError?.cause?.constraint?.fields?.[0] || 'unique field';
+        err = new Error(`A record with this ${targetField} already exists.`);
+      }
+
 
       // Safely serialize the arguments that were passed to the DB call
       let calledWith: string;

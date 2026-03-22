@@ -25,10 +25,10 @@ interface AuthenticatedSocket extends WebSocket {
 
 class ConnectionManager {
   private static instance: ConnectionManager;
-  private clients: Set<AuthenticatedSocket> = new Set();
+  private clients: AuthenticatedSocket[] = [];
 
   public get activeClients(): AuthenticatedSocket[] {
-    return Array.from(this.clients);
+    return this.clients;
   }
 
   private constructor() {}
@@ -54,17 +54,22 @@ class ConnectionManager {
         ws.authorizedImeis = new Set(vehicles.map((v: any) => v.imei));
       }
 
-      this.clients.add(ws);
+      this.clients.push(ws);
       logger.info(`[conn-manager] client authenticated: ${decoded.email} (${decoded.role})`);
       return true;
     } catch (error: any) {
-      logger.warn(`[conn-manager] auth failed: ${error.message || error} | Token received: ${token.substring(0, 15)}...`);
+      logger.warn(
+        `[conn-manager] auth failed: ${error.message || error} | Token received: ${token.substring(0, 15)}...`
+      );
       return false;
     }
   }
 
   public removeClient(ws: AuthenticatedSocket): void {
-    this.clients.delete(ws);
+    const index = this.clients.indexOf(ws);
+    if (index > -1) {
+      this.clients.splice(index, 1);
+    }
   }
 
   public setPriorityImeis(ws: AuthenticatedSocket, imeis: string[]): void {
@@ -84,7 +89,12 @@ class ConnectionManager {
   /**
    * Get all clients authorized to see updates for a specific IMEI, optionally filtered by spatial location
    */
-  public getAuthorizedClients(imei?: string, lat?: number, lng?: number, isAlert: boolean = false): AuthenticatedSocket[] {
+  public getAuthorizedClients(
+    imei?: string,
+    lat?: number,
+    lng?: number,
+    isAlert: boolean = false
+  ): AuthenticatedSocket[] {
     const authorized: AuthenticatedSocket[] = [];
 
     for (const client of this.clients) {
@@ -99,7 +109,13 @@ class ConnectionManager {
   /**
    * More efficient check for a single client and update pair
    */
-  public isInterestedInUpdate(client: AuthenticatedSocket, imei?: string, lat?: number, lng?: number, isAlert: boolean = false): boolean {
+  public isInterestedInUpdate(
+    client: AuthenticatedSocket,
+    imei?: string,
+    lat?: number,
+    lng?: number,
+    isAlert: boolean = false
+  ): boolean {
     if (!client.identity) return false;
 
     // 1. Check Identity/Role Authorization
@@ -122,16 +138,19 @@ class ConnectionManager {
     // Without this, Admin would receive every single vehicle update and crash the frontend
     if (lat !== undefined && lng !== undefined && client.viewport) {
       const { minLat, maxLat, minLng, maxLng } = client.viewport;
-      
+
       // For Admin, use a 2x expanded viewport buffer to show nearby vehicles
       // For Customers, use exact viewport
       const isAdminRole = client.identity.role === 'Admin';
       const bufferLat = isAdminRole ? (maxLat - minLat) * 0.5 : 0;
       const bufferLng = isAdminRole ? (maxLng - minLng) * 0.5 : 0;
 
-      const inViewport = lat >= (minLat - bufferLat) && lat <= (maxLat + bufferLat) && 
-                         lng >= (minLng - bufferLng) && lng <= (maxLng + bufferLng);
-      
+      const inViewport =
+        lat >= minLat - bufferLat &&
+        lat <= maxLat + bufferLat &&
+        lng >= minLng - bufferLng &&
+        lng <= maxLng + bufferLng;
+
       if (!inViewport) return false;
     }
 
