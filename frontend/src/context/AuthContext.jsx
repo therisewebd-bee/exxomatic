@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { login as apiLogin, signup as apiSignup } from '../services/api';
 import * as ws from '../services/websocket';
 
@@ -55,7 +55,7 @@ export function AuthProvider({ children }) {
     ws.disconnect();
   }
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     token,
     loading,
@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
-  };
+  }), [user, token, loading, login, signup, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -4,9 +4,13 @@ import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import helmet from 'helmet';
 import { config } from './config/config.ts';
+import statusMonitor from 'express-status-monitor';
 import mainRouter from './routes/index.ts';
 
 const app = express();
+
+// Performance Monitoring Dashboard (Accessible at /status)
+app.use(statusMonitor());
 
 app.use(helmet({
   contentSecurityPolicy: false, // Ease for Leaflet/Simulation testing
@@ -16,7 +20,7 @@ app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 app.use(cookieParser());
 app.use(cors({
-  origin: config.frontendUrl.split(','),
+  origin: true, // Allow all origins while maintaining credentials support
   credentials: true,
 }));
 app.use(express.static('public'));

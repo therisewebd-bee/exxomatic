@@ -11,7 +11,9 @@ let reconnectDelay = 1000;
 
 function getWsUrl() {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-  const wsBase = apiUrl.replace(/^http/, 'ws');
+  // If the API URL has /api, we should strip it for the WebSocket upgrade path 
+  // unless the backend is specifically configured for it. Usually it's at the root.
+  const wsBase = apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '');
 
   // Retrieve token from localStorage (saved by AuthContext on login)
   const token = localStorage.getItem('fleet_token_val');

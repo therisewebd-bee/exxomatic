@@ -1,20 +1,24 @@
 # ============================================
-# Stage 1: Build TypeScript & install deps
+# Stage 1: Install deps & generate Prisma
 # ============================================
 FROM node:22-alpine AS build
 
 WORKDIR /app
 
 COPY package.json package-lock.json tsconfig.json ./
+COPY prisma/ ./prisma/
+
+# Install all deps (including tsx/typescript) and generate Prisma client
+RUN npm ci --ignore-scripts && \
+    npx prisma generate --schema=./prisma/schema.prisma
+
+# Copy source code (needed for tsx to run)
 COPY src/ ./src/
 
-# Install all deps, generate Prisma client, compile TS, then prune to prod-only
-RUN npm ci --ignore-scripts \
-    && npx prisma generate --schema=./src/prisma/schema.prisma 2>/dev/null || true \
-    && npx tsc --sourceMap false \
-    && npm prune --omit=dev \
-    && npm cache clean --force \
-    && rm -rf /root/.npm /tmp/*
+# Prune dev dependencies, but keep tsx/typescript (now in dependencies)
+RUN npm prune --omit=dev && \
+    npm cache clean --force && \
+    rm -rf /root/.npm /tmp/*
 
 
 # ============================================
@@ -29,19 +33,18 @@ RUN apk add --no-cache tini \
 ENV NODE_ENV=production
 WORKDIR /app
 
-# Copy only what's needed to run
+# Copy everything needed to run from source via tsx
 COPY --from=build --chown=appuser:appgroup /app/node_modules ./node_modules
-COPY --from=build --chown=appuser:appgroup /app/dist ./dist
+COPY --from=build --chown=appuser:appgroup /app/src ./src
 COPY --from=build --chown=appuser:appgroup /app/package.json ./
+COPY --from=build --chown=appuser:appgroup /app/tsconfig.json ./
 
 RUN mkdir -p /app/logs && chown appuser:appgroup /app/logs
 
 USER appuser
 
-EXPOSE 5000 3000
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD node -e "const s=require('net').createConnection(5000,'localhost');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1))"
+EXPOSE 5000 3001 5001
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "./dist/index.js"]
+# Run directly from source using tsx
+CMD ["npx", "tsx", "src/index.ts"]

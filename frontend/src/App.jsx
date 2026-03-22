@@ -47,7 +47,7 @@ function Dashboard() {
       const liveAge = live?.timestamp ? (nowTime - new Date(live.timestamp).getTime()) : Infinity;
       const isLiveFresh = liveAge < 120000; // 2 minutes
 
-      let currentStatus = v.status;
+      let currentStatus = v.status || 'stopped'; // Default for newly registered vehicles
       if (isLiveFresh && live) {
          currentStatus = live.motionStatus || (live.speed > 5 ? 'moving' : 'idle');
       } else if (currentStatus === 'online') {

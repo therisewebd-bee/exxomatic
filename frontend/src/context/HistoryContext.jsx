@@ -12,33 +12,29 @@ export function HistoryProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const cacheRef = useRef({});
+  cacheRef.current = historyCache;
+
   // Support flexible date ranges and caching
-  // We use functional updates or internal checks to keep this stable
   const fetchVehicleHistory = useCallback(async (imei, startDate, endDate, force = false) => {
     if (!imei) return [];
-    const now = Date.now();
-    const CACHE_STALE_TIME = 5 * 60 * 1000; // 5 minutes
-
+    
+    // Normalize range to hour-level to improve cache hits for "today" views
     const start = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const end = endDate || new Date().toISOString();
     
-    const startObj = new Date(start);
-    startObj.setMinutes(0, 0, 0);
-    const endObj = new Date(end);
-    endObj.setMinutes(0, 0, 0);
-    const rangeKey = `${imei}_${startObj.getTime()}_${endObj.getTime()}`;
+    const startTs = Math.floor(new Date(start).getTime() / 1800000); // 30-min buckets
+    const endTs = Math.floor(new Date(end).getTime() / 1800000);
+    const rangeKey = `${imei}_${startTs}_${endTs}`;
 
-    // Concurrency & Redundancy Guard
-    if (activeRequests.current.has(rangeKey) && !force) return [];
-    if (historyCache[rangeKey] && !force && (Date.now() - historyCache[rangeKey].timestamp < 30000)) {
-        return historyCache[rangeKey].data;
+    // 1. Check in-memory cache first
+    const cached = cacheRef.current[rangeKey];
+    if (cached && !force && (Date.now() - cached.timestamp < 300000)) { // 5 min cache
+        return cached.data;
     }
 
-    // Optimization: avoid loading state if we already have it in local state closure is tricky
-    // but the effect in MapView will handle the data flow.
-    // To truely avoid the loop, we MUST NOT let this function reference change when cache changes.
-    // We'll rely on setHistoryCache's functional update to check 'prev' if needed, 
-    // but for the initial check, we'll just proceed or use a simpler check.
+    // 2. Concurrency Guard
+    if (activeRequests.current.has(rangeKey) && !force) return [];
 
     activeRequests.current.add(rangeKey);
     setLoading(true);
@@ -51,8 +47,6 @@ export function HistoryProvider({ children }) {
         endDate: end,
         limit: 5000
       });
-
-
 
       const logs = (res.data || [])
         .filter(loc => loc.lat && loc.lng)
@@ -81,18 +75,15 @@ export function HistoryProvider({ children }) {
       activeRequests.current.delete(rangeKey);
       setLoading(false);
     }
-  }, []); // STABLE CALLBACK - NO DEPENDENCIES
+  }, []); // No longer depends on historyCache
 
   // Helper to get cached data for a specific range without re-fetching
   const getHistory = useCallback((imei, startDate, endDate) => {
     const start = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const end = endDate || new Date().toISOString();
-    
-    const startObj = new Date(start);
-    startObj.setMinutes(0, 0, 0);
-    const endObj = new Date(end);
-    endObj.setMinutes(0, 0, 0);
-    const rangeKey = `${imei}_${startObj.getTime()}_${endObj.getTime()}`;
+    const startTs = Math.floor(new Date(start).getTime() / 1800000);
+    const endTs = Math.floor(new Date(end).getTime() / 1800000);
+    const rangeKey = `${imei}_${startTs}_${endTs}`;
     
     return historyCache[rangeKey]?.data || EMPTY_ARRAY;
   }, [historyCache]); 
@@ -101,11 +92,9 @@ export function HistoryProvider({ children }) {
   const getSpeedChartData = useCallback((imei, startDate, endDate) => {
     const start = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const end = endDate || new Date().toISOString();
-    const startObj = new Date(start);
-    startObj.setMinutes(0, 0, 0);
-    const endObj = new Date(end);
-    endObj.setMinutes(0, 0, 0);
-    const rangeKey = `${imei}_${startObj.getTime()}_${endObj.getTime()}`;
+    const startTs = Math.floor(new Date(start).getTime() / 1800000);
+    const endTs = Math.floor(new Date(end).getTime() / 1800000);
+    const rangeKey = `${imei}_${startTs}_${endTs}`;
     return historyCache[rangeKey]?.speedChartData || EMPTY_ARRAY;
   }, [historyCache]);
 

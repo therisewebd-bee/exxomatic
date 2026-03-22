@@ -89,7 +89,7 @@ const startTcpServer = async (): Promise<void> => {
   });
 
   const PORT = Number(config.tcpPort);
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     logger.info(`[tcp] server up on port ${PORT}`);
   });
 };

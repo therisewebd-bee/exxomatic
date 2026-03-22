@@ -530,23 +530,23 @@ export default function MapView({ vehicles, selectedVehicle, onSelectVehicle, li
 
     // Viewport filtering (only render markers in view): performance improvement
     const [bounds, setBounds] = useState(null);
+    const lastBoundsRef = useRef(null);
+    
     // Stable callback that only updates state when bounds materially change
     const handleBoundsChange = useCallback((newBounds) => {
-        setBounds(prev => {
-            if (!prev) {
-                onViewportChange?.(newBounds);
-                return newBounds;
-            }
+        const prev = lastBoundsRef.current;
+        if (prev) {
             if (prev.zoom === newBounds.zoom) {
                 const d = Math.abs(prev.swLat - newBounds.swLat) + 
                           Math.abs(prev.swLng - newBounds.swLng) +
                           Math.abs(prev.neLat - newBounds.neLat) +
                           Math.abs(prev.neLng - newBounds.neLng);
-                if (d < 0.001) return prev;
+                if (d < 0.001) return; // Skip insignificant changes
             }
-            onViewportChange?.(newBounds);
-            return newBounds;
-        });
+        }
+        lastBoundsRef.current = newBounds;
+        setBounds(newBounds);
+        onViewportChange?.(newBounds);
     }, [onViewportChange]);
 
     // 1. Dynamic Grid Clustering Algorithm

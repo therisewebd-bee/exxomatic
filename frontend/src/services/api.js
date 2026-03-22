@@ -1,14 +1,21 @@
-const BASE = '/api';
+const BASE = import.meta.env.VITE_API_URL || '/api';
 
 async function request(endpoint, method = 'GET', body = null) {
+  const token = localStorage.getItem('fleet_token_val');
   const opts = {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
     credentials: 'include',
   };
   if (body) opts.body = JSON.stringify(body);
 
-  const res = await fetch(`${BASE}${endpoint}`, opts);
+  // If BASE ends with /api, and endpoint starts with /, we might have double slash.
+  // fetch handles this fine but let's be clean.
+  const url = `${BASE.replace(/\/$/, '')}${endpoint}`;
+  const res = await fetch(url, opts);
   const json = await res.json();
 
   if (!res.ok) {

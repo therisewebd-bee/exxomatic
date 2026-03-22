@@ -4,7 +4,7 @@ dotenv.config();
 // Aiven uses self-signed SSL certs — must be set before any pg connection
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/index.js';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 

@@ -51,7 +51,7 @@ class ConnectionManager {
           where: { customerId: decoded.id },
           select: { imei: true },
         });
-        ws.authorizedImeis = new Set(vehicles.map((v) => v.imei));
+        ws.authorizedImeis = new Set(vehicles.map((v: any) => v.imei));
       }
 
       this.clients.add(ws);

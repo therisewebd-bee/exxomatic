@@ -9,6 +9,7 @@ import { catchService } from '../utils/utilHandler.ts';
 import { vehicleCache } from '../services/tracker/vehicleCache.ts';
 
 
+
 //VDS here stands for Vehicle Data Schema
 //catchServcie here is a highOrder fucntion
 //whcih track , error in case the db call fails
@@ -36,6 +37,11 @@ const createVehicleDb = catchService(
 
     // Sync cache
     vehicleCache.addVehicle(vehicle.imei);
+    
+    // If geofences assigned, force an audit on the very first GPS ping
+    if (geofenceIds && geofenceIds.length > 0) {
+      vehicleCache.forceAudit(vehicle.imei);
+    }
 
     return vehicle;
 
@@ -77,7 +83,6 @@ const updateVehicleDb = catchService(
     vehicleCache.forceAudit(vehicle.imei);
 
     return vehicle;
-
   },
   'DB-Call:Vehicle',
   'Update Vehicle'
@@ -85,7 +90,7 @@ const updateVehicleDb = catchService(
 
 const deleteVehicleDb = catchService(
   async (vehicleId: string) => {
-    return await prismaAdapter.$transaction(async (tx) => {
+    return await prismaAdapter.$transaction(async (tx: any) => {
       // 1. Fetch vehicle to get the IMEI (needed for LocationLog lookup)
       const vehicle = await tx.vehicleInfo.findUnique({
         where: { id: vehicleId },

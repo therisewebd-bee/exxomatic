@@ -292,3 +292,46 @@ export const processTrackerUpdateBatch = async (updates: TrackerPayload[]): Prom
     throw error;
   }
 };
+
+/**
+ * Immediate Geofence Audit (Used when geofence assignments change)
+ * Force-evaluates a vehicle's status against its assigned geofences
+ * based on its last known position.
+ */
+export const performOneTimeAudit = async (imei: string, lat: number, lng: number): Promise<void> => {
+  try {
+    const allAssignedFences = await checkWithInGeofenceDb(imei, lat, lng);
+    const insideFences = allAssignedFences.filter((f: any) => f.isInside);
+    const isBreached = allAssignedFences.length > 0 && insideFences.length === 0;
+
+    // 1. Update memory cache instantly
+    vehicleCache.updateAuditState(imei, lat, lng, isBreached ? 'ALERT' : 'NORMAL');
+
+    // 2. Broadcast to UI so the marker turns red/green immediately
+    const result: NormalizedTrackerResponse = {
+      location: {
+        imei,
+        lat: Number(lat),
+        lng: Number(lng),
+        timestamp: new Date().toISOString()
+      },
+      geofences: insideFences,
+      status: isBreached ? 'ALERT' : 'NORMAL',
+      motionStatus: 'stopped' // Default for stationary audits
+    };
+
+    wsService.broadcast('tracker:live', result, imei, Number(lat), Number(lng), isBreached);
+
+    if (isBreached && vehicleCache.shouldNotify(imei)) {
+      wsService.broadcast('geofence:breach', {
+        imei,
+        action: 'exited',
+        geofence: { name: allAssignedFences.map((f: any) => f.name).join(', ') },
+        timestamp: new Date().toISOString(),
+      }, imei);
+      vehicleCache.markNotified(imei);
+    }
+  } catch (err) {
+    logger.error(`[one-time-audit] failure for ${imei}: ${err}`);
+  }
+};

@@ -66,7 +66,9 @@ const deleteVehicleHandler = AsyncHandler(async (req: ValidatedRequest<VehicleId
   const { params } = req.validated;
 
   const result = await deleteVehicleDb(params.vehicleId);
-  vehicleCache.removeVehicle(result.imei);
+  if (result) {
+    vehicleCache.removeVehicle(result.imei);
+  }
 
   return res.status(200).json(new ApiResponse(200, result, 'Vehicle deleted successfully'));
 });

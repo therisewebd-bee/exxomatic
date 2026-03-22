@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
-import { getLocationHistory } from '../services/api';
+import { useState, useEffect, useMemo } from 'react';
 import { useVehiclesQuery } from '../hooks/useQueries';
 import { useHistory } from '../context/HistoryContext';
 import { MdHistory, MdSpeed, MdTimer, MdMoving } from 'react-icons/md';
@@ -7,6 +6,7 @@ import AddressCell from './AddressCell';
 import { getDistanceFromLatLonInKm, calculateSpeed } from '../utils/geoUtils';
 import PanelLayout from './ui/PanelLayout';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import SearchableMultiSelect from './ui/SearchableMultiSelect';
 
 export default function AnalyticsPanel() {
   const [selectedImei, setSelectedImei] = useState('');
@@ -15,6 +15,10 @@ export default function AnalyticsPanel() {
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState(null);
   const { data: vehicles = [] } = useVehiclesQuery();
+
+  const vehicleOptions = useMemo(() => 
+    vehicles.map(v => ({ id: v.imei, label: v.vechicleNumb || v.imei })),
+  [vehicles]);
 
   useEffect(() => {
     if (!selectedImei || !date) return;
@@ -129,23 +133,22 @@ export default function AnalyticsPanel() {
   }, [selectedImei, date]);
 
   const controlBar = (
-    <div className="flex gap-4">
+    <div className="flex gap-4 items-center">
       <input
         type="date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
         className="px-4 py-2 border border-gray-200 rounded-lg outline-none focus:border-brand-purple shadow-sm bg-white text-sm"
       />
-      <select
-        value={selectedImei}
-        onChange={(e) => setSelectedImei(e.target.value)}
-        className="px-4 py-2 border border-gray-200 rounded-lg outline-none focus:border-brand-purple shadow-sm bg-white min-w-[200px] text-sm"
-      >
-        <option value="">Select Vehicle...</option>
-        {vehicles.map((v) => (
-          <option key={v.imei} value={v.imei}>{v.vechicleNumb || v.imei}</option>
-        ))}
-      </select>
+      <div className="w-[280px]">
+        <SearchableMultiSelect 
+          options={vehicleOptions}
+          selectedIds={selectedImei ? [selectedImei] : []}
+          onChange={(ids) => setSelectedImei(ids[0] || '')}
+          placeholder="Pick a vehicle..."
+          multi={false}
+        />
+      </div>
     </div>
   );
 

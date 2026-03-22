@@ -13,9 +13,8 @@ const startServers = async () => {
 
     // 1. Start HTTP Server
     const httpServer = http.createServer(app);
-    const PORT = config.port;
-
-    httpServer.listen(PORT, () => {
+    const PORT = Number(config.port);
+    httpServer.listen(PORT, '0.0.0.0', () => {
       logger.info(`HTTP Server running on port ${PORT}`);
     });
 

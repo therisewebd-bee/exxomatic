@@ -27,7 +27,7 @@ class VehicleCache {
   public async init(): Promise<void> {
     try {
       const vehicles = await prismaAdapter.vehicleInfo.findMany({ select: { imei: true } });
-      this.registeredImeis = new Set(vehicles.map(v => v.imei));
+      this.registeredImeis = new Set(vehicles.map((v: any) => v.imei));
       this.loaded = true;
       logger.info(`[cache] loaded ${this.registeredImeis.size} vehicles`);
     } catch (error: any) {

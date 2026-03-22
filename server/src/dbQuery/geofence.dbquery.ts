@@ -10,6 +10,7 @@ import { vehicleCache } from '../services/tracker/vehicleCache.ts';
 import crypto from 'crypto';
 
 
+
 //this function is creaeted to reduce
 //the duplication of geo fence
 //so user can re-use it
@@ -23,7 +24,8 @@ const createGeofenceDb = catchService(
     const { vehicleIds, name, zone, isActive } = data;
     const zoneHash = hashGeofence(zone);
 
-    return await prismaAdapter.$transaction(async (tx) => {
+    // Transaction: pure DB work only, no side effects
+    const { geofence, linkedVehicles } = await prismaAdapter.$transaction(async (tx: any) => {
       const existing = await tx.geofence.findFirst({
         where: { zoneHash },
       });
@@ -39,16 +41,15 @@ const createGeofenceDb = catchService(
               skipDuplicates: true,
             });
           }
-          return existing;
+          // Fetch linked vehicles for post-tx audit
+          const vList = vehicleIds?.length > 0
+            ? await tx.vehicleInfo.findMany({ where: { id: { in: vehicleIds } }, select: { imei: true } })
+            : [];
+          return { geofence: existing, linkedVehicles: vList };
         }
 
-      //create new geo fence in case it's not in db
       const geofence = await tx.geofence.create({
-        data: {
-          name,
-          zoneHash,
-          isActive,
-        },
+        data: { name, zoneHash, isActive },
       });
 
       if (vehicleIds && vehicleIds.length > 0) {
@@ -60,38 +61,37 @@ const createGeofenceDb = catchService(
         });
       }
 
-      //calling raw query as prism dosen't support it
-      //this calling of raw query updateds the zone data
-      //in geo fence table , and uses geofence to get id of it
-      //so it can store data propley
       await tx.$executeRaw`
             UPDATE "Geofence" 
             SET "zone" = ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(zone)}), 4326)
             WHERE "id" = ${geofence.id}::uuid
         `;
 
-      // Sync cache: force audit on all linked vehicles
-      if (vehicleIds && vehicleIds.length > 0) {
-        const vehicles = await tx.vehicleInfo.findMany({
-          where: { id: { in: vehicleIds } },
-          select: { imei: true }
-        });
-        vehicles.forEach(v => vehicleCache.forceAudit(v.imei));
-      }
+      // Fetch linked vehicles for post-tx audit
+      const vList = vehicleIds?.length > 0
+        ? await tx.vehicleInfo.findMany({ where: { id: { in: vehicleIds } }, select: { imei: true } })
+        : [];
 
-      return geofence;
-
+      return { geofence, linkedVehicles: vList };
     });
+
+    // Post-transaction: lightweight cache sync (no DB connection held)
+    for (const v of linkedVehicles) {
+      vehicleCache.forceAudit(v.imei);
+    }
+
+    return geofence;
   },
   'DB-Call Geo',
   'creating GeoFence'
 );
 
+
 const updateGeofenceDb = catchService(
   async (geofenceId: string, data: any) => {
     const { vehicleIds, name, zone, isActive } = data;
 
-    return await prismaAdapter.$transaction(async (tx) => {
+    const { geofence, linkedVehicles } = await prismaAdapter.$transaction(async (tx: any) => {
       const geofence = await tx.geofence.update({
         where: { id: geofenceId },
         data: {
@@ -124,22 +124,25 @@ const updateGeofenceDb = catchService(
         }
       }
 
-      // Sync cache: force audit on all linked vehicles
-      if (vehicleIds && vehicleIds.length > 0) {
-        const vehicles = await tx.vehicleInfo.findMany({
-          where: { id: { in: vehicleIds } },
-          select: { imei: true }
-        });
-        vehicles.forEach(v => vehicleCache.forceAudit(v.imei));
-      }
+      // Fetch linked vehicles for post-tx audit
+      const vList = vehicleIds?.length > 0
+        ? await tx.vehicleInfo.findMany({ where: { id: { in: vehicleIds } }, select: { imei: true } })
+        : [];
 
-      return geofence;
-
+      return { geofence, linkedVehicles: vList };
     });
+
+    // Post-transaction: lightweight cache sync (no DB connection held)
+    for (const v of linkedVehicles) {
+      vehicleCache.forceAudit(v.imei);
+    }
+
+    return geofence;
   },
   'DB-Call Geo',
   'updating GeoFence'
 );
+
 
 const findGeofenceByIdDb = catchService(
   async (geofenceId: string) => {
@@ -251,7 +254,7 @@ const checkWithInGeofenceBatchDb = catchService(
 
 const deleteGeofenceDb = catchService(
   async (geofenceId: string) => {
-    return await prismaAdapter.$transaction(async (tx) => {
+    return await prismaAdapter.$transaction(async (tx: any) => {
       // Check how many vehicles are linked to this geofence
       const linkedCount = await tx.vehiclesOnGeofences.count({
         where: { geofenceId },

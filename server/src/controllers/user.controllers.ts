@@ -64,8 +64,8 @@ const loginUserHandler = AsyncHandler(async (req: ValidatedRequest<LoginAccountI
 
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
+    sameSite: 'lax' as const,
     maxAge: 24 * 60 * 60 * 1000, // 1 day
   };
 
