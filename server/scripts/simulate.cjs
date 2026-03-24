@@ -1,11 +1,13 @@
 const net = require('net');
 
 /**
- * High-Volume IoT Fleet Network Simulator (Assignment Format)
+ * High-Volume IoT Fleet Network Simulator ($SLU Format)
  * 
  * Simulates up to 10,000 UNIQUE vehicles spread universally across India.
  * Each device routes data through a randomized TCP Socket Pool to mimic
  * entirely separate devices connecting to the central listener simultaneously.
+ *
+ * Packet format: $SLU{IMEI},{CMD_ID},{SERIAL},{ISO_TS},{EID},...*{CHECKSUM}
  *
  * Usage: node scripts/simulate.cjs [test_case: 1|2|3] [vehicle_count: default 10000]
  */
@@ -20,7 +22,7 @@ const SERVER_PORT = 5000;
 // we will pool the devices across a max of 200 distinct TCP sockets.
 const SOCKET_POOL_SIZE = Math.min(TOTAL_VEHICLES, 200);
 
-console.log(`\n🚀 Initializing Vast-Scale Hardware Network...`);
+console.log(`\n🚀 Initializing Vast-Scale Hardware Network ($SLU Format)...`);
 console.log(`📱 Unique Real-time Devices: ${TOTAL_VEHICLES}`);
 console.log(`🔌 Simulated Network Sockets: ${SOCKET_POOL_SIZE} distinct TCP connections`);
 console.log(`🔥 STRESS MULTIPLIER: ${STRESS_MULTIPLIER}x (Throughput Amp)`);
@@ -58,8 +60,6 @@ switch (TEST_CASE) {
 console.log(`🧪 Activating: ${caseDescription}`);
 
 // Generate unique vehicles spread across the entirety of the Globe bounds
-// World Latitude: -90.0 to 90.0
-// World Longitude: -180.0 to 180.0
 console.log(`🌍 Scattering vehicles globally across the entire world...`);
 
 const vehicles = [];
@@ -67,26 +67,46 @@ for (let i = 0; i < TOTAL_VEHICLES; i++) {
   const imei = '8607' + String(Math.floor(Math.random() * 90000000000) + 10000000000);
   vehicles.push({
     imei,
-    lat: (Math.random() * 180) - 90,     // Random anywhere between -90 and 90
-    lng: (Math.random() * 360) - 180,    // Random anywhere between -180 and 180
+    lat: (Math.random() * 180) - 90,
+    lng: (Math.random() * 360) - 180,
     speed: baseSpeed + (Math.random() * 10 - 5),
     heading: Math.random() * 360,
-    socketIndex: i % SOCKET_POOL_SIZE   // Assign this device to a dedicated socket in the pool
+    odometer: Math.random() * 50000,
+    serial: Math.floor(Math.random() * 100000),
+    socketIndex: i % SOCKET_POOL_SIZE
   });
 }
 
-function formatDate(date) {
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = String(date.getFullYear());
-  return `${dd}${mm}${yyyy}`;
-}
+/**
+ * Build a $SLU format packet string.
+ * Format: $SLU{IMEI},{CMD_ID},{SERIAL},{EDI},{EID},{LDI},{LTDD},{LGDD},{SPDK},{ODOD},
+ *         {HEAD},{ALTD},{IGN},{ENG},{DRV},{RPM},{DUR},{TDUR},{STRT},{STP},{IDL},
+ *         {VBAT},{VIN},{BATH},{BATC},{V3},{CFL},{SATN},{FIX},{IN1},{IN2},{OUT1},
+ *         {TVI},{TI1},{TV1},{TH1},{TV2},{TI2},{TH2},{CV1},{EXTRA}*{CHECKSUM}
+ */
+function buildSluPacket(v, now) {
+  const isoTs = now.toISOString().replace('.000Z', '+00:00').replace(/\.\d{3}Z$/, '+00:00');
+  const serial = ++v.serial;
+  const speed = Math.max(0, v.speed + (Math.random() * 4 - 2)).toFixed(0);
+  const ign = parseFloat(speed) > 0 ? 1 : 0;
+  const eng = ign;
+  const odo = v.odometer.toFixed(3).padStart(10, '0');
+  const heading = Math.floor(v.heading) % 360;
+  const alt = (400 + Math.random() * 200).toFixed(1);
+  const vbat = (3.8 + Math.random() * 0.5).toFixed(3);
+  const vin = (12 + Math.random() * 15).toFixed(3);
+  const batHealth = Math.floor(70 + Math.random() * 30);
+  const batCharge = Math.floor(40 + Math.random() * 60);
+  const temp = (20 + Math.random() * 20).toFixed(1);
+  const eventId = ign ? '01' : '05';
 
-function formatTime(date) {
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mins = String(date.getMinutes()).padStart(2, '0');
-  const secs = String(date.getSeconds()).padStart(2, '0');
-  return `${hh}${mins}${secs}`;
+  // Simple XOR checksum over body (2 hex chars)
+  const body = `$SLU${v.imei},06,${serial},${isoTs},${eventId},${isoTs},${v.lat.toFixed(6)},${v.lng.toFixed(6)},${speed},${odo},${heading},${alt},${ign},${eng},0,0,,56112,0.81,,,${vbat},${vin},${batHealth},${batCharge},,,,3,${ign},${ign},0,${temp},,,,,,,,,0,2`;
+  let xor = 0;
+  for (let i = 1; i < body.length; i++) xor ^= body.charCodeAt(i);
+  const checksum = xor.toString(16).toUpperCase().padStart(2, '0').slice(-2);
+
+  return body + '*' + checksum + '\n';
 }
 
 // Global scope
@@ -135,7 +155,7 @@ function startStreaming() {
 
     console.clear();
     console.log(`\n======================================================`);
-    console.log(` 🚀 FLEET TRACKER STRESS TEST DASHBOARD `);
+    console.log(` 🚀 FLEET TRACKER STRESS TEST DASHBOARD ($SLU) `);
     console.log(`======================================================`);
     console.log(` 🧪 Mode        : ${caseDescription}`);
     console.log(` 📱 Devices     : ${TOTAL_VEHICLES} Active`);
@@ -150,8 +170,6 @@ function startStreaming() {
 
   const sendChunk = () => {
     const now = new Date();
-    const fDate = formatDate(now);
-    const fTime = formatTime(now);
 
     const end = Math.min(currentIndex + CHUNK_SIZE, TOTAL_VEHICLES);
 
@@ -161,7 +179,6 @@ function startStreaming() {
       const socket = sockets[v.socketIndex];
 
       // Simple backpressure: skip sending if socket is congested
-      // In a real tracker, the device would buffer or drop.
       if (socket.destroyed || socket.writableLength > 1024 * 64) {
         continue; 
       }
@@ -170,10 +187,9 @@ function startStreaming() {
       const lngDir = Math.random() > 0.5 ? 1 : -1;
       v.lat += (Math.random() * offsetDegrees * latDir);
       v.lng += (Math.random() * offsetDegrees * lngDir);
+      v.odometer += parseFloat((Math.random() * 0.5).toFixed(3));
 
-      const currentSpeed = Math.max(0, v.speed + (Math.random() * 4 - 2)).toFixed(2);
-      const packet = `$1,AEPL,0.0.1,NR,2,H,${v.imei},XXXXXXXXXX,1,${fDate},${fTime},${v.lat.toFixed(6)},N,${v.lng.toFixed(6)},E,${currentSpeed},${v.heading.toFixed(2)},10,553.00,1.27,1.00,AIRTEL,1,1,23.20,4.20,0,O,28,404,90,110E,E0EB,,0000,00,000074,9822,*\n`;
-
+      const packet = buildSluPacket(v, now);
       socket.write(packet);
       totalDataSent++;
     }

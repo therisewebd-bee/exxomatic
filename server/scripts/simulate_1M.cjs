@@ -3,12 +3,14 @@ const { Worker, isMainThread, workerData } = require('worker_threads');
 const os = require('os');
 
 /**
- * Super-Scale 1 Million Vehicle Simulator (Multi-Threaded)
+ * Super-Scale 1 Million Vehicle Simulator (Multi-Threaded) — $SLU Format
  * 
  * Scalability Design:
  * 1. Stateless: No massive arrays. Vehicles are generated on-the-fly from index.
  * 2. Multi-Core: Distributes load across all available CPU cores.
  * 3. Batching: Writes multiple packets in single socket calls to reduce syscalls.
+ *
+ * Packet format: $SLU{IMEI},{CMD_ID},{SERIAL},{ISO_TS},{EID},...*{CHECKSUM}
  */
 
 const TOTAL_VEHICLES = 1000000;
@@ -18,7 +20,7 @@ const CORE_COUNT = Math.max(1, Math.floor(os.cpus().length / 2));
 const VEHICLES_PER_WORKER = Math.floor(TOTAL_VEHICLES / CORE_COUNT);
 
 if (isMainThread) {
-  console.log(`\n🚀 Initializing 1 MILLION Vehicle Stress Test...`);
+  console.log(`\n🚀 Initializing 1 MILLION Vehicle Stress Test ($SLU Format)...`);
   console.log(`💻 Cores Detected: ${CORE_COUNT}`);
   console.log(`📱 Vehicles per Core: ${VEHICLES_PER_WORKER.toLocaleString()}`);
 
@@ -33,7 +35,7 @@ if (isMainThread) {
 
     console.clear();
     console.log(`\n======================================================`);
-    console.log(` 💎 SUPERSCALE 1M SIMULATOR DASHBOARD `);
+    console.log(` 💎 SUPERSCALE 1M SIMULATOR DASHBOARD ($SLU) `);
     console.log(`======================================================`);
     console.log(` 📱 Concurrent Vehicles : ${TOTAL_VEHICLES.toLocaleString()}`);
     console.log(` ⚡ Throughput          : ${tps.toLocaleString()} updates/sec`);
@@ -66,6 +68,39 @@ if (isMainThread) {
   const sockets = [];
   let connected = 0;
 
+  // Per-worker serial counter
+  let serialCounter = startId * 100;
+
+  /**
+   * Build a $SLU packet on-the-fly from an ID.
+   */
+  function buildSluPacket(id, now) {
+    const imei = '86' + String(id).padStart(13, '0');
+    const isoTs = now.toISOString().replace('.000Z', '+00:00').replace(/\.\d{3}Z$/, '+00:00');
+    const serial = ++serialCounter;
+
+    // Pseudo-random movement based on time and ID
+    const lat = 20 + (Math.sin(id + now.getTime() / 10000) * 5);
+    const lng = 78 + (Math.cos(id + now.getTime() / 10000) * 5);
+    const speed = Math.floor(40 + Math.random() * 20);
+    const ign = speed > 0 ? 1 : 0;
+    const heading = Math.floor(Math.random() * 360);
+    const alt = (400 + Math.random() * 200).toFixed(1);
+    const odo = (Math.random() * 50000).toFixed(3).padStart(10, '0');
+    const vbat = (3.8 + Math.random() * 0.5).toFixed(3);
+    const vin = (12 + Math.random() * 15).toFixed(3);
+    const batHealth = Math.floor(70 + Math.random() * 30);
+    const batCharge = Math.floor(40 + Math.random() * 60);
+    const temp = (20 + Math.random() * 20).toFixed(1);
+
+    const body = `$SLU${imei},06,${serial},${isoTs},01,${isoTs},${lat.toFixed(6)},${lng.toFixed(6)},${speed},${odo},${heading},${alt},${ign},${ign},0,0,,56112,0.81,,,${vbat},${vin},${batHealth},${batCharge},,,,3,${ign},${ign},0,${temp},,,,,,,,,0,2`;
+    let xor = 0;
+    for (let i = 1; i < body.length; i++) xor ^= body.charCodeAt(i);
+    const checksum = xor.toString(16).toUpperCase().padStart(2, '0').slice(-2);
+
+    return body + '*' + checksum + '\n';
+  }
+
   const connect = () => {
     for (let i = 0; i < socketCount; i++) {
       const s = new net.Socket();
@@ -83,23 +118,12 @@ if (isMainThread) {
     let sentInCycle = 0;
 
     const sendBatch = () => {
-      let batchBuffer = '';
-      const workloadPerTick = 500; // Reduced from 2000 for smoother execution
+      const workloadPerTick = 500;
+      const now = new Date();
 
       for (let i = 0; i < workloadPerTick; i++) {
         const id = startId + (Math.floor(Math.random() * count));
-        const imei = '86' + String(id).padStart(13, '0');
-
-        // Pseudo-random movement based on time and ID
-        const now = new Date();
-        const lat = 20 + (Math.sin(id + now.getTime() / 10000) * 5);
-        const lng = 78 + (Math.cos(id + now.getTime() / 10000) * 5);
-        const speed = 40 + (Math.random() * 20);
-
-        const fDate = now.getDate().toString().padStart(2, '0') + (now.getMonth() + 1).toString().padStart(2, '0') + now.getFullYear();
-        const fTime = now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0') + now.getSeconds().toString().padStart(2, '0');
-
-        const packet = `$1,AEPL,0.0.1,NR,2,H,${imei},XXXXXXXXXX,1,${fDate},${fTime},${lat.toFixed(6)},N,${lng.toFixed(6)},E,${speed.toFixed(2)},180.00,10,553.00,1.27,1.00,AIRTEL,1,1,23.20,4.20,0,O,28,404,90,110E,E0EB,,0000,00,000074,9822,*\n`;
+        const packet = buildSluPacket(id, now);
 
         const socket = sockets[id % socketCount];
         if (!socket.destroyed) {

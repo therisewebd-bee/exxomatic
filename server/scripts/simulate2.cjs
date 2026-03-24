@@ -1,11 +1,10 @@
 const net = require('net');
 
 /**
- * Lightweight IoT Fleet Simulator (100 devices)
+ * Lightweight IoT Fleet Simulator (100 devices) — $SLU Format
  * Simple script to test the full pipeline without heavy load.
- * Uses the $1,AEPL hardware format.
  *
- * Usage: node scripts/simulate.js [device_count] [host] [port]
+ * Usage: node scripts/simulate2.cjs [device_count] [host] [port]
  */
 
 const DEVICE_COUNT = parseInt(process.argv[2] || '100', 10);
@@ -34,41 +33,61 @@ for (let i = 0; i < DEVICE_COUNT; i++) {
     imei: '8607' + String(10000000000 + i).padStart(11, '0'),
     lat: base.lat + (Math.random() - 0.5) * 0.01,
     lng: base.lng + (Math.random() - 0.5) * 0.01,
+    odometer: Math.random() * 50000,
+    serial: Math.floor(Math.random() * 100000),
   });
 }
 
-let interval = null;
+/**
+ * Build a $SLU packet for a single device.
+ */
+function buildSluPacket(dev, now) {
+  const isoTs = now.toISOString().replace('.000Z', '+00:00').replace(/\.\d{3}Z$/, '+00:00');
+  const serial = ++dev.serial;
+  const speed = (Math.random() * 60).toFixed(0);
+  const ign = parseFloat(speed) > 0 ? 1 : 0;
+  const eng = ign;
+  const heading = Math.floor(Math.random() * 360);
+  const alt = (400 + Math.random() * 200).toFixed(1);
+  const odo = dev.odometer.toFixed(3).padStart(10, '0');
+  const vbat = (3.8 + Math.random() * 0.5).toFixed(3);
+  const vin = (12 + Math.random() * 15).toFixed(3);
+  const batHealth = Math.floor(70 + Math.random() * 30);
+  const batCharge = Math.floor(40 + Math.random() * 60);
+  const temp = (20 + Math.random() * 20).toFixed(1);
+  const eventId = ign ? '01' : '05';
 
-function fmtDate(d) {
-  return String(d.getDate()).padStart(2, '0') + String(d.getMonth() + 1).padStart(2, '0') + d.getFullYear();
+  const body = `$SLU${dev.imei},06,${serial},${isoTs},${eventId},${isoTs},${dev.lat.toFixed(6)},${dev.lng.toFixed(6)},${speed},${odo},${heading},${alt},${ign},${eng},0,0,,56112,0.81,,,${vbat},${vin},${batHealth},${batCharge},,,,3,${ign},${ign},0,${temp},,,,,,,,,0,2`;
+  let xor = 0;
+  for (let i = 1; i < body.length; i++) xor ^= body.charCodeAt(i);
+  const checksum = xor.toString(16).toUpperCase().padStart(2, '0').slice(-2);
+
+  return body + '*' + checksum + '\n';
 }
-function fmtTime(d) {
-  return String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + String(d.getSeconds()).padStart(2, '0');
-}
+
+let interval = null;
 
 function connect() {
   const client = new net.Socket();
 
   client.connect(SERVER_PORT, SERVER_HOST, () => {
     console.log(`✅ Connected to ${SERVER_HOST}:${SERVER_PORT}`);
-    console.log(`📡 Streaming ${DEVICE_COUNT} devices every 2 seconds...\n`);
+    console.log(`📡 Streaming ${DEVICE_COUNT} devices every 2 seconds ($SLU format)...\n`);
 
     let tick = 0;
 
     const sendBatch = () => {
       tick++;
       const now = new Date();
-      const d = fmtDate(now);
-      const t = fmtTime(now);
       let buf = '';
 
       for (const dev of devices) {
         // Small random walk (~50m per tick)
         dev.lat += (Math.random() - 0.5) * 0.0005;
         dev.lng += (Math.random() - 0.5) * 0.0005;
-        const speed = (Math.random() * 60).toFixed(2);
+        dev.odometer += parseFloat((Math.random() * 0.2).toFixed(3));
 
-        buf += `$1,AEPL,0.0.1,NR,2,H,${dev.imei},XXXXXXXXXX,1,${d},${t},${dev.lat.toFixed(6)},N,${dev.lng.toFixed(6)},E,${speed},${(Math.random() * 360).toFixed(2)},10,553.00,1.27,1.00,AIRTEL,1,1,23.20,4.20,0,O,28,404,90,110E,E0EB,,0000,00,000074,9822,*\n`;
+        buf += buildSluPacket(dev, now);
       }
 
       client.write(buf);
