@@ -20,6 +20,7 @@ class VehicleCache {
   private static instance: VehicleCache;
   private registeredImeis: Set<string> = new Set();
   private auditStates: Map<string, AuditState> = new Map();
+  public unknownPayloads: Map<string, any> = new Map();
   private loaded: boolean = false;
 
   private constructor() {

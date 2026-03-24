@@ -13,9 +13,9 @@ const net = require('net');
  */
 
 const TEST_CASE = process.argv[2] || '2';
-const TOTAL_VEHICLES = parseInt(process.argv[3] || '10000', 10);
+const TOTAL_VEHICLES = parseInt(process.argv[3] || '5', 10);
 const STRESS_MULTIPLIER = parseInt(process.argv[4] || '1', 10);
-const SERVER_HOST = '54.205.0.61';
+const SERVER_HOST = 'localhost';
 const SERVER_PORT = 5000;
 
 // To avoid Operating System "EMFILE" errors (max open files), 
@@ -87,21 +87,46 @@ for (let i = 0; i < TOTAL_VEHICLES; i++) {
 function buildSluPacket(v, now) {
   const isoTs = now.toISOString().replace('.000Z', '+00:00').replace(/\.\d{3}Z$/, '+00:00');
   const serial = ++v.serial;
+
+  // Calculate movement
   const speed = Math.max(0, v.speed + (Math.random() * 4 - 2)).toFixed(0);
-  const ign = parseFloat(speed) > 0 ? 1 : 0;
-  const eng = ign;
+  const isMoving = parseFloat(speed) > 0;
+
+  // Create randomized realistic event ID
+  // 01 = Location Report, 04 = IGN ON, 05 = IGN OFF, 24 = ENG ON, 25 = ENG OFF
+  let eventId = '01';
+  const randEvent = Math.random();
+  if (randEvent > 0.95) eventId = isMoving ? '04' : '05';
+  else if (randEvent > 0.9) eventId = isMoving ? '24' : '25';
+
+  const ign = isMoving ? 1 : 0;
+  const eng = isMoving ? 1 : 0;
+  const drv = isMoving ? 1 : 0;
+  const rpm = isMoving ? Math.floor(800 + Math.random() * 2000) : 0;
+
   const odo = v.odometer.toFixed(3).padStart(10, '0');
   const heading = Math.floor(v.heading) % 360;
   const alt = (400 + Math.random() * 200).toFixed(1);
+
+  const tdur = 56112 + Math.floor(serial / 10);
+  const start = 0.81;
   const vbat = (3.8 + Math.random() * 0.5).toFixed(3);
   const vin = (12 + Math.random() * 15).toFixed(3);
   const batHealth = Math.floor(70 + Math.random() * 30);
   const batCharge = Math.floor(40 + Math.random() * 60);
   const temp = (20 + Math.random() * 20).toFixed(1);
-  const eventId = ign ? '01' : '05';
 
-  // Simple XOR checksum over body (2 hex chars)
-  const body = `$SLU${v.imei},06,${serial},${isoTs},${eventId},${isoTs},${v.lat.toFixed(6)},${v.lng.toFixed(6)},${speed},${odo},${heading},${alt},${ign},${eng},0,0,,56112,0.81,,,${vbat},${vin},${batHealth},${batCharge},,,,3,${ign},${ign},0,${temp},,,,,,,,,0,2`;
+  // Reconstruct exact format requested
+  // $SLU{IMEI},06,SERIAL,EDI,EID,LDI,LTDD,LGDD,SPDK,ODOD,HEAD,ALTD,IGN,ENG,DRV,RPM,DUR,TDUR,STRT,STP,IDL,VBAT,VIN,BATH,BATC,V3,CFL,SATN,FIX,IN1,IN2,OUT1,TVI,TI1,TV1,TH1,TV2,TI2,TV2,TH2,CV1,Extra1,Extra2
+  const fields = [
+    `$SLU${v.imei}`, '06', serial, isoTs, eventId, isoTs, v.lat.toFixed(6), v.lng.toFixed(6), speed, odo,
+    heading, alt, ign, eng, drv, rpm, '', tdur, start, '', '', vbat, vin, batHealth, batCharge, '', '', '',
+    '3', '1', '1', '0', temp, '', '', '', '', '', '', '', '', '0', '2'
+  ];
+
+  const body = fields.join(',');
+
+  // Simple XOR checksum over body
   let xor = 0;
   for (let i = 1; i < body.length; i++) xor ^= body.charCodeAt(i);
   const checksum = xor.toString(16).toUpperCase().padStart(2, '0').slice(-2);
@@ -180,7 +205,7 @@ function startStreaming() {
 
       // Simple backpressure: skip sending if socket is congested
       if (socket.destroyed || socket.writableLength > 1024 * 64) {
-        continue; 
+        continue;
       }
 
       const latDir = Math.random() > 0.5 ? 1 : -1;

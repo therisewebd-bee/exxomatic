@@ -19,8 +19,19 @@ async function request(endpoint, method = 'GET', body = null) {
   const json = await res.json();
 
   if (!res.ok) {
-    const err = new Error(json.message || 'Request failed');
+    let errorMessage = json.message || 'Request failed';
+    
+    // Normalize validation errors from Zod into a readable string
+    if (json.error?.type === 'validation error' && json.error?.details) {
+       const details = Object.entries(json.error.details)
+         .map(([field, msg]) => `${field.replace(/^body\./, '')}: ${msg}`)
+         .join(', ');
+       errorMessage = `${errorMessage} - ${details}`;
+    }
+
+    const err = new Error(errorMessage);
     err.status = res.status;
+    err.details = json.error?.details;
     throw err;
   }
   return json;
@@ -31,7 +42,7 @@ export const signup = (data) => request('/users/register', 'POST', data);
 export const login  = (data) => request('/users/login', 'POST', data);
 export const updateUser = (id, data) => request(`/users/${id}`, 'PATCH', data);
 export const getUsers = () => request('/users');
-export const createUser = (data) => request('/users', 'POST', data);
+export const createUser = (data) => request('/users/register', 'POST', data);
 export const deleteUser = (id) => request(`/users/${id}`, 'DELETE');
 
 // ─── Vehicles ────────────────────────────────────────

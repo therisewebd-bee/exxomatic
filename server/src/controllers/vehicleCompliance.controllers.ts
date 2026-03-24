@@ -17,8 +17,17 @@ import {
 } from '../dto/vehicleCompliance.dto.ts';
 import { ValidatedRequest } from '../types/request.ts';
 
-const logComplianceHandler = AsyncHandler(async (req: ValidatedRequest<CreateVehicleComplianceInput>, res: Response) => {
+import { prismaAdapter } from '../dbQuery/dbInit.ts';
+
+const logComplianceHandler = AsyncHandler(async (req: ValidatedRequest<CreateVehicleComplianceInput> | any, res: Response) => {
   const { body } = req.validated;
+
+  if (req.user?.role !== 'Admin') {
+    const vehicle = await prismaAdapter.vehicleInfo.findUnique({ where: { id: body.vehicleId } });
+    if (!vehicle || vehicle.customerId !== req.user.id) {
+      throw new ApiError(403, 'Permission denied: Cannot log petrol receipts for vehicles you do not own');
+    }
+  }
 
   const logged = await createVehicleComplianceDb({ body });
 
@@ -27,17 +36,18 @@ const logComplianceHandler = AsyncHandler(async (req: ValidatedRequest<CreateVeh
     .json(new ApiResponse(201, logged, 'Compliance record logged successfully'));
 });
 
-const getCompliances = AsyncHandler(async (req: ValidatedRequest<FindVehicleComplianceQueryInput>, res: Response) => {
+const getCompliances = AsyncHandler(async (req: ValidatedRequest<FindVehicleComplianceQueryInput> | any, res: Response) => {
   const { query } = req.validated;
+  const customerId = req.user?.role !== 'Admin' ? req.user?.id : undefined;
 
-  const result = await findVehicleCompliancesDb({ query });
+  const result = await findVehicleCompliancesDb(query, customerId);
 
   return res
     .status(200)
     .json(new ApiResponse(200, result, 'Compliance records retrieved successfully'));
 });
 
-const getCompliance = AsyncHandler(async (req: ValidatedRequest<ComplianceIdParam>, res: Response) => {
+const getCompliance = AsyncHandler(async (req: ValidatedRequest<ComplianceIdParam> | any, res: Response) => {
   const { params } = req.validated;
 
   const record = await findVehicleComplianceByIdDb({ params });
@@ -45,16 +55,32 @@ const getCompliance = AsyncHandler(async (req: ValidatedRequest<ComplianceIdPara
     throw new ApiError(404, 'Compliance record not found');
   }
 
+  if (req.user?.role !== 'Admin') {
+    const vehicle = await prismaAdapter.vehicleInfo.findUnique({ where: { id: record.vehicleId } });
+    if (!vehicle || vehicle.customerId !== req.user.id) {
+      throw new ApiError(403, 'Permission denied: You do not own this report');
+    }
+  }
+
   return res
     .status(200)
     .json(new ApiResponse(200, record, 'Compliance record retrieved successfully'));
 });
 
-const updateComplianceHandler = AsyncHandler(async (req: ValidatedRequest<UpdateVehicleComplianceInput & ComplianceIdParam>, res: Response) => {
+const updateComplianceHandler = AsyncHandler(async (req: ValidatedRequest<UpdateVehicleComplianceInput & ComplianceIdParam> | any, res: Response) => {
   const { body, params } = req.validated;
 
   if (Object.keys(body).length === 0) {
     throw new ApiError(400, 'At least one field must be provided for update');
+  }
+
+  if (req.user?.role !== 'Admin') {
+    const record = await findVehicleComplianceByIdDb({ params });
+    if (!record) throw new ApiError(404, 'Compliance record not found');
+    const vehicle = await prismaAdapter.vehicleInfo.findUnique({ where: { id: record.vehicleId } });
+    if (!vehicle || vehicle.customerId !== req.user.id) {
+      throw new ApiError(403, 'Permission denied: You do not own this report');
+    }
   }
 
   const updated = await updateVehicleComplianceDb({ params }, { body });
@@ -64,8 +90,17 @@ const updateComplianceHandler = AsyncHandler(async (req: ValidatedRequest<Update
     .json(new ApiResponse(200, updated, 'Compliance record updated successfully'));
 });
 
-const deleteComplianceHandler = AsyncHandler(async (req: ValidatedRequest<ComplianceIdParam>, res: Response) => {
+const deleteComplianceHandler = AsyncHandler(async (req: ValidatedRequest<ComplianceIdParam> | any, res: Response) => {
   const { params } = req.validated;
+
+  if (req.user?.role !== 'Admin') {
+    const record = await findVehicleComplianceByIdDb({ params });
+    if (!record) throw new ApiError(404, 'Compliance record not found');
+    const vehicle = await prismaAdapter.vehicleInfo.findUnique({ where: { id: record.vehicleId } });
+    if (!vehicle || vehicle.customerId !== req.user.id) {
+      throw new ApiError(403, 'Permission denied: You do not own this report');
+    }
+  }
 
   const result = await deleteVehicleComplianceDb({ params });
 

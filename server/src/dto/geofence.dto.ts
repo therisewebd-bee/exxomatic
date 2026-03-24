@@ -20,6 +20,7 @@ export const createGeofenceSchema = z.object({
     zoneHash: zoneHashSchema,
     isActive: isActiveSchema,
     vehicleIds: z.array(z.uuid()).optional(),
+    customerId: z.uuid().optional(),
   }),
 });
 
@@ -30,6 +31,7 @@ export const updateGeofenceSchema = z.object({
     zoneHash: zoneHashSchema,
     isActive: isActiveSchema.optional(),
     vehicleIds: z.array(z.uuid()).optional(),
+    customerId: z.uuid().optional(),
   }),
 });
 

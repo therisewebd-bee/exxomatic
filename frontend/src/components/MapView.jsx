@@ -53,7 +53,7 @@ if (typeof L !== 'undefined' && L.DomEvent) {
 
 const EMPTY_ARRAY = [];
 
-export default function MapView({ vehicles, selectedVehicle, selectionTime, onSelectVehicle, livePositions = {}, unknownDevices = {}, onDrawComplete, isAdmin, onViewportChange }) {
+export default function MapView({ vehicles, selectedVehicle, selectionTime, onSelectVehicle, livePositions = {}, unknownDevices = {}, onDrawComplete, isAdmin, onViewportChange, onRegisterRequest, onEditRequest, onAnalyzeRequest }) {
     const mapRef = useRef(null);
     const [overlayTarget, setOverlayTarget] = useState(null);
     
@@ -203,15 +203,44 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                                         <span className="text-gray-600">{statusLabels[vehicle.status] || 'Unknown'}</span>
                                     </div>
                                     <div className="text-gray-500 mb-2">Speed: {vehicle.speed || 0} km/h</div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowHistoryData(true);
-                                        }}
-                                        className="w-full py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded flex items-center justify-center gap-1 transition-colors"
-                                    >
-                                        <MdAssessment size={14} /> View Historical Data
-                                    </button>
+                                    
+                                    {vehicle.diagnostics && Object.keys(vehicle.diagnostics).length > 0 && (
+                                        <div className="bg-gray-50 rounded p-2 mb-2 border border-gray-100">
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Live Diagnostics</div>
+                                            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-brand-purple">
+                                                {vehicle.diagnostics.odometer !== undefined && <div><span className="text-gray-500">Odo:</span> {(vehicle.diagnostics.odometer).toFixed(1)} km</div>}
+                                                {vehicle.diagnostics.batteryVoltage !== undefined && <div><span className="text-gray-500">Bat:</span> {vehicle.diagnostics.batteryVoltage}V</div>}
+                                                {vehicle.diagnostics.temperature !== undefined && <div><span className="text-gray-500">Temp:</span> {vehicle.diagnostics.temperature}°C</div>}
+                                                {vehicle.diagnostics.engine !== undefined && <div><span className="text-gray-500">Eng:</span> {vehicle.diagnostics.engine ? 'ON' : 'OFF'}</div>}
+                                                {vehicle.diagnostics.rpm !== undefined && <div><span className="text-gray-500">RPM:</span> {vehicle.diagnostics.rpm}</div>}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-col gap-1.5 mt-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onAnalyzeRequest) onAnalyzeRequest(vehicle);
+                                                else setShowHistoryData(true);
+                                            }}
+                                            className="w-full py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded flex items-center justify-center gap-1 transition-colors"
+                                        >
+                                            <MdAssessment size={14} /> View Analytics
+                                        </button>
+
+                                        {isAdmin && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (onEditRequest) onEditRequest(vehicle);
+                                                }}
+                                                className="w-full py-1.5 bg-brand-purple/10 hover:bg-brand-purple/20 text-brand-purple border border-brand-purple/20 text-xs font-bold rounded flex items-center justify-center gap-1 transition-colors"
+                                            >
+                                                Assign Customer / Edit
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </Popup>
                         </Marker>
@@ -263,20 +292,25 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                                         <span className="text-gray-600">{statusLabels[status] || 'Unknown'}</span>
                                     </div>
                                     <div className="text-gray-500 mb-2">Speed: {speed} km/h</div>
+
+                                    {pos.diagnostics && Object.keys(pos.diagnostics).length > 0 && (
+                                        <div className="bg-amber-50/50 rounded p-2 mb-2 border border-amber-100">
+                                            <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1">Diagnostics</div>
+                                            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-amber-900">
+                                                {pos.diagnostics.odometer !== undefined && <div><span className="text-amber-600">Odo:</span> {(pos.diagnostics.odometer).toFixed(1)} km</div>}
+                                                {pos.diagnostics.batteryVoltage !== undefined && <div><span className="text-amber-600">Bat:</span> {pos.diagnostics.batteryVoltage}V</div>}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <button
-                                        onClick={async () => {
-                                            const num = prompt('Enter vehicle number/name:');
-                                            if (!num) return;
-                                            try {
-                                                await createMutation.mutateAsync({ imei, vechicleNumb: num });
-                                                alert('Vehicle registered!');
-                                            } catch (e) {
-                                                alert(e.message || 'Registration failed');
-                                            }
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onRegisterRequest) onRegisterRequest(imei);
                                         }}
                                         className="w-full py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded flex items-center justify-center gap-1 transition-colors"
                                     >
-                                        Quick Register
+                                        Register Vehicle
                                     </button>
                                 </div>
                             </Popup>

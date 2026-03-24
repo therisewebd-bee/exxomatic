@@ -21,7 +21,7 @@ const hashGeofence = (zone: object) => {
 
 const createGeofenceDb = catchService(
   async (data: any) => {
-    const { vehicleIds, name, zone, isActive } = data;
+    const { vehicleIds, name, zone, isActive, customerId } = data;
     const zoneHash = hashGeofence(zone);
 
     // Transaction: pure DB work only, no side effects
@@ -49,7 +49,7 @@ const createGeofenceDb = catchService(
         }
 
       const geofence = await tx.geofence.create({
-        data: { name, zoneHash, isActive },
+        data: { name, zoneHash, isActive, customerId },
       });
 
       if (vehicleIds && vehicleIds.length > 0) {
@@ -162,9 +162,10 @@ const findGeofenceByIdDb = catchService(
 );
 
 const findAllGeofenceDb = catchService(
-  async (page: number = 1, limit: number = 10) => {
+  async (page: number = 1, limit: number = 10, filters: any = {}) => {
     const skip = (page - 1) * limit;
     return await prismaAdapter.geofence.findMany({
+      where: filters,
       skip,
       take: limit,
       include: {

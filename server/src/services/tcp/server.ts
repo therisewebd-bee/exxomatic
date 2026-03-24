@@ -99,7 +99,7 @@ const startTcpServer = async (): Promise<void> => {
                 lng: Number(parsed.lng),
                 timestamp: parsed.timestamp ? new Date(parsed.timestamp) : new Date()
               };
-            } catch (_) {}
+            } catch (_) { }
           }
 
           if (payload) {
@@ -114,6 +114,7 @@ const startTcpServer = async (): Promise<void> => {
               const lastPing = unknownPings.get(payload.imei) || 0;
               if (now - lastPing > 2000) {
                 unknownPings.set(payload.imei, now);
+                vehicleCache.unknownPayloads.set(payload.imei, payload);
                 wsService.broadcast('tracker:unknown', {
                   location: {
                     imei: payload.imei,

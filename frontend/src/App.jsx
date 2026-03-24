@@ -33,6 +33,9 @@ function Dashboard() {
   const [selection, setSelection] = useState({ id: null, ts: 0 });
   const [drawingActive, setDrawingActive] = useState(false);
   const [drawnZone, setDrawnZone] = useState(null);
+  const [registerImei, setRegisterImei] = useState(null);
+  const [editVehicleId, setEditVehicleId] = useState(null);
+  const [analyticsImei, setAnalyticsImei] = useState(null);
 
   // WebSocket vehicle tracking — all batching, eviction, and events handled by the hook
   const { livePositions, unknownDevices, notifications, handleViewportChange, totalLiveCount } = useWebSocketVehicles(isAuthenticated, isAdmin);
@@ -62,17 +65,22 @@ function Dashboard() {
         isAlert: isLiveFresh ? (live.status === 'ALERT') : false,
         plate: v.vechicleNumb || v.imei,
         isUnregistered: false,
+        diagnostics: isLiveFresh ? (live.diagnostics || {}) : {}
       };
     });
 
-    // For Admin: merge unknown devices — simple cap, no sort
+    // For Admin: merge unknown devices via O(N) functional composition
     if (isAdmin) {
-      let count = 0;
-      for (const imei in unknownDevices) {
-        if (count >= 500) break;
-        const pos = unknownDevices[imei];
-        if (!pos.timestamp || (nowTime - new Date(pos.timestamp).getTime()) > 120000) continue;
-        registered.push({
+      const registeredImeis = new Set(vehicles.map(v => String(v.imei)));
+
+      const unregPool = Object.entries(unknownDevices)
+        .filter(([imei, pos]) => 
+          !registeredImeis.has(String(imei)) && 
+          pos.timestamp && 
+          (nowTime - new Date(pos.timestamp).getTime()) <= 120000
+        )
+        .slice(0, 500)
+        .map(([imei, pos]) => ({
           id: `unregistered-${imei}`,
           imei,
           lat: pos.lat,
@@ -82,9 +90,10 @@ function Dashboard() {
           isAlert: false,
           plate: `Unregistered (${imei.slice(-6)})`,
           isUnregistered: true,
-        });
-        count++;
-      }
+          diagnostics: pos.diagnostics || {}
+        }));
+
+      registered.push(...unregPool);
     }
 
     return registered;
@@ -100,6 +109,20 @@ function Dashboard() {
     setActiveTab('liveMap');
   }, []);
 
+  const handleRegisterRequest = useCallback((imei) => {
+    setRegisterImei(imei);
+    setActiveTab('vehicles');
+  }, []);
+
+  const handleEditRequest = useCallback((vehicle) => {
+    setEditVehicleId(vehicle.id);
+    setActiveTab('vehicles');
+  }, []);
+
+  const handleAnalyzeRequest = useCallback((vehicle) => {
+    setAnalyticsImei(vehicle.imei);
+    setActiveTab('analytics');
+  }, []);
 
   // Geofence drawing callbacks
   const handleDrawRequested = useCallback(() => {
@@ -121,6 +144,8 @@ function Dashboard() {
     setDrawnZone(null);
   }, []);
 
+  const registeredVehiclesOnly = useMemo(() => mergedVehicles.filter(v => !v.isUnregistered), [mergedVehicles]);
+
   if (!isAuthenticated) return (
     <Suspense fallback={<LazyFallback />}>
       <AuthOverlay />
@@ -138,9 +163,12 @@ function Dashboard() {
             selectedVehicle={selectedVehicle}
             onSelectVehicle={handleSelectVehicle}
             totalLiveCount={totalLiveCount}
+            isAdmin={isAdmin}
+            onRegisterRequest={handleRegisterRequest}
+            onEditRequest={handleEditRequest}
           />
           <MapView
-            vehicles={mergedVehicles}
+            vehicles={registeredVehiclesOnly}
             livePositions={livePositions}
             selectedVehicle={selectedVehicle}
             selectionTime={selection.ts}
@@ -149,6 +177,9 @@ function Dashboard() {
             onDrawComplete={handleDrawComplete}
             isAdmin={isAdmin}
             onViewportChange={handleViewportChange}
+            onRegisterRequest={handleRegisterRequest}
+            onEditRequest={handleEditRequest}
+            onAnalyzeRequest={handleAnalyzeRequest}
           />
         </>
       )}
@@ -164,11 +195,17 @@ function Dashboard() {
 
         {activeTab === 'vehicles' && (
           <VehicleManagementPanel
-            vehicles={mergedVehicles}
+            vehicles={registeredVehiclesOnly}
+            registerImei={registerImei}
+            editVehicleId={editVehicleId}
+            onClearRegisterImei={() => {
+              setRegisterImei(null);
+              setEditVehicleId(null);
+            }}
           />
         )}
 
-        {activeTab === 'analytics' && <AnalyticsPanel />}
+        {activeTab === 'analytics' && <AnalyticsPanel key={analyticsImei} initialImei={analyticsImei} />}
         {activeTab === 'reports' && <ReportsPanel vehicles={mergedVehicles} />}
         {activeTab === 'settings' && <SettingsPanel />}
         {activeTab === 'notifications' && <NotificationsPanel notifications={notifications} />}

@@ -137,10 +137,22 @@ exports.Prisma.LocationLogScalarFieldEnum = {
   altitude: 'altitude',
   speed: 'speed',
   heading: 'heading',
-  batteryVoltage: 'batteryVoltage',
   ignition: 'ignition',
   timestamp: 'timestamp',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  odometer: 'odometer',
+  engine: 'engine',
+  rpm: 'rpm',
+  batteryVoltage: 'batteryVoltage',
+  inputVoltage: 'inputVoltage',
+  batteryHealth: 'batteryHealth',
+  batteryCharge: 'batteryCharge',
+  temperature: 'temperature',
+  gpsFix: 'gpsFix',
+  digitalInput1: 'digitalInput1',
+  digitalInput2: 'digitalInput2',
+  digitalOutput1: 'digitalOutput1',
+  totalEngineDuration: 'totalEngineDuration'
 };
 
 exports.Prisma.UserScalarFieldEnum = {
@@ -158,6 +170,7 @@ exports.Prisma.GeofenceScalarFieldEnum = {
   name: 'name',
   zoneHash: 'zoneHash',
   isActive: 'isActive',
+  customerId: 'customerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

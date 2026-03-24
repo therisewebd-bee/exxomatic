@@ -122,9 +122,10 @@ export default function Sidebar({ activeTab, onTabChange, onLogout }) {
 
     const currentNavItems = [...navItems];
     if (user?.role === 'Admin') {
-        currentNavItems.push({
+        const settingsIdx = currentNavItems.findIndex(i => i.id === 'settings');
+        currentNavItems.splice(settingsIdx, 0, {
             id: 'users',
-            label: 'User Management',
+            label: 'Users',
             icon: <MdPeople size={18} />,
         });
     }

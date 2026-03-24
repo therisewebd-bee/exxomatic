@@ -60,14 +60,14 @@ class WebSocketService {
       // Optimized Priority Load: memory cache first, guarded DB fallback
       if (ws.identity) {
         try {
-          const cachedUpdates: any[] = [];
-          for (const [imei, update] of this.lastPosCache) {
-            if (ws.identity.role === 'Admin' || ws.authorizedImeis?.has(imei)) {
-              cachedUpdates.push(update);
-              if (cachedUpdates.length >= 30 && ws.identity.role === 'Customer') break;
-              if (cachedUpdates.length >= 200 && ws.identity.role === 'Admin') break;
-            }
-          }
+          const isCustomer = ws.identity.role === 'Customer';
+          const maxCacheSize = isCustomer ? 30 : 200;
+
+          // Pure functional stream conversion of LRU cache
+          const cachedUpdates = Array.from(this.lastPosCache.entries())
+            .filter(([imei]) => !isCustomer || ws.authorizedImeis?.has(imei))
+            .map(([_, update]) => update)
+            .slice(0, maxCacheSize);
 
           if (cachedUpdates.length > 0) {
             this.sendToClient(ws, SocketResponse.format('tracker:live:batch', cachedUpdates));
@@ -161,62 +161,53 @@ class WebSocketService {
       return;
     }
 
-    // Pre-serialize alert payload ONCE (shared across all clients)
-    let alertMessage: string | null = null;
-    if (this.alertBuffer.length > 0) {
-      alertMessage = JSON.stringify(SocketResponse.format('tracker:live:batch', this.alertBuffer));
-    }
+    // Pre-serialize admin alert payload for zero-cost routing
+    const adminAlertMessage = this.alertBuffer.length > 0
+      ? JSON.stringify(SocketResponse.format('tracker:live:batch', this.alertBuffer))
+      : null;
 
-    for (const client of allClients) {
+    allClients.forEach((client) => {
       try {
-        if (client.readyState !== 1) continue;
+        if (client.readyState !== 1) return;
+
+        // Tenant-level Alert Filtering (O(N) with pure filter)
+        const clientAlerts = this.alertBuffer.length > 0
+          ? (client.identity?.role === 'Admin' ? this.alertBuffer : this.alertBuffer.filter(a => client.authorizedImeis?.has(a.location?.imei || a.imei)))
+          : [];
 
         if (!client.viewport) {
-          // No viewport: Admin gets alerts only
-          if (client.identity?.role === 'Admin' && alertMessage) {
-            client.send(alertMessage);
+          if (client.identity?.role === 'Admin' && adminAlertMessage) {
+            client.send(adminAlertMessage);
+          } else if (clientAlerts.length > 0) {
+            client.send(JSON.stringify(SocketResponse.format('tracker:live:batch', clientAlerts)));
           }
-          continue;
+          return;
         }
 
         const { minLat, maxLat, minLng, maxLng } = client.viewport;
-        const clientBatch: any[] = [];
+        const startLat = Math.floor(minLat * 2), endLat = Math.floor(maxLat * 2);
+        const startLng = Math.floor(minLng * 2), endLng = Math.floor(maxLng * 2);
 
-        // Spatial grid lookup
-        const startLat = Math.floor(minLat * 2);
-        const endLat = Math.floor(maxLat * 2);
-        const startLng = Math.floor(minLng * 2);
-        const endLng = Math.floor(maxLng * 2);
+        // Functional Vector Grid Translation Engine (O(N))
+        const latRange = Array.from({ length: endLat - startLat + 1 }, (_, i) => startLat + i);
+        const lngRange = Array.from({ length: endLng - startLng + 1 }, (_, i) => startLng + i);
 
-        for (let latIdx = startLat; latIdx <= endLat; latIdx++) {
-          for (let lngIdx = startLng; lngIdx <= endLng; lngIdx++) {
-            const cellKey = `${latIdx}:${lngIdx}`;
-            const cellUpdates = this.gridBuffer.get(cellKey);
-            if (cellUpdates) {
-              for (const update of cellUpdates) {
-                clientBatch.push(update);
-                if (clientBatch.length > 500) break;
-              }
-            }
-            if (clientBatch.length > 500) break;
-          }
-          if (clientBatch.length > 500) break;
-        }
+        // Generate matrix, lookup cache, flatten arrays, filter auth, and slice to safe 500 limit in one O(N) functional river
+        const gridUpdates = latRange
+          .flatMap(latIdx => lngRange.map(lngIdx => `${latIdx}:${lngIdx}`))
+          .flatMap(cellKey => this.gridBuffer.get(cellKey) || [])
+          .filter(update => client.identity?.role === 'Admin' || client.authorizedImeis?.has(update.location?.imei || update.imei))
+          .slice(0, 500);
 
-        // Merge alerts + spatial updates into one message
-        if (clientBatch.length > 0 || alertMessage) {
-          const finalBatch = this.alertBuffer.length > 0
-            ? [...this.alertBuffer, ...clientBatch]
-            : clientBatch;
-          if (finalBatch.length > 0) {
-            client.send(JSON.stringify(SocketResponse.format('tracker:live:batch', finalBatch)));
-          }
+        // Concat O(1) merge
+        const finalBatch = [...clientAlerts, ...gridUpdates];
+        if (finalBatch.length > 0) {
+          client.send(JSON.stringify(SocketResponse.format('tracker:live:batch', finalBatch)));
         }
       } catch (err: any) {
-        // Per-client try-catch: one bad socket can't abort the loop
         logger.warn(`[ws] send error for client: ${err.message}`);
       }
-    }
+    });
 
     this.gridBuffer.clear();
     this.alertBuffer = [];

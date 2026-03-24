@@ -51,6 +51,19 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
         liveBuffer = {};
         hasLiveData = false;
 
+        // Auto-evict newly registered trackers from the Unknown Devices panel
+        setUnknownDevices(prevUnknown => {
+          let modified = false;
+          const nextUnknown = { ...prevUnknown };
+          for (const imei of Object.keys(pending)) {
+            if (nextUnknown[imei]) {
+              delete nextUnknown[imei];
+              modified = true;
+            }
+          }
+          return modified ? nextUnknown : prevUnknown;
+        });
+
         setLivePositions(prev => {
           // Mutate-and-return: O(keys in pending) instead of O(keys in prev + pending)
           const next = Object.assign({}, prev, pending);
@@ -116,7 +129,8 @@ export function useWebSocketVehicles(isAuthenticated, isAdmin) {
           ignition: loc.ignition,
           timestamp: loc.timestamp,
           status: item.status,
-          motionStatus: item.motionStatus
+          motionStatus: item.motionStatus,
+          diagnostics: item.diagnostics || {}
         };
         if (isUnknown) {
           unknownBuffer[loc.imei] = update;

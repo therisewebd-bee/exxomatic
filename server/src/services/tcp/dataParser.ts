@@ -26,6 +26,7 @@ export interface SluParsedData extends TrackerPayload {
   digitalOutput1?: boolean;
   temperature?: number;
   messageSerial?: number;
+  rawPacket?: string;
 }
 
 /**
@@ -70,10 +71,13 @@ const enum SLU {
   TI1      = 33, // Temp input 1
   TV1      = 34, // Temp value 1
   TH1      = 35, // Temp high 1
-  TV2      = 36, // Temp value 2
+  TV2_1    = 36, // Temp value 2 (Dup in spec)
   TI2      = 37, // Temp input 2
-  TH2      = 38, // Temp high 2 (field label reuse in spec)
-  CV1      = 39, // Custom value 1
+  TV2_2    = 38, // Temp value 2 (Dup in spec)
+  TH2      = 39, // Temp high 2 
+  CV1      = 40, // Custom value 1
+  EXT1     = 41, // Extra 1
+  EXT2     = 42, // Extra 2
 }
 
 /**
@@ -177,6 +181,7 @@ export const parseRawSluData = (data: string): SluParsedData | null => {
       digitalOutput1,
       temperature,
       messageSerial,
+      rawPacket: cleanData,
     };
   } catch (error) {
     return null;

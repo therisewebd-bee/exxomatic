@@ -13,6 +13,9 @@ export interface TrackerPayload {
   heading?: number;
   ignition?: boolean;
   timestamp?: Date;
+  eventId?: string;
+  rawPacket?: string;
+  [key: string]: any; // Accept extended diagnostic fields (SLU format)
 }
 
 export type MotionStatus = 'moving' | 'idle' | 'stopped' | 'offline';
@@ -23,6 +26,7 @@ export interface NormalizedTrackerResponse {
   geofences: any[];
   status: 'NORMAL' | 'ALERT';
   motionStatus: MotionStatus;
+  diagnostics?: any; // New payload attachment for UI metrics without trashing DB schema
 }
 
 /**
@@ -62,6 +66,8 @@ export const processLiveUpdate = async (data: TrackerPayload): Promise<void> => 
       motionStatus = 'idle';
     }
 
+    const { imei: _i, lat: _la, lng: _ln, speed: _s, ignition: _ig, timestamp: _t, altitude: _a, heading: _h, ...diagnostics } = data;
+
     const result: NormalizedTrackerResponse = {
       location: {
         imei,
@@ -73,7 +79,8 @@ export const processLiveUpdate = async (data: TrackerPayload): Promise<void> => 
       },
       geofences: insideFences,
       status: isBreached ? 'ALERT' : 'NORMAL',
-      motionStatus
+      motionStatus,
+      diagnostics: Object.keys(diagnostics).length > 0 ? diagnostics : undefined
     };
 
     // 2. Immediate Broadcast
@@ -109,7 +116,24 @@ export const processTrackerUpdate = async (data: TrackerPayload): Promise<Normal
       ignition: data.ignition,
       altitude: data.altitude,
       heading: data.heading,
-      timestamp
+      timestamp,
+      // $SLU hardware diagnostics
+      odometer: data.odometer,
+      engine: data.engine,
+      rpm: data.rpm,
+      batteryVoltage: data.batteryVoltage,
+      inputVoltage: data.inputVoltage,
+      batteryHealth: data.batteryHealth != null ? Math.round(data.batteryHealth) : undefined,
+      batteryCharge: data.batteryCharge != null ? Math.round(data.batteryCharge) : undefined,
+      temperature: data.temperature,
+      gpsFix: data.gpsFix != null ? Math.round(data.gpsFix) : undefined,
+      digitalInput1: data.digitalInput1,
+      digitalInput2: data.digitalInput2,
+      digitalOutput1: data.digitalOutput1,
+      totalEngineDuration: data.totalEngineDuration != null ? Math.round(data.totalEngineDuration) : undefined,
+      messageSerial: data.messageSerial != null ? Math.round(data.messageSerial) : undefined,
+      eventId: data.eventId,
+      rawPacket: data.rawPacket,
     });
 
     // 2. Spatial Optimized Geofence Audit
@@ -193,7 +217,24 @@ export const processTrackerUpdateBatch = async (updates: TrackerPayload[]): Prom
         ignition: data.ignition,
         altitude: data.altitude,
         heading: data.heading,
-        timestamp: data.timestamp || new Date()
+        timestamp: data.timestamp || new Date(),
+        // $SLU hardware diagnostics
+        odometer: data.odometer,
+        engine: data.engine,
+        rpm: data.rpm,
+        batteryVoltage: data.batteryVoltage,
+        inputVoltage: data.inputVoltage,
+        batteryHealth: data.batteryHealth != null ? Math.round(data.batteryHealth) : undefined,
+        batteryCharge: data.batteryCharge != null ? Math.round(data.batteryCharge) : undefined,
+        temperature: data.temperature,
+        gpsFix: data.gpsFix != null ? Math.round(data.gpsFix) : undefined,
+        digitalInput1: data.digitalInput1,
+        digitalInput2: data.digitalInput2,
+        digitalOutput1: data.digitalOutput1,
+        totalEngineDuration: data.totalEngineDuration != null ? Math.round(data.totalEngineDuration) : undefined,
+        messageSerial: data.messageSerial != null ? Math.round(data.messageSerial) : undefined,
+        eventId: data.eventId,
+        rawPacket: data.rawPacket,
       }))
     );
 
@@ -257,6 +298,8 @@ export const processTrackerUpdateBatch = async (updates: TrackerPayload[]): Prom
         motionStatus = 'idle';
       }
 
+      const { imei: _i, lat: _la, lng: _ln, speed: _s, ignition: _ig, timestamp: _t, altitude: _a, heading: _h, ...diagnostics } = data;
+
       const result: NormalizedTrackerResponse = {
         location: {
           imei,
@@ -270,7 +313,8 @@ export const processTrackerUpdateBatch = async (updates: TrackerPayload[]): Prom
         },
         geofences: insideFences,
         status: isBreached ? 'ALERT' : 'NORMAL',
-        motionStatus
+        motionStatus,
+        diagnostics: Object.keys(diagnostics).length > 0 ? diagnostics : undefined
       };
 
       // Broadcast triggers WebSocket buffers natively

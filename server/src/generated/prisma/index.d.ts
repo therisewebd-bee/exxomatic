@@ -1388,10 +1388,12 @@ export namespace Prisma {
 
   export type UserCountOutputType = {
     vehicleInfos: number
+    geofences: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     vehicleInfos?: boolean | UserCountOutputTypeCountVehicleInfosArgs
+    geofences?: boolean | UserCountOutputTypeCountGeofencesArgs
   }
 
   // Custom InputTypes
@@ -1410,6 +1412,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountVehicleInfosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: VehicleInfoWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountGeofencesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: GeofenceWhereInput
   }
 
 
@@ -2628,7 +2637,15 @@ export namespace Prisma {
     altitude: Decimal | null
     speed: Decimal | null
     heading: Decimal | null
+    odometer: number | null
+    rpm: number | null
     batteryVoltage: number | null
+    inputVoltage: number | null
+    batteryHealth: number | null
+    batteryCharge: number | null
+    temperature: number | null
+    gpsFix: number | null
+    totalEngineDuration: number | null
   }
 
   export type LocationLogSumAggregateOutputType = {
@@ -2637,7 +2654,15 @@ export namespace Prisma {
     altitude: Decimal | null
     speed: Decimal | null
     heading: Decimal | null
+    odometer: number | null
+    rpm: number | null
     batteryVoltage: number | null
+    inputVoltage: number | null
+    batteryHealth: number | null
+    batteryCharge: number | null
+    temperature: number | null
+    gpsFix: number | null
+    totalEngineDuration: number | null
   }
 
   export type LocationLogMinAggregateOutputType = {
@@ -2648,10 +2673,22 @@ export namespace Prisma {
     altitude: Decimal | null
     speed: Decimal | null
     heading: Decimal | null
-    batteryVoltage: number | null
     ignition: boolean | null
     timestamp: Date | null
     createdAt: Date | null
+    odometer: number | null
+    engine: boolean | null
+    rpm: number | null
+    batteryVoltage: number | null
+    inputVoltage: number | null
+    batteryHealth: number | null
+    batteryCharge: number | null
+    temperature: number | null
+    gpsFix: number | null
+    digitalInput1: boolean | null
+    digitalInput2: boolean | null
+    digitalOutput1: boolean | null
+    totalEngineDuration: number | null
   }
 
   export type LocationLogMaxAggregateOutputType = {
@@ -2662,10 +2699,22 @@ export namespace Prisma {
     altitude: Decimal | null
     speed: Decimal | null
     heading: Decimal | null
-    batteryVoltage: number | null
     ignition: boolean | null
     timestamp: Date | null
     createdAt: Date | null
+    odometer: number | null
+    engine: boolean | null
+    rpm: number | null
+    batteryVoltage: number | null
+    inputVoltage: number | null
+    batteryHealth: number | null
+    batteryCharge: number | null
+    temperature: number | null
+    gpsFix: number | null
+    digitalInput1: boolean | null
+    digitalInput2: boolean | null
+    digitalOutput1: boolean | null
+    totalEngineDuration: number | null
   }
 
   export type LocationLogCountAggregateOutputType = {
@@ -2676,10 +2725,22 @@ export namespace Prisma {
     altitude: number
     speed: number
     heading: number
-    batteryVoltage: number
     ignition: number
     timestamp: number
     createdAt: number
+    odometer: number
+    engine: number
+    rpm: number
+    batteryVoltage: number
+    inputVoltage: number
+    batteryHealth: number
+    batteryCharge: number
+    temperature: number
+    gpsFix: number
+    digitalInput1: number
+    digitalInput2: number
+    digitalOutput1: number
+    totalEngineDuration: number
     _all: number
   }
 
@@ -2690,7 +2751,15 @@ export namespace Prisma {
     altitude?: true
     speed?: true
     heading?: true
+    odometer?: true
+    rpm?: true
     batteryVoltage?: true
+    inputVoltage?: true
+    batteryHealth?: true
+    batteryCharge?: true
+    temperature?: true
+    gpsFix?: true
+    totalEngineDuration?: true
   }
 
   export type LocationLogSumAggregateInputType = {
@@ -2699,7 +2768,15 @@ export namespace Prisma {
     altitude?: true
     speed?: true
     heading?: true
+    odometer?: true
+    rpm?: true
     batteryVoltage?: true
+    inputVoltage?: true
+    batteryHealth?: true
+    batteryCharge?: true
+    temperature?: true
+    gpsFix?: true
+    totalEngineDuration?: true
   }
 
   export type LocationLogMinAggregateInputType = {
@@ -2710,10 +2787,22 @@ export namespace Prisma {
     altitude?: true
     speed?: true
     heading?: true
-    batteryVoltage?: true
     ignition?: true
     timestamp?: true
     createdAt?: true
+    odometer?: true
+    engine?: true
+    rpm?: true
+    batteryVoltage?: true
+    inputVoltage?: true
+    batteryHealth?: true
+    batteryCharge?: true
+    temperature?: true
+    gpsFix?: true
+    digitalInput1?: true
+    digitalInput2?: true
+    digitalOutput1?: true
+    totalEngineDuration?: true
   }
 
   export type LocationLogMaxAggregateInputType = {
@@ -2724,10 +2813,22 @@ export namespace Prisma {
     altitude?: true
     speed?: true
     heading?: true
-    batteryVoltage?: true
     ignition?: true
     timestamp?: true
     createdAt?: true
+    odometer?: true
+    engine?: true
+    rpm?: true
+    batteryVoltage?: true
+    inputVoltage?: true
+    batteryHealth?: true
+    batteryCharge?: true
+    temperature?: true
+    gpsFix?: true
+    digitalInput1?: true
+    digitalInput2?: true
+    digitalOutput1?: true
+    totalEngineDuration?: true
   }
 
   export type LocationLogCountAggregateInputType = {
@@ -2738,10 +2839,22 @@ export namespace Prisma {
     altitude?: true
     speed?: true
     heading?: true
-    batteryVoltage?: true
     ignition?: true
     timestamp?: true
     createdAt?: true
+    odometer?: true
+    engine?: true
+    rpm?: true
+    batteryVoltage?: true
+    inputVoltage?: true
+    batteryHealth?: true
+    batteryCharge?: true
+    temperature?: true
+    gpsFix?: true
+    digitalInput1?: true
+    digitalInput2?: true
+    digitalOutput1?: true
+    totalEngineDuration?: true
     _all?: true
   }
 
@@ -2839,10 +2952,22 @@ export namespace Prisma {
     altitude: Decimal | null
     speed: Decimal | null
     heading: Decimal | null
-    batteryVoltage: number | null
     ignition: boolean
     timestamp: Date
     createdAt: Date
+    odometer: number | null
+    engine: boolean | null
+    rpm: number | null
+    batteryVoltage: number | null
+    inputVoltage: number | null
+    batteryHealth: number | null
+    batteryCharge: number | null
+    temperature: number | null
+    gpsFix: number | null
+    digitalInput1: boolean | null
+    digitalInput2: boolean | null
+    digitalOutput1: boolean | null
+    totalEngineDuration: number | null
     _count: LocationLogCountAggregateOutputType | null
     _avg: LocationLogAvgAggregateOutputType | null
     _sum: LocationLogSumAggregateOutputType | null
@@ -2872,10 +2997,22 @@ export namespace Prisma {
     altitude?: boolean
     speed?: boolean
     heading?: boolean
-    batteryVoltage?: boolean
     ignition?: boolean
     timestamp?: boolean
     createdAt?: boolean
+    odometer?: boolean
+    engine?: boolean
+    rpm?: boolean
+    batteryVoltage?: boolean
+    inputVoltage?: boolean
+    batteryHealth?: boolean
+    batteryCharge?: boolean
+    temperature?: boolean
+    gpsFix?: boolean
+    digitalInput1?: boolean
+    digitalInput2?: boolean
+    digitalOutput1?: boolean
+    totalEngineDuration?: boolean
     vehicle?: boolean | VehicleInfoDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["locationLog"]>
 
@@ -2887,10 +3024,22 @@ export namespace Prisma {
     altitude?: boolean
     speed?: boolean
     heading?: boolean
-    batteryVoltage?: boolean
     ignition?: boolean
     timestamp?: boolean
     createdAt?: boolean
+    odometer?: boolean
+    engine?: boolean
+    rpm?: boolean
+    batteryVoltage?: boolean
+    inputVoltage?: boolean
+    batteryHealth?: boolean
+    batteryCharge?: boolean
+    temperature?: boolean
+    gpsFix?: boolean
+    digitalInput1?: boolean
+    digitalInput2?: boolean
+    digitalOutput1?: boolean
+    totalEngineDuration?: boolean
     vehicle?: boolean | VehicleInfoDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["locationLog"]>
 
@@ -2902,10 +3051,22 @@ export namespace Prisma {
     altitude?: boolean
     speed?: boolean
     heading?: boolean
-    batteryVoltage?: boolean
     ignition?: boolean
     timestamp?: boolean
     createdAt?: boolean
+    odometer?: boolean
+    engine?: boolean
+    rpm?: boolean
+    batteryVoltage?: boolean
+    inputVoltage?: boolean
+    batteryHealth?: boolean
+    batteryCharge?: boolean
+    temperature?: boolean
+    gpsFix?: boolean
+    digitalInput1?: boolean
+    digitalInput2?: boolean
+    digitalOutput1?: boolean
+    totalEngineDuration?: boolean
     vehicle?: boolean | VehicleInfoDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["locationLog"]>
 
@@ -2917,13 +3078,25 @@ export namespace Prisma {
     altitude?: boolean
     speed?: boolean
     heading?: boolean
-    batteryVoltage?: boolean
     ignition?: boolean
     timestamp?: boolean
     createdAt?: boolean
+    odometer?: boolean
+    engine?: boolean
+    rpm?: boolean
+    batteryVoltage?: boolean
+    inputVoltage?: boolean
+    batteryHealth?: boolean
+    batteryCharge?: boolean
+    temperature?: boolean
+    gpsFix?: boolean
+    digitalInput1?: boolean
+    digitalInput2?: boolean
+    digitalOutput1?: boolean
+    totalEngineDuration?: boolean
   }
 
-  export type LocationLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "imei" | "lat" | "lng" | "altitude" | "speed" | "heading" | "batteryVoltage" | "ignition" | "timestamp" | "createdAt", ExtArgs["result"]["locationLog"]>
+  export type LocationLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "imei" | "lat" | "lng" | "altitude" | "speed" | "heading" | "ignition" | "timestamp" | "createdAt" | "odometer" | "engine" | "rpm" | "batteryVoltage" | "inputVoltage" | "batteryHealth" | "batteryCharge" | "temperature" | "gpsFix" | "digitalInput1" | "digitalInput2" | "digitalOutput1" | "totalEngineDuration", ExtArgs["result"]["locationLog"]>
   export type LocationLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     vehicle?: boolean | VehicleInfoDefaultArgs<ExtArgs>
   }
@@ -2947,10 +3120,22 @@ export namespace Prisma {
       altitude: Prisma.Decimal | null
       speed: Prisma.Decimal | null
       heading: Prisma.Decimal | null
-      batteryVoltage: number | null
       ignition: boolean
       timestamp: Date
       createdAt: Date
+      odometer: number | null
+      engine: boolean | null
+      rpm: number | null
+      batteryVoltage: number | null
+      inputVoltage: number | null
+      batteryHealth: number | null
+      batteryCharge: number | null
+      temperature: number | null
+      gpsFix: number | null
+      digitalInput1: boolean | null
+      digitalInput2: boolean | null
+      digitalOutput1: boolean | null
+      totalEngineDuration: number | null
     }, ExtArgs["result"]["locationLog"]>
     composites: {}
   }
@@ -3382,10 +3567,22 @@ export namespace Prisma {
     readonly altitude: FieldRef<"LocationLog", 'Decimal'>
     readonly speed: FieldRef<"LocationLog", 'Decimal'>
     readonly heading: FieldRef<"LocationLog", 'Decimal'>
-    readonly batteryVoltage: FieldRef<"LocationLog", 'Float'>
     readonly ignition: FieldRef<"LocationLog", 'Boolean'>
     readonly timestamp: FieldRef<"LocationLog", 'DateTime'>
     readonly createdAt: FieldRef<"LocationLog", 'DateTime'>
+    readonly odometer: FieldRef<"LocationLog", 'Float'>
+    readonly engine: FieldRef<"LocationLog", 'Boolean'>
+    readonly rpm: FieldRef<"LocationLog", 'Int'>
+    readonly batteryVoltage: FieldRef<"LocationLog", 'Float'>
+    readonly inputVoltage: FieldRef<"LocationLog", 'Float'>
+    readonly batteryHealth: FieldRef<"LocationLog", 'Int'>
+    readonly batteryCharge: FieldRef<"LocationLog", 'Int'>
+    readonly temperature: FieldRef<"LocationLog", 'Float'>
+    readonly gpsFix: FieldRef<"LocationLog", 'Int'>
+    readonly digitalInput1: FieldRef<"LocationLog", 'Boolean'>
+    readonly digitalInput2: FieldRef<"LocationLog", 'Boolean'>
+    readonly digitalOutput1: FieldRef<"LocationLog", 'Boolean'>
+    readonly totalEngineDuration: FieldRef<"LocationLog", 'Int'>
   }
     
 
@@ -3986,6 +4183,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     vehicleInfos?: boolean | User$vehicleInfosArgs<ExtArgs>
+    geofences?: boolean | User$geofencesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -4022,6 +4220,7 @@ export namespace Prisma {
   export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "password" | "role" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     vehicleInfos?: boolean | User$vehicleInfosArgs<ExtArgs>
+    geofences?: boolean | User$geofencesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -4031,6 +4230,7 @@ export namespace Prisma {
     name: "User"
     objects: {
       vehicleInfos: Prisma.$VehicleInfoPayload<ExtArgs>[]
+      geofences: Prisma.$GeofencePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -4435,6 +4635,7 @@ export namespace Prisma {
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     vehicleInfos<T extends User$vehicleInfosArgs<ExtArgs> = {}>(args?: Subset<T, User$vehicleInfosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehicleInfoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    geofences<T extends User$geofencesArgs<ExtArgs> = {}>(args?: Subset<T, User$geofencesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GeofencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4888,6 +5089,30 @@ export namespace Prisma {
   }
 
   /**
+   * User.geofences
+   */
+  export type User$geofencesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Geofence
+     */
+    select?: GeofenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Geofence
+     */
+    omit?: GeofenceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GeofenceInclude<ExtArgs> | null
+    where?: GeofenceWhereInput
+    orderBy?: GeofenceOrderByWithRelationInput | GeofenceOrderByWithRelationInput[]
+    cursor?: GeofenceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: GeofenceScalarFieldEnum | GeofenceScalarFieldEnum[]
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4921,6 +5146,7 @@ export namespace Prisma {
     name: string | null
     zoneHash: string | null
     isActive: boolean | null
+    customerId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4930,6 +5156,7 @@ export namespace Prisma {
     name: string | null
     zoneHash: string | null
     isActive: boolean | null
+    customerId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4939,6 +5166,7 @@ export namespace Prisma {
     name: number
     zoneHash: number
     isActive: number
+    customerId: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -4950,6 +5178,7 @@ export namespace Prisma {
     name?: true
     zoneHash?: true
     isActive?: true
+    customerId?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4959,6 +5188,7 @@ export namespace Prisma {
     name?: true
     zoneHash?: true
     isActive?: true
+    customerId?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4968,6 +5198,7 @@ export namespace Prisma {
     name?: true
     zoneHash?: true
     isActive?: true
+    customerId?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -5050,6 +5281,7 @@ export namespace Prisma {
     name: string
     zoneHash: string | null
     isActive: boolean
+    customerId: string | null
     createdAt: Date
     updatedAt: Date
     _count: GeofenceCountAggregateOutputType | null
@@ -5076,8 +5308,10 @@ export namespace Prisma {
     name?: boolean
     zoneHash?: boolean
     isActive?: boolean
+    customerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    customer?: boolean | Geofence$customerArgs<ExtArgs>
     vehicles?: boolean | Geofence$vehiclesArgs<ExtArgs>
     _count?: boolean | GeofenceCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["geofence"]>
@@ -5087,8 +5321,10 @@ export namespace Prisma {
     name?: boolean
     zoneHash?: boolean
     isActive?: boolean
+    customerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    customer?: boolean | Geofence$customerArgs<ExtArgs>
   }, ExtArgs["result"]["geofence"]>
 
   export type GeofenceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -5096,8 +5332,10 @@ export namespace Prisma {
     name?: boolean
     zoneHash?: boolean
     isActive?: boolean
+    customerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    customer?: boolean | Geofence$customerArgs<ExtArgs>
   }, ExtArgs["result"]["geofence"]>
 
   export type GeofenceSelectScalar = {
@@ -5105,21 +5343,28 @@ export namespace Prisma {
     name?: boolean
     zoneHash?: boolean
     isActive?: boolean
+    customerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type GeofenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "zoneHash" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["geofence"]>
+  export type GeofenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "zoneHash" | "isActive" | "customerId" | "createdAt" | "updatedAt", ExtArgs["result"]["geofence"]>
   export type GeofenceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    customer?: boolean | Geofence$customerArgs<ExtArgs>
     vehicles?: boolean | Geofence$vehiclesArgs<ExtArgs>
     _count?: boolean | GeofenceCountOutputTypeDefaultArgs<ExtArgs>
   }
-  export type GeofenceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
-  export type GeofenceIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+  export type GeofenceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    customer?: boolean | Geofence$customerArgs<ExtArgs>
+  }
+  export type GeofenceIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    customer?: boolean | Geofence$customerArgs<ExtArgs>
+  }
 
   export type $GeofencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Geofence"
     objects: {
+      customer: Prisma.$UserPayload<ExtArgs> | null
       vehicles: Prisma.$VehiclesOnGeofencesPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -5127,6 +5372,7 @@ export namespace Prisma {
       name: string
       zoneHash: string | null
       isActive: boolean
+      customerId: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["geofence"]>
@@ -5523,6 +5769,7 @@ export namespace Prisma {
    */
   export interface Prisma__GeofenceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    customer<T extends Geofence$customerArgs<ExtArgs> = {}>(args?: Subset<T, Geofence$customerArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     vehicles<T extends Geofence$vehiclesArgs<ExtArgs> = {}>(args?: Subset<T, Geofence$vehiclesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VehiclesOnGeofencesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -5557,6 +5804,7 @@ export namespace Prisma {
     readonly name: FieldRef<"Geofence", 'String'>
     readonly zoneHash: FieldRef<"Geofence", 'String'>
     readonly isActive: FieldRef<"Geofence", 'Boolean'>
+    readonly customerId: FieldRef<"Geofence", 'String'>
     readonly createdAt: FieldRef<"Geofence", 'DateTime'>
     readonly updatedAt: FieldRef<"Geofence", 'DateTime'>
   }
@@ -5813,6 +6061,10 @@ export namespace Prisma {
      */
     data: GeofenceCreateManyInput | GeofenceCreateManyInput[]
     skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GeofenceIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -5883,6 +6135,10 @@ export namespace Prisma {
      * Limit how many Geofences to update.
      */
     limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GeofenceIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -5949,6 +6205,25 @@ export namespace Prisma {
      * Limit how many Geofences to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Geofence.customer
+   */
+  export type Geofence$customerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the User
+     */
+    omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
   }
 
   /**
@@ -8277,10 +8552,22 @@ export namespace Prisma {
     altitude: 'altitude',
     speed: 'speed',
     heading: 'heading',
-    batteryVoltage: 'batteryVoltage',
     ignition: 'ignition',
     timestamp: 'timestamp',
-    createdAt: 'createdAt'
+    createdAt: 'createdAt',
+    odometer: 'odometer',
+    engine: 'engine',
+    rpm: 'rpm',
+    batteryVoltage: 'batteryVoltage',
+    inputVoltage: 'inputVoltage',
+    batteryHealth: 'batteryHealth',
+    batteryCharge: 'batteryCharge',
+    temperature: 'temperature',
+    gpsFix: 'gpsFix',
+    digitalInput1: 'digitalInput1',
+    digitalInput2: 'digitalInput2',
+    digitalOutput1: 'digitalOutput1',
+    totalEngineDuration: 'totalEngineDuration'
   };
 
   export type LocationLogScalarFieldEnum = (typeof LocationLogScalarFieldEnum)[keyof typeof LocationLogScalarFieldEnum]
@@ -8304,6 +8591,7 @@ export namespace Prisma {
     name: 'name',
     zoneHash: 'zoneHash',
     isActive: 'isActive',
+    customerId: 'customerId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -8410,6 +8698,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -8424,9 +8719,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Boolean'
+   * Reference to a field of type 'Int'
    */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+  /**
+   * Reference to a field of type 'Int[]'
+   */
+  export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -8441,20 +8743,6 @@ export namespace Prisma {
    * Reference to a field of type 'userRole[]'
    */
   export type ListEnumuserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'userRole[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Int'
-   */
-  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-  /**
-   * Reference to a field of type 'Int[]'
-   */
-  export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
   /**
    * Deep Input Types
@@ -8541,10 +8829,22 @@ export namespace Prisma {
     altitude?: DecimalNullableFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
     speed?: DecimalNullableFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
     heading?: DecimalNullableFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: FloatNullableFilter<"LocationLog"> | number | null
     ignition?: BoolFilter<"LocationLog"> | boolean
     timestamp?: DateTimeFilter<"LocationLog"> | Date | string
     createdAt?: DateTimeFilter<"LocationLog"> | Date | string
+    odometer?: FloatNullableFilter<"LocationLog"> | number | null
+    engine?: BoolNullableFilter<"LocationLog"> | boolean | null
+    rpm?: IntNullableFilter<"LocationLog"> | number | null
+    batteryVoltage?: FloatNullableFilter<"LocationLog"> | number | null
+    inputVoltage?: FloatNullableFilter<"LocationLog"> | number | null
+    batteryHealth?: IntNullableFilter<"LocationLog"> | number | null
+    batteryCharge?: IntNullableFilter<"LocationLog"> | number | null
+    temperature?: FloatNullableFilter<"LocationLog"> | number | null
+    gpsFix?: IntNullableFilter<"LocationLog"> | number | null
+    digitalInput1?: BoolNullableFilter<"LocationLog"> | boolean | null
+    digitalInput2?: BoolNullableFilter<"LocationLog"> | boolean | null
+    digitalOutput1?: BoolNullableFilter<"LocationLog"> | boolean | null
+    totalEngineDuration?: IntNullableFilter<"LocationLog"> | number | null
     vehicle?: XOR<VehicleInfoScalarRelationFilter, VehicleInfoWhereInput>
   }
 
@@ -8556,10 +8856,22 @@ export namespace Prisma {
     altitude?: SortOrderInput | SortOrder
     speed?: SortOrderInput | SortOrder
     heading?: SortOrderInput | SortOrder
-    batteryVoltage?: SortOrderInput | SortOrder
     ignition?: SortOrder
     timestamp?: SortOrder
     createdAt?: SortOrder
+    odometer?: SortOrderInput | SortOrder
+    engine?: SortOrderInput | SortOrder
+    rpm?: SortOrderInput | SortOrder
+    batteryVoltage?: SortOrderInput | SortOrder
+    inputVoltage?: SortOrderInput | SortOrder
+    batteryHealth?: SortOrderInput | SortOrder
+    batteryCharge?: SortOrderInput | SortOrder
+    temperature?: SortOrderInput | SortOrder
+    gpsFix?: SortOrderInput | SortOrder
+    digitalInput1?: SortOrderInput | SortOrder
+    digitalInput2?: SortOrderInput | SortOrder
+    digitalOutput1?: SortOrderInput | SortOrder
+    totalEngineDuration?: SortOrderInput | SortOrder
     vehicle?: VehicleInfoOrderByWithRelationInput
   }
 
@@ -8574,10 +8886,22 @@ export namespace Prisma {
     altitude?: DecimalNullableFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
     speed?: DecimalNullableFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
     heading?: DecimalNullableFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: FloatNullableFilter<"LocationLog"> | number | null
     ignition?: BoolFilter<"LocationLog"> | boolean
     timestamp?: DateTimeFilter<"LocationLog"> | Date | string
     createdAt?: DateTimeFilter<"LocationLog"> | Date | string
+    odometer?: FloatNullableFilter<"LocationLog"> | number | null
+    engine?: BoolNullableFilter<"LocationLog"> | boolean | null
+    rpm?: IntNullableFilter<"LocationLog"> | number | null
+    batteryVoltage?: FloatNullableFilter<"LocationLog"> | number | null
+    inputVoltage?: FloatNullableFilter<"LocationLog"> | number | null
+    batteryHealth?: IntNullableFilter<"LocationLog"> | number | null
+    batteryCharge?: IntNullableFilter<"LocationLog"> | number | null
+    temperature?: FloatNullableFilter<"LocationLog"> | number | null
+    gpsFix?: IntNullableFilter<"LocationLog"> | number | null
+    digitalInput1?: BoolNullableFilter<"LocationLog"> | boolean | null
+    digitalInput2?: BoolNullableFilter<"LocationLog"> | boolean | null
+    digitalOutput1?: BoolNullableFilter<"LocationLog"> | boolean | null
+    totalEngineDuration?: IntNullableFilter<"LocationLog"> | number | null
     vehicle?: XOR<VehicleInfoScalarRelationFilter, VehicleInfoWhereInput>
   }, "id">
 
@@ -8589,10 +8913,22 @@ export namespace Prisma {
     altitude?: SortOrderInput | SortOrder
     speed?: SortOrderInput | SortOrder
     heading?: SortOrderInput | SortOrder
-    batteryVoltage?: SortOrderInput | SortOrder
     ignition?: SortOrder
     timestamp?: SortOrder
     createdAt?: SortOrder
+    odometer?: SortOrderInput | SortOrder
+    engine?: SortOrderInput | SortOrder
+    rpm?: SortOrderInput | SortOrder
+    batteryVoltage?: SortOrderInput | SortOrder
+    inputVoltage?: SortOrderInput | SortOrder
+    batteryHealth?: SortOrderInput | SortOrder
+    batteryCharge?: SortOrderInput | SortOrder
+    temperature?: SortOrderInput | SortOrder
+    gpsFix?: SortOrderInput | SortOrder
+    digitalInput1?: SortOrderInput | SortOrder
+    digitalInput2?: SortOrderInput | SortOrder
+    digitalOutput1?: SortOrderInput | SortOrder
+    totalEngineDuration?: SortOrderInput | SortOrder
     _count?: LocationLogCountOrderByAggregateInput
     _avg?: LocationLogAvgOrderByAggregateInput
     _max?: LocationLogMaxOrderByAggregateInput
@@ -8611,10 +8947,22 @@ export namespace Prisma {
     altitude?: DecimalNullableWithAggregatesFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
     speed?: DecimalNullableWithAggregatesFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
     heading?: DecimalNullableWithAggregatesFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: FloatNullableWithAggregatesFilter<"LocationLog"> | number | null
     ignition?: BoolWithAggregatesFilter<"LocationLog"> | boolean
     timestamp?: DateTimeWithAggregatesFilter<"LocationLog"> | Date | string
     createdAt?: DateTimeWithAggregatesFilter<"LocationLog"> | Date | string
+    odometer?: FloatNullableWithAggregatesFilter<"LocationLog"> | number | null
+    engine?: BoolNullableWithAggregatesFilter<"LocationLog"> | boolean | null
+    rpm?: IntNullableWithAggregatesFilter<"LocationLog"> | number | null
+    batteryVoltage?: FloatNullableWithAggregatesFilter<"LocationLog"> | number | null
+    inputVoltage?: FloatNullableWithAggregatesFilter<"LocationLog"> | number | null
+    batteryHealth?: IntNullableWithAggregatesFilter<"LocationLog"> | number | null
+    batteryCharge?: IntNullableWithAggregatesFilter<"LocationLog"> | number | null
+    temperature?: FloatNullableWithAggregatesFilter<"LocationLog"> | number | null
+    gpsFix?: IntNullableWithAggregatesFilter<"LocationLog"> | number | null
+    digitalInput1?: BoolNullableWithAggregatesFilter<"LocationLog"> | boolean | null
+    digitalInput2?: BoolNullableWithAggregatesFilter<"LocationLog"> | boolean | null
+    digitalOutput1?: BoolNullableWithAggregatesFilter<"LocationLog"> | boolean | null
+    totalEngineDuration?: IntNullableWithAggregatesFilter<"LocationLog"> | number | null
   }
 
   export type UserWhereInput = {
@@ -8629,6 +8977,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     vehicleInfos?: VehicleInfoListRelationFilter
+    geofences?: GeofenceListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -8640,6 +8989,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     vehicleInfos?: VehicleInfoOrderByRelationAggregateInput
+    geofences?: GeofenceOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -8654,6 +9004,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     vehicleInfos?: VehicleInfoListRelationFilter
+    geofences?: GeofenceListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -8690,8 +9041,10 @@ export namespace Prisma {
     name?: StringFilter<"Geofence"> | string
     zoneHash?: StringNullableFilter<"Geofence"> | string | null
     isActive?: BoolFilter<"Geofence"> | boolean
+    customerId?: UuidNullableFilter<"Geofence"> | string | null
     createdAt?: DateTimeFilter<"Geofence"> | Date | string
     updatedAt?: DateTimeFilter<"Geofence"> | Date | string
+    customer?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     vehicles?: VehiclesOnGeofencesListRelationFilter
   }
 
@@ -8700,8 +9053,10 @@ export namespace Prisma {
     name?: SortOrder
     zoneHash?: SortOrderInput | SortOrder
     isActive?: SortOrder
+    customerId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    customer?: UserOrderByWithRelationInput
     vehicles?: VehiclesOnGeofencesOrderByRelationAggregateInput
   }
 
@@ -8713,8 +9068,10 @@ export namespace Prisma {
     NOT?: GeofenceWhereInput | GeofenceWhereInput[]
     name?: StringFilter<"Geofence"> | string
     isActive?: BoolFilter<"Geofence"> | boolean
+    customerId?: UuidNullableFilter<"Geofence"> | string | null
     createdAt?: DateTimeFilter<"Geofence"> | Date | string
     updatedAt?: DateTimeFilter<"Geofence"> | Date | string
+    customer?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     vehicles?: VehiclesOnGeofencesListRelationFilter
   }, "id" | "zoneHash">
 
@@ -8723,6 +9080,7 @@ export namespace Prisma {
     name?: SortOrder
     zoneHash?: SortOrderInput | SortOrder
     isActive?: SortOrder
+    customerId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: GeofenceCountOrderByAggregateInput
@@ -8738,6 +9096,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"Geofence"> | string
     zoneHash?: StringNullableWithAggregatesFilter<"Geofence"> | string | null
     isActive?: BoolWithAggregatesFilter<"Geofence"> | boolean
+    customerId?: UuidNullableWithAggregatesFilter<"Geofence"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Geofence"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Geofence"> | Date | string
   }
@@ -8964,10 +9323,22 @@ export namespace Prisma {
     altitude?: Decimal | DecimalJsLike | number | string | null
     speed?: Decimal | DecimalJsLike | number | string | null
     heading?: Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: number | null
     ignition?: boolean
     timestamp: Date | string
     createdAt?: Date | string
+    odometer?: number | null
+    engine?: boolean | null
+    rpm?: number | null
+    batteryVoltage?: number | null
+    inputVoltage?: number | null
+    batteryHealth?: number | null
+    batteryCharge?: number | null
+    temperature?: number | null
+    gpsFix?: number | null
+    digitalInput1?: boolean | null
+    digitalInput2?: boolean | null
+    digitalOutput1?: boolean | null
+    totalEngineDuration?: number | null
     vehicle: VehicleInfoCreateNestedOneWithoutLocationsInput
   }
 
@@ -8979,10 +9350,22 @@ export namespace Prisma {
     altitude?: Decimal | DecimalJsLike | number | string | null
     speed?: Decimal | DecimalJsLike | number | string | null
     heading?: Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: number | null
     ignition?: boolean
     timestamp: Date | string
     createdAt?: Date | string
+    odometer?: number | null
+    engine?: boolean | null
+    rpm?: number | null
+    batteryVoltage?: number | null
+    inputVoltage?: number | null
+    batteryHealth?: number | null
+    batteryCharge?: number | null
+    temperature?: number | null
+    gpsFix?: number | null
+    digitalInput1?: boolean | null
+    digitalInput2?: boolean | null
+    digitalOutput1?: boolean | null
+    totalEngineDuration?: number | null
   }
 
   export type LocationLogUpdateInput = {
@@ -8992,10 +9375,22 @@ export namespace Prisma {
     altitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     speed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     heading?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
     ignition?: BoolFieldUpdateOperationsInput | boolean
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    odometer?: NullableFloatFieldUpdateOperationsInput | number | null
+    engine?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    rpm?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    inputVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    batteryHealth?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryCharge?: NullableIntFieldUpdateOperationsInput | number | null
+    temperature?: NullableFloatFieldUpdateOperationsInput | number | null
+    gpsFix?: NullableIntFieldUpdateOperationsInput | number | null
+    digitalInput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalInput2?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalOutput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    totalEngineDuration?: NullableIntFieldUpdateOperationsInput | number | null
     vehicle?: VehicleInfoUpdateOneRequiredWithoutLocationsNestedInput
   }
 
@@ -9007,10 +9402,22 @@ export namespace Prisma {
     altitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     speed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     heading?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
     ignition?: BoolFieldUpdateOperationsInput | boolean
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    odometer?: NullableFloatFieldUpdateOperationsInput | number | null
+    engine?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    rpm?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    inputVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    batteryHealth?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryCharge?: NullableIntFieldUpdateOperationsInput | number | null
+    temperature?: NullableFloatFieldUpdateOperationsInput | number | null
+    gpsFix?: NullableIntFieldUpdateOperationsInput | number | null
+    digitalInput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalInput2?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalOutput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    totalEngineDuration?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type LocationLogCreateManyInput = {
@@ -9021,10 +9428,22 @@ export namespace Prisma {
     altitude?: Decimal | DecimalJsLike | number | string | null
     speed?: Decimal | DecimalJsLike | number | string | null
     heading?: Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: number | null
     ignition?: boolean
     timestamp: Date | string
     createdAt?: Date | string
+    odometer?: number | null
+    engine?: boolean | null
+    rpm?: number | null
+    batteryVoltage?: number | null
+    inputVoltage?: number | null
+    batteryHealth?: number | null
+    batteryCharge?: number | null
+    temperature?: number | null
+    gpsFix?: number | null
+    digitalInput1?: boolean | null
+    digitalInput2?: boolean | null
+    digitalOutput1?: boolean | null
+    totalEngineDuration?: number | null
   }
 
   export type LocationLogUpdateManyMutationInput = {
@@ -9034,10 +9453,22 @@ export namespace Prisma {
     altitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     speed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     heading?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
     ignition?: BoolFieldUpdateOperationsInput | boolean
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    odometer?: NullableFloatFieldUpdateOperationsInput | number | null
+    engine?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    rpm?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    inputVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    batteryHealth?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryCharge?: NullableIntFieldUpdateOperationsInput | number | null
+    temperature?: NullableFloatFieldUpdateOperationsInput | number | null
+    gpsFix?: NullableIntFieldUpdateOperationsInput | number | null
+    digitalInput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalInput2?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalOutput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    totalEngineDuration?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type LocationLogUncheckedUpdateManyInput = {
@@ -9048,10 +9479,22 @@ export namespace Prisma {
     altitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     speed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     heading?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
     ignition?: BoolFieldUpdateOperationsInput | boolean
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    odometer?: NullableFloatFieldUpdateOperationsInput | number | null
+    engine?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    rpm?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    inputVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    batteryHealth?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryCharge?: NullableIntFieldUpdateOperationsInput | number | null
+    temperature?: NullableFloatFieldUpdateOperationsInput | number | null
+    gpsFix?: NullableIntFieldUpdateOperationsInput | number | null
+    digitalInput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalInput2?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalOutput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    totalEngineDuration?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type UserCreateInput = {
@@ -9063,6 +9506,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     vehicleInfos?: VehicleInfoCreateNestedManyWithoutCustomerInput
+    geofences?: GeofenceCreateNestedManyWithoutCustomerInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -9074,6 +9518,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     vehicleInfos?: VehicleInfoUncheckedCreateNestedManyWithoutCustomerInput
+    geofences?: GeofenceUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type UserUpdateInput = {
@@ -9085,6 +9530,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     vehicleInfos?: VehicleInfoUpdateManyWithoutCustomerNestedInput
+    geofences?: GeofenceUpdateManyWithoutCustomerNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -9096,6 +9542,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     vehicleInfos?: VehicleInfoUncheckedUpdateManyWithoutCustomerNestedInput
+    geofences?: GeofenceUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -9135,6 +9582,7 @@ export namespace Prisma {
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
+    customer?: UserCreateNestedOneWithoutGeofencesInput
     vehicles?: VehiclesOnGeofencesCreateNestedManyWithoutGeofenceInput
   }
 
@@ -9143,6 +9591,7 @@ export namespace Prisma {
     name: string
     zoneHash?: string | null
     isActive?: boolean
+    customerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     vehicles?: VehiclesOnGeofencesUncheckedCreateNestedManyWithoutGeofenceInput
@@ -9155,6 +9604,7 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customer?: UserUpdateOneWithoutGeofencesNestedInput
     vehicles?: VehiclesOnGeofencesUpdateManyWithoutGeofenceNestedInput
   }
 
@@ -9163,6 +9613,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     zoneHash?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    customerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     vehicles?: VehiclesOnGeofencesUncheckedUpdateManyWithoutGeofenceNestedInput
@@ -9173,6 +9624,7 @@ export namespace Prisma {
     name: string
     zoneHash?: string | null
     isActive?: boolean
+    customerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -9191,6 +9643,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     zoneHash?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    customerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -9508,6 +9961,11 @@ export namespace Prisma {
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type FloatNullableFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
@@ -9519,9 +9977,20 @@ export namespace Prisma {
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
+  export type BoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type VehicleInfoScalarRelationFilter = {
@@ -9542,10 +10011,22 @@ export namespace Prisma {
     altitude?: SortOrder
     speed?: SortOrder
     heading?: SortOrder
-    batteryVoltage?: SortOrder
     ignition?: SortOrder
     timestamp?: SortOrder
     createdAt?: SortOrder
+    odometer?: SortOrder
+    engine?: SortOrder
+    rpm?: SortOrder
+    batteryVoltage?: SortOrder
+    inputVoltage?: SortOrder
+    batteryHealth?: SortOrder
+    batteryCharge?: SortOrder
+    temperature?: SortOrder
+    gpsFix?: SortOrder
+    digitalInput1?: SortOrder
+    digitalInput2?: SortOrder
+    digitalOutput1?: SortOrder
+    totalEngineDuration?: SortOrder
   }
 
   export type LocationLogAvgOrderByAggregateInput = {
@@ -9554,7 +10035,15 @@ export namespace Prisma {
     altitude?: SortOrder
     speed?: SortOrder
     heading?: SortOrder
+    odometer?: SortOrder
+    rpm?: SortOrder
     batteryVoltage?: SortOrder
+    inputVoltage?: SortOrder
+    batteryHealth?: SortOrder
+    batteryCharge?: SortOrder
+    temperature?: SortOrder
+    gpsFix?: SortOrder
+    totalEngineDuration?: SortOrder
   }
 
   export type LocationLogMaxOrderByAggregateInput = {
@@ -9565,10 +10054,22 @@ export namespace Prisma {
     altitude?: SortOrder
     speed?: SortOrder
     heading?: SortOrder
-    batteryVoltage?: SortOrder
     ignition?: SortOrder
     timestamp?: SortOrder
     createdAt?: SortOrder
+    odometer?: SortOrder
+    engine?: SortOrder
+    rpm?: SortOrder
+    batteryVoltage?: SortOrder
+    inputVoltage?: SortOrder
+    batteryHealth?: SortOrder
+    batteryCharge?: SortOrder
+    temperature?: SortOrder
+    gpsFix?: SortOrder
+    digitalInput1?: SortOrder
+    digitalInput2?: SortOrder
+    digitalOutput1?: SortOrder
+    totalEngineDuration?: SortOrder
   }
 
   export type LocationLogMinOrderByAggregateInput = {
@@ -9579,10 +10080,22 @@ export namespace Prisma {
     altitude?: SortOrder
     speed?: SortOrder
     heading?: SortOrder
-    batteryVoltage?: SortOrder
     ignition?: SortOrder
     timestamp?: SortOrder
     createdAt?: SortOrder
+    odometer?: SortOrder
+    engine?: SortOrder
+    rpm?: SortOrder
+    batteryVoltage?: SortOrder
+    inputVoltage?: SortOrder
+    batteryHealth?: SortOrder
+    batteryCharge?: SortOrder
+    temperature?: SortOrder
+    gpsFix?: SortOrder
+    digitalInput1?: SortOrder
+    digitalInput2?: SortOrder
+    digitalOutput1?: SortOrder
+    totalEngineDuration?: SortOrder
   }
 
   export type LocationLogSumOrderByAggregateInput = {
@@ -9591,7 +10104,15 @@ export namespace Prisma {
     altitude?: SortOrder
     speed?: SortOrder
     heading?: SortOrder
+    odometer?: SortOrder
+    rpm?: SortOrder
     batteryVoltage?: SortOrder
+    inputVoltage?: SortOrder
+    batteryHealth?: SortOrder
+    batteryCharge?: SortOrder
+    temperature?: SortOrder
+    gpsFix?: SortOrder
+    totalEngineDuration?: SortOrder
   }
 
   export type DecimalWithAggregatesFilter<$PrismaModel = never> = {
@@ -9626,6 +10147,14 @@ export namespace Prisma {
     _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
   export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
@@ -9642,12 +10171,28 @@ export namespace Prisma {
     _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
+  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type EnumuserRoleFilter<$PrismaModel = never> = {
@@ -9663,7 +10208,17 @@ export namespace Prisma {
     none?: VehicleInfoWhereInput
   }
 
+  export type GeofenceListRelationFilter = {
+    every?: GeofenceWhereInput
+    some?: GeofenceWhereInput
+    none?: GeofenceWhereInput
+  }
+
   export type VehicleInfoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type GeofenceOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -9722,11 +10277,29 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
+  export type UuidNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedUuidNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type UserNullableScalarRelationFilter = {
+    is?: UserWhereInput | null
+    isNot?: UserWhereInput | null
+  }
+
   export type GeofenceCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     zoneHash?: SortOrder
     isActive?: SortOrder
+    customerId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -9736,6 +10309,7 @@ export namespace Prisma {
     name?: SortOrder
     zoneHash?: SortOrder
     isActive?: SortOrder
+    customerId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -9745,6 +10319,7 @@ export namespace Prisma {
     name?: SortOrder
     zoneHash?: SortOrder
     isActive?: SortOrder
+    customerId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -9762,6 +10337,21 @@ export namespace Prisma {
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     mode?: QueryMode
     not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type UuidNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedUuidNullableWithAggregatesFilter<$PrismaModel> | string | null
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
@@ -10026,6 +10616,10 @@ export namespace Prisma {
     divide?: Decimal | DecimalJsLike | number | string
   }
 
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
+  }
+
   export type NullableFloatFieldUpdateOperationsInput = {
     set?: number | null
     increment?: number
@@ -10034,8 +10628,16 @@ export namespace Prisma {
     divide?: number
   }
 
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
+  export type NullableBoolFieldUpdateOperationsInput = {
+    set?: boolean | null
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
   }
 
   export type VehicleInfoUpdateOneRequiredWithoutLocationsNestedInput = {
@@ -10053,11 +10655,25 @@ export namespace Prisma {
     connect?: VehicleInfoWhereUniqueInput | VehicleInfoWhereUniqueInput[]
   }
 
+  export type GeofenceCreateNestedManyWithoutCustomerInput = {
+    create?: XOR<GeofenceCreateWithoutCustomerInput, GeofenceUncheckedCreateWithoutCustomerInput> | GeofenceCreateWithoutCustomerInput[] | GeofenceUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: GeofenceCreateOrConnectWithoutCustomerInput | GeofenceCreateOrConnectWithoutCustomerInput[]
+    createMany?: GeofenceCreateManyCustomerInputEnvelope
+    connect?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
+  }
+
   export type VehicleInfoUncheckedCreateNestedManyWithoutCustomerInput = {
     create?: XOR<VehicleInfoCreateWithoutCustomerInput, VehicleInfoUncheckedCreateWithoutCustomerInput> | VehicleInfoCreateWithoutCustomerInput[] | VehicleInfoUncheckedCreateWithoutCustomerInput[]
     connectOrCreate?: VehicleInfoCreateOrConnectWithoutCustomerInput | VehicleInfoCreateOrConnectWithoutCustomerInput[]
     createMany?: VehicleInfoCreateManyCustomerInputEnvelope
     connect?: VehicleInfoWhereUniqueInput | VehicleInfoWhereUniqueInput[]
+  }
+
+  export type GeofenceUncheckedCreateNestedManyWithoutCustomerInput = {
+    create?: XOR<GeofenceCreateWithoutCustomerInput, GeofenceUncheckedCreateWithoutCustomerInput> | GeofenceCreateWithoutCustomerInput[] | GeofenceUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: GeofenceCreateOrConnectWithoutCustomerInput | GeofenceCreateOrConnectWithoutCustomerInput[]
+    createMany?: GeofenceCreateManyCustomerInputEnvelope
+    connect?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
   }
 
   export type EnumuserRoleFieldUpdateOperationsInput = {
@@ -10078,6 +10694,20 @@ export namespace Prisma {
     deleteMany?: VehicleInfoScalarWhereInput | VehicleInfoScalarWhereInput[]
   }
 
+  export type GeofenceUpdateManyWithoutCustomerNestedInput = {
+    create?: XOR<GeofenceCreateWithoutCustomerInput, GeofenceUncheckedCreateWithoutCustomerInput> | GeofenceCreateWithoutCustomerInput[] | GeofenceUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: GeofenceCreateOrConnectWithoutCustomerInput | GeofenceCreateOrConnectWithoutCustomerInput[]
+    upsert?: GeofenceUpsertWithWhereUniqueWithoutCustomerInput | GeofenceUpsertWithWhereUniqueWithoutCustomerInput[]
+    createMany?: GeofenceCreateManyCustomerInputEnvelope
+    set?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
+    disconnect?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
+    delete?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
+    connect?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
+    update?: GeofenceUpdateWithWhereUniqueWithoutCustomerInput | GeofenceUpdateWithWhereUniqueWithoutCustomerInput[]
+    updateMany?: GeofenceUpdateManyWithWhereWithoutCustomerInput | GeofenceUpdateManyWithWhereWithoutCustomerInput[]
+    deleteMany?: GeofenceScalarWhereInput | GeofenceScalarWhereInput[]
+  }
+
   export type VehicleInfoUncheckedUpdateManyWithoutCustomerNestedInput = {
     create?: XOR<VehicleInfoCreateWithoutCustomerInput, VehicleInfoUncheckedCreateWithoutCustomerInput> | VehicleInfoCreateWithoutCustomerInput[] | VehicleInfoUncheckedCreateWithoutCustomerInput[]
     connectOrCreate?: VehicleInfoCreateOrConnectWithoutCustomerInput | VehicleInfoCreateOrConnectWithoutCustomerInput[]
@@ -10090,6 +10720,26 @@ export namespace Prisma {
     update?: VehicleInfoUpdateWithWhereUniqueWithoutCustomerInput | VehicleInfoUpdateWithWhereUniqueWithoutCustomerInput[]
     updateMany?: VehicleInfoUpdateManyWithWhereWithoutCustomerInput | VehicleInfoUpdateManyWithWhereWithoutCustomerInput[]
     deleteMany?: VehicleInfoScalarWhereInput | VehicleInfoScalarWhereInput[]
+  }
+
+  export type GeofenceUncheckedUpdateManyWithoutCustomerNestedInput = {
+    create?: XOR<GeofenceCreateWithoutCustomerInput, GeofenceUncheckedCreateWithoutCustomerInput> | GeofenceCreateWithoutCustomerInput[] | GeofenceUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: GeofenceCreateOrConnectWithoutCustomerInput | GeofenceCreateOrConnectWithoutCustomerInput[]
+    upsert?: GeofenceUpsertWithWhereUniqueWithoutCustomerInput | GeofenceUpsertWithWhereUniqueWithoutCustomerInput[]
+    createMany?: GeofenceCreateManyCustomerInputEnvelope
+    set?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
+    disconnect?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
+    delete?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
+    connect?: GeofenceWhereUniqueInput | GeofenceWhereUniqueInput[]
+    update?: GeofenceUpdateWithWhereUniqueWithoutCustomerInput | GeofenceUpdateWithWhereUniqueWithoutCustomerInput[]
+    updateMany?: GeofenceUpdateManyWithWhereWithoutCustomerInput | GeofenceUpdateManyWithWhereWithoutCustomerInput[]
+    deleteMany?: GeofenceScalarWhereInput | GeofenceScalarWhereInput[]
+  }
+
+  export type UserCreateNestedOneWithoutGeofencesInput = {
+    create?: XOR<UserCreateWithoutGeofencesInput, UserUncheckedCreateWithoutGeofencesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutGeofencesInput
+    connect?: UserWhereUniqueInput
   }
 
   export type VehiclesOnGeofencesCreateNestedManyWithoutGeofenceInput = {
@@ -10108,6 +10758,16 @@ export namespace Prisma {
 
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
+  }
+
+  export type UserUpdateOneWithoutGeofencesNestedInput = {
+    create?: XOR<UserCreateWithoutGeofencesInput, UserUncheckedCreateWithoutGeofencesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutGeofencesInput
+    upsert?: UserUpsertWithoutGeofencesInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutGeofencesInput, UserUpdateWithoutGeofencesInput>, UserUncheckedUpdateWithoutGeofencesInput>
   }
 
   export type VehiclesOnGeofencesUpdateManyWithoutGeofenceNestedInput = {
@@ -10294,6 +10954,11 @@ export namespace Prisma {
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type NestedFloatNullableFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
@@ -10305,9 +10970,20 @@ export namespace Prisma {
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
+  export type NestedBoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedDecimalWithAggregatesFilter<$PrismaModel = never> = {
@@ -10342,15 +11018,12 @@ export namespace Prisma {
     _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -10369,12 +11042,28 @@ export namespace Prisma {
     _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
+  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumuserRoleFilter<$PrismaModel = never> = {
@@ -10408,6 +11097,17 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
+  export type NestedUuidNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedUuidNullableFilter<$PrismaModel> | string | null
+  }
+
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -10425,6 +11125,20 @@ export namespace Prisma {
     _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
+  export type NestedUuidNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedUuidNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
   export type UserCreateWithoutVehicleInfosInput = {
     id?: string
     name: string
@@ -10433,6 +11147,7 @@ export namespace Prisma {
     role?: $Enums.userRole
     createdAt?: Date | string
     updatedAt?: Date | string
+    geofences?: GeofenceCreateNestedManyWithoutCustomerInput
   }
 
   export type UserUncheckedCreateWithoutVehicleInfosInput = {
@@ -10443,6 +11158,7 @@ export namespace Prisma {
     role?: $Enums.userRole
     createdAt?: Date | string
     updatedAt?: Date | string
+    geofences?: GeofenceUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type UserCreateOrConnectWithoutVehicleInfosInput = {
@@ -10457,10 +11173,22 @@ export namespace Prisma {
     altitude?: Decimal | DecimalJsLike | number | string | null
     speed?: Decimal | DecimalJsLike | number | string | null
     heading?: Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: number | null
     ignition?: boolean
     timestamp: Date | string
     createdAt?: Date | string
+    odometer?: number | null
+    engine?: boolean | null
+    rpm?: number | null
+    batteryVoltage?: number | null
+    inputVoltage?: number | null
+    batteryHealth?: number | null
+    batteryCharge?: number | null
+    temperature?: number | null
+    gpsFix?: number | null
+    digitalInput1?: boolean | null
+    digitalInput2?: boolean | null
+    digitalOutput1?: boolean | null
+    totalEngineDuration?: number | null
   }
 
   export type LocationLogUncheckedCreateWithoutVehicleInput = {
@@ -10470,10 +11198,22 @@ export namespace Prisma {
     altitude?: Decimal | DecimalJsLike | number | string | null
     speed?: Decimal | DecimalJsLike | number | string | null
     heading?: Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: number | null
     ignition?: boolean
     timestamp: Date | string
     createdAt?: Date | string
+    odometer?: number | null
+    engine?: boolean | null
+    rpm?: number | null
+    batteryVoltage?: number | null
+    inputVoltage?: number | null
+    batteryHealth?: number | null
+    batteryCharge?: number | null
+    temperature?: number | null
+    gpsFix?: number | null
+    digitalInput1?: boolean | null
+    digitalInput2?: boolean | null
+    digitalOutput1?: boolean | null
+    totalEngineDuration?: number | null
   }
 
   export type LocationLogCreateOrConnectWithoutVehicleInput = {
@@ -10563,6 +11303,7 @@ export namespace Prisma {
     role?: EnumuserRoleFieldUpdateOperationsInput | $Enums.userRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    geofences?: GeofenceUpdateManyWithoutCustomerNestedInput
   }
 
   export type UserUncheckedUpdateWithoutVehicleInfosInput = {
@@ -10573,6 +11314,7 @@ export namespace Prisma {
     role?: EnumuserRoleFieldUpdateOperationsInput | $Enums.userRole
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    geofences?: GeofenceUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type LocationLogUpsertWithWhereUniqueWithoutVehicleInput = {
@@ -10602,10 +11344,22 @@ export namespace Prisma {
     altitude?: DecimalNullableFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
     speed?: DecimalNullableFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
     heading?: DecimalNullableFilter<"LocationLog"> | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: FloatNullableFilter<"LocationLog"> | number | null
     ignition?: BoolFilter<"LocationLog"> | boolean
     timestamp?: DateTimeFilter<"LocationLog"> | Date | string
     createdAt?: DateTimeFilter<"LocationLog"> | Date | string
+    odometer?: FloatNullableFilter<"LocationLog"> | number | null
+    engine?: BoolNullableFilter<"LocationLog"> | boolean | null
+    rpm?: IntNullableFilter<"LocationLog"> | number | null
+    batteryVoltage?: FloatNullableFilter<"LocationLog"> | number | null
+    inputVoltage?: FloatNullableFilter<"LocationLog"> | number | null
+    batteryHealth?: IntNullableFilter<"LocationLog"> | number | null
+    batteryCharge?: IntNullableFilter<"LocationLog"> | number | null
+    temperature?: FloatNullableFilter<"LocationLog"> | number | null
+    gpsFix?: IntNullableFilter<"LocationLog"> | number | null
+    digitalInput1?: BoolNullableFilter<"LocationLog"> | boolean | null
+    digitalInput2?: BoolNullableFilter<"LocationLog"> | boolean | null
+    digitalOutput1?: BoolNullableFilter<"LocationLog"> | boolean | null
+    totalEngineDuration?: IntNullableFilter<"LocationLog"> | number | null
   }
 
   export type VehicleComplianceUpsertWithWhereUniqueWithoutVehicleInput = {
@@ -10759,6 +11513,36 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type GeofenceCreateWithoutCustomerInput = {
+    id?: string
+    name: string
+    zoneHash?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    vehicles?: VehiclesOnGeofencesCreateNestedManyWithoutGeofenceInput
+  }
+
+  export type GeofenceUncheckedCreateWithoutCustomerInput = {
+    id?: string
+    name: string
+    zoneHash?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    vehicles?: VehiclesOnGeofencesUncheckedCreateNestedManyWithoutGeofenceInput
+  }
+
+  export type GeofenceCreateOrConnectWithoutCustomerInput = {
+    where: GeofenceWhereUniqueInput
+    create: XOR<GeofenceCreateWithoutCustomerInput, GeofenceUncheckedCreateWithoutCustomerInput>
+  }
+
+  export type GeofenceCreateManyCustomerInputEnvelope = {
+    data: GeofenceCreateManyCustomerInput | GeofenceCreateManyCustomerInput[]
+    skipDuplicates?: boolean
+  }
+
   export type VehicleInfoUpsertWithWhereUniqueWithoutCustomerInput = {
     where: VehicleInfoWhereUniqueInput
     update: XOR<VehicleInfoUpdateWithoutCustomerInput, VehicleInfoUncheckedUpdateWithoutCustomerInput>
@@ -10787,6 +11571,62 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"VehicleInfo"> | Date | string
   }
 
+  export type GeofenceUpsertWithWhereUniqueWithoutCustomerInput = {
+    where: GeofenceWhereUniqueInput
+    update: XOR<GeofenceUpdateWithoutCustomerInput, GeofenceUncheckedUpdateWithoutCustomerInput>
+    create: XOR<GeofenceCreateWithoutCustomerInput, GeofenceUncheckedCreateWithoutCustomerInput>
+  }
+
+  export type GeofenceUpdateWithWhereUniqueWithoutCustomerInput = {
+    where: GeofenceWhereUniqueInput
+    data: XOR<GeofenceUpdateWithoutCustomerInput, GeofenceUncheckedUpdateWithoutCustomerInput>
+  }
+
+  export type GeofenceUpdateManyWithWhereWithoutCustomerInput = {
+    where: GeofenceScalarWhereInput
+    data: XOR<GeofenceUpdateManyMutationInput, GeofenceUncheckedUpdateManyWithoutCustomerInput>
+  }
+
+  export type GeofenceScalarWhereInput = {
+    AND?: GeofenceScalarWhereInput | GeofenceScalarWhereInput[]
+    OR?: GeofenceScalarWhereInput[]
+    NOT?: GeofenceScalarWhereInput | GeofenceScalarWhereInput[]
+    id?: UuidFilter<"Geofence"> | string
+    name?: StringFilter<"Geofence"> | string
+    zoneHash?: StringNullableFilter<"Geofence"> | string | null
+    isActive?: BoolFilter<"Geofence"> | boolean
+    customerId?: UuidNullableFilter<"Geofence"> | string | null
+    createdAt?: DateTimeFilter<"Geofence"> | Date | string
+    updatedAt?: DateTimeFilter<"Geofence"> | Date | string
+  }
+
+  export type UserCreateWithoutGeofencesInput = {
+    id?: string
+    name: string
+    email: string
+    password: string
+    role?: $Enums.userRole
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    vehicleInfos?: VehicleInfoCreateNestedManyWithoutCustomerInput
+  }
+
+  export type UserUncheckedCreateWithoutGeofencesInput = {
+    id?: string
+    name: string
+    email: string
+    password: string
+    role?: $Enums.userRole
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    vehicleInfos?: VehicleInfoUncheckedCreateNestedManyWithoutCustomerInput
+  }
+
+  export type UserCreateOrConnectWithoutGeofencesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutGeofencesInput, UserUncheckedCreateWithoutGeofencesInput>
+  }
+
   export type VehiclesOnGeofencesCreateWithoutGeofenceInput = {
     assignedAt?: Date | string
     vehicle: VehicleInfoCreateNestedOneWithoutGeofencesInput
@@ -10805,6 +11645,39 @@ export namespace Prisma {
   export type VehiclesOnGeofencesCreateManyGeofenceInputEnvelope = {
     data: VehiclesOnGeofencesCreateManyGeofenceInput | VehiclesOnGeofencesCreateManyGeofenceInput[]
     skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithoutGeofencesInput = {
+    update: XOR<UserUpdateWithoutGeofencesInput, UserUncheckedUpdateWithoutGeofencesInput>
+    create: XOR<UserCreateWithoutGeofencesInput, UserUncheckedCreateWithoutGeofencesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutGeofencesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutGeofencesInput, UserUncheckedUpdateWithoutGeofencesInput>
+  }
+
+  export type UserUpdateWithoutGeofencesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    role?: EnumuserRoleFieldUpdateOperationsInput | $Enums.userRole
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicleInfos?: VehicleInfoUpdateManyWithoutCustomerNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutGeofencesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    role?: EnumuserRoleFieldUpdateOperationsInput | $Enums.userRole
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicleInfos?: VehicleInfoUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type VehiclesOnGeofencesUpsertWithWhereUniqueWithoutGeofenceInput = {
@@ -10857,6 +11730,7 @@ export namespace Prisma {
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
+    customer?: UserCreateNestedOneWithoutGeofencesInput
   }
 
   export type GeofenceUncheckedCreateWithoutVehiclesInput = {
@@ -10864,6 +11738,7 @@ export namespace Prisma {
     name: string
     zoneHash?: string | null
     isActive?: boolean
+    customerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -10924,6 +11799,7 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customer?: UserUpdateOneWithoutGeofencesNestedInput
   }
 
   export type GeofenceUncheckedUpdateWithoutVehiclesInput = {
@@ -10931,6 +11807,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     zoneHash?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    customerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -11002,10 +11879,22 @@ export namespace Prisma {
     altitude?: Decimal | DecimalJsLike | number | string | null
     speed?: Decimal | DecimalJsLike | number | string | null
     heading?: Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: number | null
     ignition?: boolean
     timestamp: Date | string
     createdAt?: Date | string
+    odometer?: number | null
+    engine?: boolean | null
+    rpm?: number | null
+    batteryVoltage?: number | null
+    inputVoltage?: number | null
+    batteryHealth?: number | null
+    batteryCharge?: number | null
+    temperature?: number | null
+    gpsFix?: number | null
+    digitalInput1?: boolean | null
+    digitalInput2?: boolean | null
+    digitalOutput1?: boolean | null
+    totalEngineDuration?: number | null
   }
 
   export type VehicleComplianceCreateManyVehicleInput = {
@@ -11034,10 +11923,22 @@ export namespace Prisma {
     altitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     speed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     heading?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
     ignition?: BoolFieldUpdateOperationsInput | boolean
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    odometer?: NullableFloatFieldUpdateOperationsInput | number | null
+    engine?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    rpm?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    inputVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    batteryHealth?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryCharge?: NullableIntFieldUpdateOperationsInput | number | null
+    temperature?: NullableFloatFieldUpdateOperationsInput | number | null
+    gpsFix?: NullableIntFieldUpdateOperationsInput | number | null
+    digitalInput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalInput2?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalOutput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    totalEngineDuration?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type LocationLogUncheckedUpdateWithoutVehicleInput = {
@@ -11047,10 +11948,22 @@ export namespace Prisma {
     altitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     speed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     heading?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
     ignition?: BoolFieldUpdateOperationsInput | boolean
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    odometer?: NullableFloatFieldUpdateOperationsInput | number | null
+    engine?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    rpm?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    inputVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    batteryHealth?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryCharge?: NullableIntFieldUpdateOperationsInput | number | null
+    temperature?: NullableFloatFieldUpdateOperationsInput | number | null
+    gpsFix?: NullableIntFieldUpdateOperationsInput | number | null
+    digitalInput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalInput2?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalOutput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    totalEngineDuration?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type LocationLogUncheckedUpdateManyWithoutVehicleInput = {
@@ -11060,10 +11973,22 @@ export namespace Prisma {
     altitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     speed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     heading?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
     ignition?: BoolFieldUpdateOperationsInput | boolean
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    odometer?: NullableFloatFieldUpdateOperationsInput | number | null
+    engine?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    rpm?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    inputVoltage?: NullableFloatFieldUpdateOperationsInput | number | null
+    batteryHealth?: NullableIntFieldUpdateOperationsInput | number | null
+    batteryCharge?: NullableIntFieldUpdateOperationsInput | number | null
+    temperature?: NullableFloatFieldUpdateOperationsInput | number | null
+    gpsFix?: NullableIntFieldUpdateOperationsInput | number | null
+    digitalInput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalInput2?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    digitalOutput1?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    totalEngineDuration?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type VehicleComplianceUpdateWithoutVehicleInput = {
@@ -11131,6 +12056,15 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type GeofenceCreateManyCustomerInput = {
+    id?: string
+    name: string
+    zoneHash?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type VehicleInfoUpdateWithoutCustomerInput = {
     id?: StringFieldUpdateOperationsInput | string
     imei?: StringFieldUpdateOperationsInput | string
@@ -11157,6 +12091,35 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     imei?: StringFieldUpdateOperationsInput | string
     vechicleNumb?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GeofenceUpdateWithoutCustomerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    zoneHash?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicles?: VehiclesOnGeofencesUpdateManyWithoutGeofenceNestedInput
+  }
+
+  export type GeofenceUncheckedUpdateWithoutCustomerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    zoneHash?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    vehicles?: VehiclesOnGeofencesUncheckedUpdateManyWithoutGeofenceNestedInput
+  }
+
+  export type GeofenceUncheckedUpdateManyWithoutCustomerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    zoneHash?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

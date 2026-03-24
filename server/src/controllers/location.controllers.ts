@@ -29,8 +29,20 @@ const logLocationHandler = AsyncHandler(async (req: ValidatedRequest<CreateLocat
   return res.status(201).json(new ApiResponse(201, result, 'Location logged and processed successfully'));
 });
 
-const getHistory = AsyncHandler(async (req: ValidatedRequest<FindLocationQueryInput>, res: Response) => {
+import { findVehiclesDb } from '../dbQuery/vehicle.dbquery.ts';
+
+const getHistory = AsyncHandler(async (req: ValidatedRequest<FindLocationQueryInput> | any, res: Response) => {
   const { query } = req.validated;
+
+  if (req.user?.role !== 'Admin') {
+    if (!query.imei) {
+      throw new ApiError(400, 'tracker imei is required to fetch history');
+    }
+    const vehicles = await findVehiclesDb({ imei: query.imei, customerId: req.user.id });
+    if (!vehicles || vehicles.length === 0) {
+      throw new ApiError(403, 'Permission denied: You do not own this tracker');
+    }
+  }
 
   const logs = await findLocationLogsDb(query);
 

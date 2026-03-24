@@ -4,7 +4,7 @@ import VehicleCard from './VehicleCard';
 
 const filterOptions = ['All Vehicles', 'Registered', 'Moving', 'Stopped', 'Idle', 'Unregistered'];
 
-export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle, totalLiveCount = 0 }) {
+export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle, totalLiveCount = 0, isAdmin, onRegisterRequest, onEditRequest }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All Vehicles');
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -142,6 +142,9 @@ export default function VehicleList({ vehicles, selectedVehicle, onSelectVehicle
                             vehicle={vehicle}
                             isSelected={selectedVehicle?.id === vehicle.id}
                             onSelect={onSelectVehicle}
+                            isAdmin={isAdmin}
+                            onRegisterRequest={onRegisterRequest}
+                            onEditRequest={onEditRequest}
                         />
                     ))}
 

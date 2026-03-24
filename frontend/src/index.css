@@ -16,6 +16,31 @@ html, body, #root {
   width: 100%;
   overflow: hidden;
   font-family: 'Inter', sans-serif;
+  user-select: none;
+  cursor: default;
+}
+
+/* Ensure all interactive elements show the pointer cursor */
+button, 
+a, 
+[role="button"],
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+/* Re-enable selection only for specific content areas */
+input, 
+textarea, 
+[contenteditable="true"], 
+.selectable-text {
+  user-select: text;
+  cursor: text;
+}
+
+/* History table selection */
+.analytics-table,
+table {
+  user-select: text;
 }
 
 /* Custom scrollbar */

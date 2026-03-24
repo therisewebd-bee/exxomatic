@@ -2,7 +2,7 @@ import { Response } from 'express';
 import AsyncHandler from '../utils/asyncHandler.utils.ts';
 import { ApiResponse } from '../utils/apiResponse.utils.ts';
 import { ApiError } from '../utils/apiError.utils.ts';
-import { hashPassword, comparePassword, generateToken } from '../utils/auth.utils.ts';
+import { hashPassword, comparePassword, generateToken, verifyToken } from '../utils/auth.utils.ts';
 import {
   createUserAccountDb,
   findUserAccountByEmailDb,
@@ -20,8 +20,28 @@ import {
 } from '../dto/user.dto.ts';
 import { ValidatedRequest } from '../types/request.ts';
 
-const registerUserHandler = AsyncHandler(async (req: ValidatedRequest<CreateAccountInput>, res: Response) => {
+const registerUserHandler = AsyncHandler(async (req: ValidatedRequest<CreateAccountInput> | any, res: Response) => {
   const { body } = req.validated;
+
+  // Attempt dynamic auth extraction to verify if an Admin is logged in
+  let isAdmin = false;
+  try {
+    const token = req.cookies?.fleet_token || req.header('Authorization')?.replace('Bearer ', '');
+    if (token) {
+      const decoded = verifyToken(token);
+      if (decoded?.id) {
+         const requestingUser = await findUserAccountByIdDb(decoded.id);
+         if (requestingUser?.role === 'Admin') isAdmin = true;
+      }
+    }
+  } catch (error) {
+    // Fail silently; treat as a public registration
+  }
+
+  // CRITICAL SECURITY: Force public signups to 'Customer'
+  if (!isAdmin) {
+    body.role = 'Customer';
+  }
 
   // Check if user already exists
   const existingUser = await findUserAccountByEmailDb(body.email);
@@ -75,16 +95,24 @@ const loginUserHandler = AsyncHandler(async (req: ValidatedRequest<LoginAccountI
     .json(new ApiResponse(200, { user: userWithoutPassword, token }, 'Login successful'));
 });
 
-const getUsers = AsyncHandler(async (req: ValidatedRequest<FindUserQueryInput>, res: Response) => {
+const getUsers = AsyncHandler(async (req: ValidatedRequest<FindUserQueryInput> | any, res: Response) => {
   const { query } = req.validated;
+
+  if (req.user?.role !== 'Admin') {
+    throw new ApiError(403, 'Permission denied: Only Admins can view the global user directory');
+  }
 
   const users = await findUserAccountsDb(query);
 
   return res.status(200).json(new ApiResponse(200, users, 'Users retrieved successfully'));
 });
 
-const getUser = AsyncHandler(async (req: ValidatedRequest<UserIdParam>, res: Response) => {
+const getUser = AsyncHandler(async (req: ValidatedRequest<UserIdParam> | any, res: Response) => {
   const { params } = req.validated;
+
+  if (req.user?.role !== 'Admin' && req.user?.id !== params.userId) {
+    throw new ApiError(403, 'Permission denied: You cannot view other user profiles');
+  }
 
   const user = await findUserAccountByIdDb(params.userId);
   if (!user) {
@@ -94,8 +122,12 @@ const getUser = AsyncHandler(async (req: ValidatedRequest<UserIdParam>, res: Res
   return res.status(200).json(new ApiResponse(200, user, 'User retrieved successfully'));
 });
 
-const updateUserHandler = AsyncHandler(async (req: ValidatedRequest<UpdateUserInput & UserIdParam>, res: Response) => {
+const updateUserHandler = AsyncHandler(async (req: ValidatedRequest<UpdateUserInput & UserIdParam> | any, res: Response) => {
   const { body, params } = req.validated;
+
+  if (req.user?.role !== 'Admin' && req.user?.id !== params.userId) {
+    throw new ApiError(403, 'Permission denied: You can only update your own profile');
+  }
 
   if (Object.keys(body).length === 0) {
     throw new ApiError(400, 'At least one field must be provided for update');
@@ -106,8 +138,12 @@ const updateUserHandler = AsyncHandler(async (req: ValidatedRequest<UpdateUserIn
   return res.status(200).json(new ApiResponse(200, updated, 'User updated successfully'));
 });
 
-const deleteUserHandler = AsyncHandler(async (req: ValidatedRequest<UserIdParam>, res: Response) => {
+const deleteUserHandler = AsyncHandler(async (req: ValidatedRequest<UserIdParam> | any, res: Response) => {
   const { params } = req.validated;
+
+  if (req.user?.role !== 'Admin') {
+    throw new ApiError(403, 'Permission denied: Only Admins can delete users');
+  }
 
   const result = await deleteUserAccountDb(params.userId);
 

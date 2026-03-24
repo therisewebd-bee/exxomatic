@@ -35,7 +35,7 @@ export const flushBuffer = async (): Promise<void> => {
   logger.info(`[buffer] flushing ${snapshot.size} vehicle updates`);
 
   const updates = Array.from(snapshot.values());
-  
+
   try {
     // Timeout guard: if processTrackerUpdateBatch hangs, force-unlock after 30s
     await Promise.race([

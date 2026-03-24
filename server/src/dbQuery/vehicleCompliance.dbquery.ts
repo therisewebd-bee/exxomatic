@@ -65,13 +65,15 @@ const findVehicleComplianceByIdDb = catchService(
 );
 
 const findVehicleCompliancesDb = catchService(
-  async (findVCS: FindVehicleComplianceQueryInput) => {
-    const { vehicleId, filledBy, page = 1, limit = 10 } = findVCS.query;
+  async (query: any, customerId?: string) => {
+    const { vehicleId, filledBy, page = 1, limit = 10 } = query;
+    const where: any = {};
+    if (vehicleId) where.vehicleId = vehicleId;
+    if (filledBy) where.filledBy = filledBy;
+    if (customerId) where.vehicle = { customerId };
+
     return await prismaAdapter.vehicleCompliance.findMany({
-      where: {
-        vehicleId,
-        filledBy,
-      },
+      where,
       include: {
         vehicle: true,
       },
