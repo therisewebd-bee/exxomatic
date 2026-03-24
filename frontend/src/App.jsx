@@ -51,9 +51,10 @@ function Dashboard() {
 
       let currentStatus = v.status || 'stopped';
       if (isLiveFresh && live) {
-         currentStatus = live.motionStatus || (live.speed > 5 ? 'moving' : 'idle');
-      } else if (currentStatus === 'online') {
-         currentStatus = v.speed > 5 ? 'moving' : 'idle';
+         currentStatus = live.motionStatus || (live.speed > 2 ? 'moving' : (live.ignition ? 'idle' : 'stopped'));
+      } else if (currentStatus === 'online' || currentStatus === 'moving' || currentStatus === 'idle') {
+         // Fallback for stale registered data
+         currentStatus = v.speed > 2 ? 'moving' : (v.engine || v.ignition ? 'idle' : 'stopped');
       }
 
       return {
@@ -62,6 +63,7 @@ function Dashboard() {
         lng: isLiveFresh ? live.lng : v.lng ?? 0,
         speed: currentStatus === 'offline' ? 0 : (isLiveFresh ? live.speed : v.speed ?? 0),
         status: currentStatus,
+        isLive: isLiveFresh, // NEW: Explicit flag for live data communication
         isAlert: isLiveFresh ? (live.status === 'ALERT') : false,
         plate: v.vechicleNumb || v.imei,
         isUnregistered: false,
@@ -87,6 +89,7 @@ function Dashboard() {
           lng: pos.lng,
           speed: pos.speed || 0,
           status: pos.motionStatus || (pos.speed > 5 ? 'moving' : 'idle'),
+          isLive: true, // Unregistered devices coming from WS are by definition live
           isAlert: false,
           plate: `Unregistered (${imei.slice(-6)})`,
           isUnregistered: true,
@@ -166,6 +169,7 @@ function Dashboard() {
             isAdmin={isAdmin}
             onRegisterRequest={handleRegisterRequest}
             onEditRequest={handleEditRequest}
+            onAnalyzeRequest={handleAnalyzeRequest}
           />
           <MapView
             vehicles={registeredVehiclesOnly}

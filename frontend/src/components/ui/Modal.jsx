@@ -7,7 +7,7 @@ import { MdClose } from 'react-icons/md';
 export default function Modal({ title, titleIcon, onClose, children, maxWidth = 'max-w-md' }) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className={`bg-white rounded-2xl w-full ${maxWidth} border border-gray-200 shadow-2xl overflow-hidden`}>
+      <div className={`bg-white rounded-2xl w-full ${maxWidth} border border-gray-200 shadow-2xl relative`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h3 className="font-bold text-gray-800 flex items-center gap-2">
             {titleIcon}

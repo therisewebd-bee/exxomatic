@@ -200,7 +200,13 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                                             className="w-2 h-2 rounded-full inline-block"
                                             style={{ backgroundColor: statusColors[vehicle.status] }}
                                         ></span>
-                                        <span className="text-gray-600">{statusLabels[vehicle.status] || 'Unknown'}</span>
+                                        <span className="text-gray-600 mr-1">{statusLabels[vehicle.status] || 'Unknown'}</span>
+                                        {vehicle.isLive && (
+                                            <span className="flex items-center gap-1 px-1.5 py-0.25 bg-green-50 text-green-600 text-[9px] font-black uppercase rounded border border-green-100 italic">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                                Live
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="text-gray-500 mb-2">Speed: {vehicle.speed || 0} km/h</div>
                                     

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCreateVehicleMutation, useUpdateVehicleMutation, useDeleteVehicleMutation, useUsersQuery } from '../hooks/useQueries';
 import { useAuth } from '../context/AuthContext';
 import { MdDirectionsCar, MdAdd, MdClose, MdDelete, MdEdit } from 'react-icons/md';
@@ -20,8 +20,16 @@ export default function VehicleManagementPanel({ vehicles, registerImei, editVeh
   const [vechicleNumb, setVechicleNumb] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const initializationRef = useRef(null); // Tracks the last entity (ID or IMEI) initialized in the form
 
   useEffect(() => {
+    // Determine the current "target" entity for the form
+    const currentTrigger = editVehicleId || registerImei;
+    
+    // If the modal is open and we've already initialized for this specific entity,
+    // do NOT overwrite the local state (user's typing).
+    if (showModal && initializationRef.current === currentTrigger) return;
+
     if (editVehicleId) {
       const v = vehicles.find(v => v.id === editVehicleId);
       if (v) {
@@ -29,6 +37,7 @@ export default function VehicleManagementPanel({ vehicles, registerImei, editVeh
         setImei(v.imei);
         setVechicleNumb(v.vechicleNumb);
         setCustomerId(v.customerId || '');
+        initializationRef.current = editVehicleId;
         setShowModal(true);
       }
     } else if (registerImei) {
@@ -36,21 +45,24 @@ export default function VehicleManagementPanel({ vehicles, registerImei, editVeh
       setImei(registerImei);
       setVechicleNumb('');
       setCustomerId('');
+      initializationRef.current = registerImei;
       setShowModal(true);
     }
-  }, [registerImei, editVehicleId, vehicles]);
+  }, [registerImei, editVehicleId, vehicles, showModal]); 
 
   // Filter to only show Customer-role users in the dropdown
   const customers = users.filter(u => u.role === 'Customer');
 
   function handleCloseModal() {
     setShowModal(false);
+    initializationRef.current = null; // Clear initialization tracker on close
     if (onClearRegisterImei) onClearRegisterImei();
   }
 
-  async function handleSave() {
+  async function handleSave(e) {
+    if (e && e.preventDefault) e.preventDefault();
     if (!imei || !vechicleNumb) return alert('Both fields are required');
-    if (isAdmin && !customerId) return alert('Please select a customer');
+    // Removed mandatory customerId check for admins as per request
     try {
       const payload = { imei, vechicleNumb };
       if (isAdmin && customerId) payload.customerId = customerId;
@@ -147,6 +159,7 @@ export default function VehicleManagementPanel({ vehicles, registerImei, editVeh
           titleIcon={editingId ? <MdEdit /> : <MdAdd />}
           onClose={handleCloseModal}
         >
+        <form onSubmit={handleSave} className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Tracker IMEI</label>
             <input
@@ -167,13 +180,13 @@ export default function VehicleManagementPanel({ vehicles, registerImei, editVeh
           {/* Admin-only: Assign vehicle to a customer */}
           {isAdmin && (
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Assign to Customer</label>
+              <label className="text-xs font-semibold text-gray-500 mb-1 block">Assign to Customer (Optional)</label>
               <select
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:border-purple-500 transition text-sm bg-white"
               >
-                <option value="">— Select Customer —</option>
+                <option value="">— Unassigned / Register to Self —</option>
                 {customers.map(c => (
                   <option key={c.id} value={c.id}>{c.name} ({c.email})</option>
                 ))}
@@ -182,11 +195,12 @@ export default function VehicleManagementPanel({ vehicles, registerImei, editVeh
           )}
 
           <button
-            onClick={handleSave} disabled={isSaving}
+            type="submit" disabled={isSaving}
             className="w-full py-3 bg-brand-purple hover:bg-brand-purple-dark text-white font-semibold rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isSaving ? 'Saving...' : editingId ? 'Update Vehicle' : 'Register Vehicle'}
           </button>
+        </form>
         </Modal>
       )}
     </PanelLayout>

@@ -23,7 +23,10 @@ export default function GeofencePanel({ onDrawRequested, drawnZone, onDrawConsum
 
   // Transform vehicles for the searchable multi-select
   const vehicleOptions = useMemo(() =>
-    vehicles.map(v => ({ id: v.id, label: v.vechicleNumb || v.imei })),
+    vehicles.map(v => ({ 
+      id: v.id, 
+      label: v.vechicleNumb ? `${v.vechicleNumb} (${v.imei})` : v.imei 
+    })),
   [vehicles]);
 
   useEffect(() => {

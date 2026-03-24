@@ -7,7 +7,7 @@ const statusConfig = {
     idle: { color: 'bg-status-idle', label: 'Idle' },
 };
 
-export default function VehicleCard({ vehicle, isSelected, onSelect, isAdmin, onRegisterRequest, onEditRequest }) {
+export default function VehicleCard({ vehicle, isSelected, onSelect, isAdmin, onRegisterRequest, onEditRequest, onAnalyze }) {
     const status = statusConfig[vehicle.status] || statusConfig.idle;
     const plate = vehicle.plate || vehicle.vechicleNumb || vehicle.imei;
     const isUnregistered = vehicle.isUnregistered;
@@ -51,40 +51,44 @@ export default function VehicleCard({ vehicle, isSelected, onSelect, isAdmin, on
                 </div>
             )}
 
-            {/* Row 1: Vehicle identity */}
+            {/* Row 1: Vehicle identity + Live Indicator */}
             <div className="flex items-center gap-2 mb-2">
-                <MdDirectionsCar className={isUnregistered ? "text-amber-500" : "text-sidebar-bg"} size={18} />
+                <div className="relative">
+                    <MdDirectionsCar className={isUnregistered ? "text-amber-500" : "text-sidebar-bg"} size={18} />
+                    {vehicle.isLive && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-white animate-pulse"></span>
+                    )}
+                </div>
                 <span className="font-semibold text-sm text-gray-800 truncate">{plate}</span>
-                <span className="text-[10px] text-gray-400 ml-auto shrink-0">IMEI:{vehicle.imei}</span>
+                <span className="text-[10px] text-gray-400 ml-auto shrink-0 uppercase font-mono tracking-tighter opacity-70">
+                    {vehicle.isLive ? 'Online' : 'Offline'}
+                </span>
             </div>
 
             {/* Row 2: Status + Speed + Diagnostics */}
-            <div className="flex items-center gap-3 mb-3">
-                <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`w-2.5 h-2.5 rounded-full ${status.color}`}></span>
-                    <span className="text-xs font-medium text-gray-700 leading-none">{status.label}</span>
+            <div className="flex flex-wrap items-center gap-y-2 justify-between mb-3 pt-1 border-t border-gray-50">
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`w-2.5 h-2.5 rounded-full ${status.color}`}></span>
+                        <span className="text-xs font-semibold text-gray-600 leading-none">{status.label}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-gray-400 shrink-0">
+                        <MdSpeed size={14} />
+                        <span className="text-[11px] font-bold leading-none">{vehicle.speed || 0} <span className="text-[9px] font-medium opacity-50 uppercase">km/h</span></span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-gray-500 shrink-0">
-                    <MdSpeed size={14} className="mt-0.5" />
-                    <span className="text-xs font-medium leading-none">{vehicle.speed || 0} km/h</span>
-                </div>
-                {diag && (diag.inputVoltage != null || diag.temperature != null) && (
-                    <div className="flex items-center gap-2 ml-auto text-[10px] text-gray-400 font-medium leading-none mt-0.5">
+
+                {diag && (diag.inputVoltage != null || diag.temperature != null || diag.batteryVoltage != null) && (
+                    <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium leading-none">
                         {diag.inputVoltage != null && (
-                            <div className="flex items-center gap-0.5" title="Vehicle Battery">
-                                <MdBatteryStd size={12} className="text-green-500" />
+                            <div className="flex items-center gap-0.5 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100" title="Vehicle Battery">
+                                <MdBatteryStd size={10} className="text-green-500" />
                                 <span>{diag.inputVoltage}V</span>
                             </div>
                         )}
-                        {diag.batteryVoltage != null && (
-                            <div className="flex items-center gap-0.5" title="Internal Battery">
-                                <MdFlashOn size={12} className="text-amber-500" />
-                                <span>{diag.batteryVoltage}V</span>
-                            </div>
-                        )}
                         {diag.temperature != null && (
-                            <div className="flex items-center gap-0.5" title="Temperature">
-                                <MdThermostat size={12} className="text-red-500" />
+                            <div className="flex items-center gap-0.5 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100" title="Temperature">
+                                <MdThermostat size={10} className="text-red-500" />
                                 <span>{diag.temperature}°</span>
                             </div>
                         )}
@@ -131,7 +135,8 @@ export default function VehicleCard({ vehicle, isSelected, onSelect, isAdmin, on
                             className="flex items-center gap-1.5 bg-brand-purple hover:bg-brand-purple-dark text-white text-xs font-bold px-4 py-2 rounded-lg transition-all duration-200 hover:shadow-md hover:shadow-brand-purple/20 active:scale-95 ml-1"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                onSelect(vehicle);
+                                if (onAnalyze) onAnalyze(vehicle);
+                                else onSelect(vehicle);
                             }}
                         >
                             View Details
