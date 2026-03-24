@@ -63,9 +63,6 @@ model LocationLog {
   digitalInput2       Boolean? // #IN2#
   digitalOutput1      Boolean? // #OUT1#
   totalEngineDuration Int?     // #TDUR# — total engine seconds
-  messageSerial       Int?     // Hardware message sequence number
-  eventId             String?  @db.VarChar(10) // IoT Event ID (EID)
-  rawPacket           String?  @db.Text        // Full unparsed $SLU string
 
   vehicle VehicleInfo @relation(fields: [imei], references: [imei])
 

@@ -6,7 +6,6 @@ export interface SluParsedData extends TrackerPayload {
   heading: number;
   ignition: boolean;
   // Extended fields from new $SLU format
-  eventId?: string;
   odometer?: number;
   engine?: boolean;
   driving?: boolean;
@@ -25,8 +24,6 @@ export interface SluParsedData extends TrackerPayload {
   digitalInput2?: boolean;
   digitalOutput1?: boolean;
   temperature?: number;
-  messageSerial?: number;
-  rawPacket?: string;
 }
 
 /**
@@ -131,7 +128,6 @@ export const parseRawSluData = (data: string): SluParsedData | null => {
     }
 
     // ── Extended fields (safe optional parsing) ───────────────
-    const eventId           = parts[SLU.EID] || undefined;
     const odometer          = safeFloat(parts[SLU.ODOD]);
     const engine            = parts.length > SLU.ENG ? parts[SLU.ENG] === '1' : undefined;
     const driving           = parts.length > SLU.DRV ? parts[SLU.DRV] === '1' : undefined;
@@ -150,7 +146,6 @@ export const parseRawSluData = (data: string): SluParsedData | null => {
     const digitalInput2     = parts.length > SLU.IN2 ? parts[SLU.IN2] === '1' : undefined;
     const digitalOutput1    = parts.length > SLU.OUT1 ? parts[SLU.OUT1] === '1' : undefined;
     const temperature       = safeFloat(parts[SLU.TVI]);
-    const messageSerial     = safeFloat(parts[SLU.SERIAL]);
 
     return {
       imei,
@@ -161,7 +156,6 @@ export const parseRawSluData = (data: string): SluParsedData | null => {
       heading,
       altitude,
       ignition,
-      eventId,
       odometer,
       engine,
       driving,
@@ -180,8 +174,6 @@ export const parseRawSluData = (data: string): SluParsedData | null => {
       digitalInput2,
       digitalOutput1,
       temperature,
-      messageSerial,
-      rawPacket: cleanData,
     };
   } catch (error) {
     return null;

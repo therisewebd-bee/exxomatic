@@ -13,8 +13,6 @@ export interface TrackerPayload {
   heading?: number;
   ignition?: boolean;
   timestamp?: Date;
-  eventId?: string;
-  rawPacket?: string;
   [key: string]: any; // Accept extended diagnostic fields (SLU format)
 }
 
@@ -60,7 +58,7 @@ export const processLiveUpdate = async (data: TrackerPayload): Promise<void> => 
     const hasIgnition = !!data.ignition;
     let motionStatus: MotionStatus = 'stopped';
 
-    if (speed > 3) {
+    if (speed > 2) {
       motionStatus = 'moving';
     } else if (hasIgnition) {
       motionStatus = 'idle';
@@ -75,7 +73,9 @@ export const processLiveUpdate = async (data: TrackerPayload): Promise<void> => 
         lng: Number(lng),
         speed: Number(speed),
         ignition: hasIgnition,
-        timestamp: timestamp.toISOString()
+        timestamp: timestamp.toISOString(),
+        altitude: data.altitude ? Number(data.altitude) : undefined,
+        heading: data.heading ? Number(data.heading) : undefined
       },
       geofences: insideFences,
       status: isBreached ? 'ALERT' : 'NORMAL',
@@ -131,9 +131,6 @@ export const processTrackerUpdate = async (data: TrackerPayload): Promise<Normal
       digitalInput2: data.digitalInput2,
       digitalOutput1: data.digitalOutput1,
       totalEngineDuration: data.totalEngineDuration != null ? Math.round(data.totalEngineDuration) : undefined,
-      messageSerial: data.messageSerial != null ? Math.round(data.messageSerial) : undefined,
-      eventId: data.eventId,
-      rawPacket: data.rawPacket,
     });
 
     // 2. Spatial Optimized Geofence Audit
@@ -156,13 +153,15 @@ export const processTrackerUpdate = async (data: TrackerPayload): Promise<Normal
     const hasIgnition = !!data.ignition;
     let motionStatus: MotionStatus = 'stopped';
 
-    if (speed > 3) {
+    if (speed > 2) {
       motionStatus = 'moving';
     } else if (hasIgnition) {
       motionStatus = 'idle';
     }
 
     // 3. Normalization
+    const { imei: _i, lat: _la, lng: _ln, speed: _s, ignition: _ig, timestamp: _t, altitude: _a, heading: _h, ...diagnostics } = data;
+
     const result: NormalizedTrackerResponse = {
       location: {
         imei: locationLog.imei,
@@ -176,7 +175,8 @@ export const processTrackerUpdate = async (data: TrackerPayload): Promise<Normal
       },
       geofences: insideFences,
       status: isBreached ? 'ALERT' : 'NORMAL',
-      motionStatus
+      motionStatus,
+      diagnostics: Object.keys(diagnostics).length > 0 ? diagnostics : undefined
     };
 
     // 4. Persistence-triggered broadcasting
@@ -232,9 +232,6 @@ export const processTrackerUpdateBatch = async (updates: TrackerPayload[]): Prom
         digitalInput2: data.digitalInput2,
         digitalOutput1: data.digitalOutput1,
         totalEngineDuration: data.totalEngineDuration != null ? Math.round(data.totalEngineDuration) : undefined,
-        messageSerial: data.messageSerial != null ? Math.round(data.messageSerial) : undefined,
-        eventId: data.eventId,
-        rawPacket: data.rawPacket,
       }))
     );
 
@@ -292,7 +289,7 @@ export const processTrackerUpdateBatch = async (updates: TrackerPayload[]): Prom
       const hasIgnition = !!data.ignition;
       let motionStatus: MotionStatus = 'stopped';
 
-      if (speed > 3) {
+      if (speed > 2) {
         motionStatus = 'moving';
       } else if (hasIgnition) {
         motionStatus = 'idle';

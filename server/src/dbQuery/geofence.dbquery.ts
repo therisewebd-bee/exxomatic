@@ -292,21 +292,32 @@ const checkWithInGeofenceBatchDb = catchService(
 
 const deleteGeofenceDb = catchService(
   async (geofenceId: string) => {
-    return await prismaAdapter.$transaction(async (tx: any) => {
-      // Check how many vehicles are linked to this geofence
-      const linkedCount = await tx.vehiclesOnGeofences.count({
+    const { geofence, linkedImeis } = await prismaAdapter.$transaction(async (tx: any) => {
+      // 1. Fetch linked vehicle IMEIs before they are unlinked/deleted
+      const linkedVehicles = await tx.vehiclesOnGeofences.findMany({
         where: { geofenceId },
+        include: { vehicle: { select: { imei: true } } }
       });
+      const imeis = linkedVehicles.map((v: any) => v.vehicle.imei);
 
-      if (linkedCount > 1) {
-        throw new Error(`Cannot delete: this geofence is linked to ${linkedCount} vehicles. Please edit the geofence and unlink vehicles first.`);
+      // 2. Safety check
+      if (imeis.length > 1) {
+        throw new Error(`Cannot delete: this geofence is linked to ${imeis.length} vehicles. Please edit the geofence and unlink vehicles first.`);
       }
 
-      // CASCADE in schema handles VehiclesOnGeofences cleanup automatically
-      return await tx.geofence.delete({
+      const deleted = await tx.geofence.delete({
         where: { id: geofenceId },
       });
+
+      return { geofence: deleted, linkedImeis: imeis };
     });
+
+    // Post-transaction: Instant cache re-audit
+    for (const imei of linkedImeis) {
+      vehicleCache.forceAudit(imei);
+    }
+
+    return geofence;
   },
   'DB-Call Geo',
   'deleting GeoFence'

@@ -15,7 +15,7 @@ const net = require('net');
 const TEST_CASE = process.argv[2] || '2';
 const TOTAL_VEHICLES = parseInt(process.argv[3] || '5', 10);
 const STRESS_MULTIPLIER = parseInt(process.argv[4] || '1', 10);
-const SERVER_HOST = 'localhost';
+const SERVER_HOST = '54.205.0.61';
 const SERVER_PORT = 5000;
 
 // To avoid Operating System "EMFILE" errors (max open files), 
@@ -94,10 +94,10 @@ function buildSluPacket(v, now) {
 
   // Create randomized realistic event ID
   // 01 = Location Report, 04 = IGN ON, 05 = IGN OFF, 24 = ENG ON, 25 = ENG OFF
-  let eventId = '01';
   const randEvent = Math.random();
-  if (randEvent > 0.95) eventId = isMoving ? '04' : '05';
-  else if (randEvent > 0.9) eventId = isMoving ? '24' : '25';
+  let ignStatus = '01';
+  if (randEvent > 0.95) ignStatus = isMoving ? '04' : '05';
+  else if (randEvent > 0.9) ignStatus = isMoving ? '24' : '25';
 
   const ign = isMoving ? 1 : 0;
   const eng = isMoving ? 1 : 0;
@@ -119,7 +119,7 @@ function buildSluPacket(v, now) {
   // Reconstruct exact format requested
   // $SLU{IMEI},06,SERIAL,EDI,EID,LDI,LTDD,LGDD,SPDK,ODOD,HEAD,ALTD,IGN,ENG,DRV,RPM,DUR,TDUR,STRT,STP,IDL,VBAT,VIN,BATH,BATC,V3,CFL,SATN,FIX,IN1,IN2,OUT1,TVI,TI1,TV1,TH1,TV2,TI2,TV2,TH2,CV1,Extra1,Extra2
   const fields = [
-    `$SLU${v.imei}`, '06', serial, isoTs, eventId, isoTs, v.lat.toFixed(6), v.lng.toFixed(6), speed, odo,
+    `$SLU${v.imei}`, '06', serial, isoTs, ignStatus, isoTs, v.lat.toFixed(6), v.lng.toFixed(6), speed, odo,
     heading, alt, ign, eng, drv, rpm, '', tdur, start, '', '', vbat, vin, batHealth, batCharge, '', '', '',
     '3', '1', '1', '0', temp, '', '', '', '', '', '', '', '', '0', '2'
   ];

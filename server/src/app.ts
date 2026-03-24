@@ -1,10 +1,9 @@
 import express, { NextFunction, Request, Response } from 'express';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import helmet from 'helmet';
-import { config } from './config/config.ts';
 import statusMonitor from 'express-status-monitor';
+import { corsMiddleware } from './middlewares/cors.middleware.ts';
 import mainRouter from './routes/index.ts';
 
 const app = express();
@@ -19,10 +18,7 @@ app.use(compression());
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 app.use(cookieParser());
-app.use(cors({
-  origin: true, // Allow all origins while maintaining credentials support
-  credentials: true,
-}));
+app.use(corsMiddleware);
 app.use(express.static('public'));
 
 // Health check

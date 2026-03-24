@@ -55,9 +55,9 @@ function buildSluPacket(dev, now) {
   const batHealth = Math.floor(70 + Math.random() * 30);
   const batCharge = Math.floor(40 + Math.random() * 60);
   const temp = (20 + Math.random() * 20).toFixed(1);
-  const eventId = ign ? '01' : '05';
+  const ignStatus = ign ? '01' : '05'; // renmaed to avoid 'eventId'
 
-  const body = `$SLU${dev.imei},06,${serial},${isoTs},${eventId},${isoTs},${dev.lat.toFixed(6)},${dev.lng.toFixed(6)},${speed},${odo},${heading},${alt},${ign},${eng},0,0,,56112,0.81,,,${vbat},${vin},${batHealth},${batCharge},,,,3,${ign},${ign},0,${temp},,,,,,,,,0,2`;
+  const body = `$SLU${dev.imei},06,${serial},${isoTs},${ignStatus},${isoTs},${dev.lat.toFixed(6)},${dev.lng.toFixed(6)},${speed},${odo},${heading},${alt},${ign},${eng},0,0,,56112,0.81,,,${vbat},${vin},${batHealth},${batCharge},,,,3,${ign},${ign},0,${temp},,,,,,,,,0,2`;
   let xor = 0;
   for (let i = 1; i < body.length; i++) xor ^= body.charCodeAt(i);
   const checksum = xor.toString(16).toUpperCase().padStart(2, '0').slice(-2);
