@@ -1,4 +1,9 @@
-const BASE = import.meta.env.VITE_API_URL || '/api';
+// Force relative path on HTTPS to leverage Netlify proxy and avoid Mixed Content blocks
+const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+const envApiUrl = import.meta.env.VITE_API_URL || '';
+const isEnvHttp = envApiUrl.startsWith('http:');
+
+const BASE = (isHttps && isEnvHttp) ? '/api' : (envApiUrl || '/api');
 
 async function request(endpoint, method = 'GET', body = null) {
   const token = localStorage.getItem('fleet_token_val');
