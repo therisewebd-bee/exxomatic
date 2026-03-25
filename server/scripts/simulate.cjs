@@ -15,7 +15,7 @@ const net = require('net');
 const TEST_CASE = process.argv[2] || '2';
 const TOTAL_VEHICLES = parseInt(process.argv[3] || '5', 10);
 const STRESS_MULTIPLIER = parseInt(process.argv[4] || '1', 10);
-const SERVER_HOST = '54.205.0.61';
+const SERVER_HOST = '13.49.240.170';
 const SERVER_PORT = 5000;
 
 // To avoid Operating System "EMFILE" errors (max open files), 
