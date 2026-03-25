@@ -27,20 +27,15 @@ export default function AuthOverlay() {
       <div className="w-full max-w-md mx-4 rounded-2xl border border-white/10 p-8 shadow-2xl backdrop-blur-sm"
            style={{ background: '#1e293b/80' }}>
         <div className="flex flex-col items-center mb-8">
-           <div className="w-16 h-16 bg-gradient-to-tr from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-purple-500/20">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0112 3v1m0 0a8.001 8.001 0 00-4.582 1.54M12 4a8.001 8.001 0 014.582 1.54M12 4v1m0 16v1m0-1a10.003 10.003 0 01-5.713-1.792M12 21a10.003 10.003 0 005.713-1.792M12 21V12" />
-              </svg>
-           </div>
-           <h2 className="text-3xl font-extrabold text-white tracking-tight">FleetLive Ingress</h2>
-           <p className="text-gray-400 mt-2 text-sm font-medium">Monitoring Node Authorization Required</p>
+           <h2 className="text-3xl font-extrabold text-white tracking-tight">Authorized Access</h2>
+           <p className="text-gray-400 mt-2 text-sm font-medium uppercase tracking-widest">Monitoring Node Authorization Required</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1">
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider ml-1">Fleet Identifier (Email)</label>
             <input
-              type="email" placeholder="adm@fleet-live.io" value={email}
+              type="email" placeholder="admin@tracker.io" value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-4 rounded-xl border border-white/5 bg-[#0f172a]/50 text-white outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20 transition-all font-medium"
               required

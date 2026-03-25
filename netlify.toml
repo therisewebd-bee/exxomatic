@@ -1,7 +1,13 @@
 [build]
   base = "frontend"
-  command = "npm install && npm run build"
+  command = "sed -i 's|__BACKEND_API_URL__|'\"$VITE_API_URL\"'|g' ../netlify.toml && npm install && npm run build"
   publish = "dist"
+
+[[redirects]]
+  from = "/api/*"
+  to = "__BACKEND_API_URL__/:splat"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/*"
