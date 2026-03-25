@@ -1,0 +1,20 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Aiven uses self-signed SSL certs — must be set before any pg connection
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+import { PrismaClient } from '../generated/prisma/index.js';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
+
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  max: 50, // Added for high-concurrency WebSocket connections
+  idleTimeoutMillis: 30000
+});
+
+const adapter = new PrismaPg(pool as any);
+
+export const prismaAdapter = new PrismaClient({ adapter });

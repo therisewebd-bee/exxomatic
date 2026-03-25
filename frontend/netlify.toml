@@ -1,0 +1,7 @@
+[build]
+  base = "frontend"
+  command = "mkdir -p public && echo \"/api/* $VITE_API_URL/:splat 200!\" > public/_redirects && echo \"/* /index.html 200\" >> public/_redirects && npm install && npm run build"
+  publish = "dist"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "VITE_API_URL"

@@ -1,0 +1,80 @@
+@import 'leaflet/dist/leaflet.css';
+@import 'leaflet-draw/dist/leaflet.draw.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  user-select: none;
+  cursor: default;
+}
+
+/* Ensure all interactive elements show the pointer cursor */
+button, 
+a, 
+[role="button"],
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+/* Re-enable selection only for specific content areas */
+input, 
+textarea, 
+[contenteditable="true"], 
+.selectable-text {
+  user-select: text;
+  cursor: text;
+}
+
+/* History table selection */
+.analytics-table,
+table {
+  user-select: text;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4c4c4;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+/* Fix leaflet default icon issue */
+.leaflet-default-icon-path {
+  background-image: url(https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png);
+}
+
+/* Ensure drawing tools are visible and not hidden behind sidebar/vehicle list */
+.leaflet-top, .leaflet-bottom {
+  z-index: 1000 !important;
+}
+
+.leaflet-draw-toolbar {
+  background: white !important;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+}
+
+.leaflet-control-draw-measure {
+  background: white !important;
+}
