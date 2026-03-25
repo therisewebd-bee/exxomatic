@@ -19,7 +19,8 @@ function getWsUrl() {
 
   // If the API URL has /api, we should strip it for the WebSocket upgrade path 
   // unless the backend is specifically configured for it. Usually it's at the root.
-  const wsBase = apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '');
+  // Convert http(s) to ws(s)
+  const wsBase = apiUrl.replace(/^https/, 'wss').replace(/^http/, 'ws').replace(/\/api\/?$/, '');
 
   // Retrieve token from localStorage (saved by AuthContext on login)
   const token = localStorage.getItem('fleet_token_val');
@@ -42,7 +43,20 @@ export function connect() {
     return;
   }
 
-  socket = new WebSocket(url);
+  const isSecurePage = window.location.protocol === 'https:';
+  if (isSecurePage && url.startsWith('ws:')) {
+    console.warn('[WS] Blocking insecure WebSocket attempt from HTTPS page. Please configure WSS.');
+    scheduleReconnect();
+    return;
+  }
+
+  try {
+    socket = new WebSocket(url);
+  } catch (err) {
+    console.error('[WS] Failed to create WebSocket:', err);
+    scheduleReconnect();
+    return;
+  }
 
   socket.onopen = () => {
 

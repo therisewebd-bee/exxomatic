@@ -15,13 +15,12 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   cookieSecret: process.env.COOKIE_SECRET || 'your-cookie-secret',
   dbUrl: process.env.DATABASE_URL,
-  frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/^"(.*)"$/, '$1'),
+  frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/^["'](.*)["']$/, '$1'),
   allowedOrigins: [
     'http://localhost:5173',
     'http://localhost:3000',
     'http://127.0.0.1:5173',
-    process.env.FRONTEND_URL,
+    'https://exxomatic.netlify.app',
+    (process.env.FRONTEND_URL || '').trim().replace(/^["'](.*)["']$/, '$1'),
   ].filter(Boolean) as string[],
 };
-
-

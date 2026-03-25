@@ -14,17 +14,21 @@ export const corsMiddleware = cors({
     if (!origin) return callback(null, true);
 
     const isAllowed = config.allowedOrigins.some((allowed) => {
+      const cleanAllowed = allowed.trim().toLowerCase();
+      const cleanOrigin = origin.trim().toLowerCase();
+      
       // Direct match
-      if (allowed === origin) return true;
-      // Domain match (for ec2 compute-1 etc if we add them to config)
-      if (origin.endsWith(allowed.replace(/^https?:\/\//, ''))) return true;
+      if (cleanAllowed === cleanOrigin) return true;
+      // Domain match (ends with domain.com)
+      const domainOnly = cleanAllowed.replace(/^https?:\/\//, '');
+      if (cleanOrigin.endsWith(domainOnly)) return true;
       return false;
     });
 
-    if (isAllowed || config.nodeEnv === 'development') {
+    if (isAllowed || config.nodeEnv === 'development' || config.nodeEnv === 'dev') {
       callback(null, true);
     } else {
-      console.error(`CORS REJECTED: Origin "${origin}" not in allowed list:`, config.allowedOrigins);
+      console.error(`[CORS REJECT] Origin: "${origin}" | Expected one of:`, config.allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
