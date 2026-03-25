@@ -7,7 +7,7 @@ import {
     updateUserHandler,
     deleteUserHandler,
 } from '../controllers/user.controllers.ts';
-import { validate } from '../middleware/validate.middleware.ts';
+import { validate } from '../middlewares/validate.middleware.ts';
 import {
     createAccountSchema,
     loginAccountSchema,
@@ -15,7 +15,7 @@ import {
     userIdParamSchema,
     findUserQuerySchema,
 } from '../dto/user.dto.ts';
-import { verifyAuth } from '../middleware/auth.middleware.ts';
+import { verifyAuth } from '../middlewares/auth.middleware.ts';
 
 const router = Router();
 

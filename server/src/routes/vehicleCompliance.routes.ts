@@ -7,14 +7,14 @@ import {
     deleteComplianceHandler,
     getLiveFuelRate,
 } from '../controllers/vehicleCompliance.controllers.ts';
-import { validate } from '../middleware/validate.middleware.ts';
+import { validate } from '../middlewares/validate.middleware.ts';
 import {
     createVehicleComplianceSchema,
     updateVehicleComplianceSchema,
     findVehicleComplianceQuerySchema,
     complianceIdParamSchema,
 } from '../dto/vehicleCompliance.dto.ts';
-import { verifyAuth } from '../middleware/auth.middleware.ts';
+import { verifyAuth } from '../middlewares/auth.middleware.ts';
 
 const router = Router();
 

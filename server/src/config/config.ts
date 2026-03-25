@@ -15,7 +15,7 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   cookieSecret: process.env.COOKIE_SECRET || 'your-cookie-secret',
   dbUrl: process.env.DATABASE_URL,
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/^"(.*)"$/, '$1'),
   allowedOrigins: [
     'http://localhost:5173',
     'http://localhost:3000',
@@ -23,4 +23,5 @@ export const config = {
     process.env.FRONTEND_URL,
   ].filter(Boolean) as string[],
 };
+
 

@@ -7,14 +7,14 @@ import {
     checkGeofenceHandler,
     deleteGeofenceHandler,
 } from '../controllers/geofence.controllers.ts';
-import { validate } from '../middleware/validate.middleware.ts';
+import { validate } from '../middlewares/validate.middleware.ts';
 import {
     createGeofenceSchema,
     updateGeofenceSchema,
     geofenceIdParamSchema,
     findGeofenceQuerySchema,
 } from '../dto/geofence.dto.ts';
-import { verifyAuth } from '../middleware/auth.middleware.ts';
+import { verifyAuth } from '../middlewares/auth.middleware.ts';
 
 const router = Router();
 

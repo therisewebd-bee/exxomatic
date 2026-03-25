@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { config } from '../config/config.ts';
+import { config } from '../config/config.js';
 
 /**
  * Centralized CORS Middleware
@@ -24,6 +24,7 @@ export const corsMiddleware = cors({
     if (isAllowed || config.nodeEnv === 'development') {
       callback(null, true);
     } else {
+      console.error(`CORS REJECTED: Origin "${origin}" not in allowed list:`, config.allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },

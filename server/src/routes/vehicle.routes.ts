@@ -6,14 +6,14 @@ import {
     updateVehicleHandler,
     deleteVehicleHandler,
 } from '../controllers/vehicle.controllers.ts';
-import { validate } from '../middleware/validate.middleware.ts';
+import { validate } from '../middlewares/validate.middleware.ts';
 import {
     createVehicleSchema,
     updateVehicleSchema,
     vehicleIdParamSchema,
     findVehicleQuerySchema,
 } from '../dto/vehicle.dto.ts';
-import { verifyAuth } from '../middleware/auth.middleware.ts';
+import { verifyAuth } from '../middlewares/auth.middleware.ts';
 
 const router = Router();
 
