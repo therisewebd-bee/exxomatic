@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import AddressCell from './AddressCell';
 
@@ -46,12 +46,22 @@ export default function PlaybackControls({ validHistoryPath, selectedVehicle, ov
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackIndex, setPlaybackIndex] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [autoFocus, setAutoFocus] = useState(true);
+  const map = useMap();
 
   // Reset when vehicle changes
   useEffect(() => {
     setPlaybackIndex(0);
     setIsPlaying(false);
+    setAutoFocus(true);
   }, [selectedVehicle?.imei, validHistoryPath?.length]);
+
+  // Disable auto-focus when user manually drags the map
+  useEffect(() => {
+    const handleMapDrag = () => setAutoFocus(false);
+    map.on('dragstart', handleMapDrag);
+    return () => map.off('dragstart', handleMapDrag);
+  }, [map]);
 
   // Interpolated ghost position
   const playbackPos = useMemo(() => {
@@ -69,6 +79,13 @@ export default function PlaybackControls({ validHistoryPath, selectedVehicle, ov
       Number(p1.lng) + (Number(p2.lng) - Number(p1.lng)) * fraction
     ];
   }, [validHistoryPath, playbackIndex]);
+
+  // Auto-focus map updates matching playback position
+  useEffect(() => {
+    if (autoFocus && playbackPos) {
+      map.setView(playbackPos, map.getZoom(), { animate: false });
+    }
+  }, [playbackPos, autoFocus, map]);
 
   // 60FPS Animation Loop
   useEffect(() => {
@@ -168,6 +185,15 @@ export default function PlaybackControls({ validHistoryPath, selectedVehicle, ov
               </div>
 
               <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+                <button 
+                  onClick={() => setAutoFocus(!autoFocus)} 
+                  className={`px-3 py-1 rounded text-[10px] uppercase tracking-wider font-bold transition-all flex items-center gap-1.5 ${autoFocus ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500 hover:text-gray-700'}`}
+                  title={autoFocus ? "Auto-Focus Active" : "Enable Auto-Focus"}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${autoFocus ? 'bg-brand-purple animate-pulse' : 'bg-gray-400'}`}></div>
+                  FOCUS
+                </button>
+                <div className="w-[1px] h-3 bg-gray-300 mx-1"></div>
                 {[1, 2, 5, 10].map(sp => (
                   <button key={sp} onClick={() => setPlaybackSpeed(sp)} className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${playbackSpeed === sp ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500 hover:text-gray-700'}`}>
                     {sp}x
