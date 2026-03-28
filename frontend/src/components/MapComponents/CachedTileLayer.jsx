@@ -4,22 +4,26 @@ import L from 'leaflet';
 import { getCachedTile, cacheTile } from '../../services/tileCache';
 
 /**
- * Single-active-layer tile component with smooth handoff.
- * Only ONE layer loads tiles at a time (avoids Google rate-limiting).
- * On switch: new layer is added on top → old layer removed after load.
+ * Single-layer tile component with IndexedDB caching.
+ * On layer switch: old layer is removed immediately, new layer is rendered fresh.
  */
 export default function CachedTileLayer({ 
-    layers,       // { osm: { url, attribution }, google: {...}, googleSat: {...} }
-    activeLayer,  // 'osm' | 'google' | 'googleSat'
+    layers,
+    activeLayer,
     maxZoom = 19
 }) {
     const map = useMap();
     const currentLayerRef = useRef(null);
-    const currentIdRef = useRef(null);
 
     useEffect(() => {
         const config = layers[activeLayer];
         if (!config) return;
+
+        // Remove old layer immediately
+        if (currentLayerRef.current) {
+            map.removeLayer(currentLayerRef.current);
+            currentLayerRef.current = null;
+        }
 
         const cacheId = btoa(config.url).slice(0, 10);
 
@@ -45,7 +49,6 @@ export default function CachedTileLayer({
                                 done(null, tile);
                             })
                             .catch(() => {
-                                // Direct load fallback (skip cache)
                                 tile.src = urlVal;
                                 tile.onload = () => done(null, tile);
                                 tile.onerror = () => done(null, tile);
@@ -62,32 +65,16 @@ export default function CachedTileLayer({
             maxZoom,
         });
 
-        // Keep ref to old layer so we can remove it after new one loads
-        const oldLayer = currentLayerRef.current;
-
-        // Add new layer on top
         newLayer.addTo(map);
         currentLayerRef.current = newLayer;
-        currentIdRef.current = activeLayer;
 
-        // Remove old layer after a short delay (lets new tiles appear first)
-        if (oldLayer) {
-            const removeTimer = setTimeout(() => {
-                try { map.removeLayer(oldLayer); } catch(e) {}
-            }, 600);
-
-            return () => clearTimeout(removeTimer);
-        }
-    }, [map, activeLayer, layers, maxZoom]);
-
-    // Cleanup on unmount
-    useEffect(() => {
         return () => {
-            if (currentLayerRef.current) {
-                try { map.removeLayer(currentLayerRef.current); } catch(e) {}
+            if (currentLayerRef.current === newLayer) {
+                map.removeLayer(newLayer);
+                currentLayerRef.current = null;
             }
         };
-    }, [map]);
+    }, [map, activeLayer, layers, maxZoom]);
 
     return null;
 }
