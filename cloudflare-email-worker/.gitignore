@@ -1,0 +1,18 @@
+# Cloudflare Workers
+.wrangler
+.dev.vars
+dist
+node_modules
+
+# Secrets
+secrets.json
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Templates (if generated)
+src/templates.js
+src/templates.d.ts

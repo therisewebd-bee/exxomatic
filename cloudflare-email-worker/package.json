@@ -1,0 +1,35 @@
+{
+  "name": "cloudflare-email-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for sending emails",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "node tools/compile-mjml.js",
+    "dev": "node tools/compile-mjml.js && wrangler dev",
+    "compile-templates": "node tools/compile-mjml.js",
+    "deploy": "npm run build && wrangler deploy",
+    "types": "wrangler types"
+  },
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "email",
+    "mjml"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "handlebars": "^4.7.8",
+    "hono": "^4.0.0",
+    "nodemailer": "^6.9.9"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240208.0",
+    "@types/handlebars": "^4.0.40",
+    "@types/node": "^24.10.1",
+    "@types/nodemailer": "^7.0.4",
+    "mjml": "^4.15.2",
+    "typescript": "^5.3.3",
+    "wrangler": "^4.52.1"
+  }
+}

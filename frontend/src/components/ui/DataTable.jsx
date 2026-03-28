@@ -1,12 +1,13 @@
 /**
- * Reusable data table with column definitions and empty state.
+ * Reusable data table with column definitions, empty state, and optional row expansion.
  * 
  * @param {Array<{key: string, label: string}>} columns - Column definitions
  * @param {Array} data - Row data
  * @param {Function} renderRow - (item, index) => <tr> element
+ * @param {Function} [renderExpansion] - (item, index) => <tr> element or null (renders inline card below row)
  * @param {string} emptyMessage - Message when no data
  */
-export default function DataTable({ columns, data, renderRow, emptyMessage = 'No data found' }) {
+export default function DataTable({ columns, data, renderRow, renderExpansion, emptyMessage = 'No data found' }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
       <table className="w-full text-left">
@@ -27,7 +28,12 @@ export default function DataTable({ columns, data, renderRow, emptyMessage = 'No
               </td>
             </tr>
           )}
-          {data.map((item, index) => renderRow(item, index))}
+          {data.map((item, index) => (
+            <>
+              {renderRow(item, index)}
+              {renderExpansion && renderExpansion(item, index)}
+            </>
+          ))}
         </tbody>
       </table>
     </div>

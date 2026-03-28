@@ -1,0 +1,22 @@
+name = "email-worker"
+main = "src/index.ts"
+compatibility_date = "2024-12-05"
+compatibility_flags = ["nodejs_compat"]
+minify = true
+
+[vars]
+MAIL_FROM = "noreply@example.com"
+MAIL_FROM_NAME = "Prerna Services & Enterprises"
+MAIL_HOST = "smtp.gmail.com"
+MAIL_PORT = "465"
+MAIL_SECURE = "true"
+MAIL_RATE_LIMIT = "50"
+# MAIL_USER and MAIL_PASS should be set via `wrangler secret put`
+
+[[d1_databases]]
+binding = "DB"
+database_name = "email-db"
+database_id = "e21b7d94-0de3-47ae-b36e-0663db385982"
+
+[triggers]
+crons = ["*/10 * * * *"] # Run every 10 minutes
