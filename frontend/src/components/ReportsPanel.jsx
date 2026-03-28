@@ -101,16 +101,16 @@ export default function ReportsPanel({ vehicles = [] }) {
       const res = await checkLiveFuelRate(city);
       if (res.data?.rate) {
          setFuelRate(res.data.rate);
-         const source = res.data.source === 'live' ? '🟢 Live' : '🟡 Cached';
+         const source = res.data.source === 'live' ? 'Live' : 'Cached';
          setDetectedAddress(`${source} — ${res.data.city}`);
       } else {
          setFuelRate('94.72');
-         setDetectedAddress('⚠️ Fallback rate');
+         setDetectedAddress('Fallback rate');
       }
     } catch (e) {
       // Use a safe fallback
       setFuelRate('94.72');
-      setDetectedAddress('⚠️ Using fallback rate (network issue)');
+      setDetectedAddress('Using fallback rate (network issue)');
     } finally {
       setIsFetchingFuel(false);
     }

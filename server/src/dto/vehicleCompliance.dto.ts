@@ -16,7 +16,7 @@ const filledAddressSchema = z.string().max(255, 'Address must be max 255 char lo
 
 const filledBySchema = z.string().min(2).max(100, 'Name must be max 100 char long');
 
-const receiptUrlSchema = z.string().url('Invalid URL format').max(500).optional();
+const receiptUrlSchema = z.string().max(500, 'Receipt ID too long').optional();
 
 const filledAtSchema = z.coerce.date();
 
