@@ -213,7 +213,7 @@ function Dashboard() {
         {activeTab === 'reports' && <ReportsPanel vehicles={mergedVehicles} />}
         {activeTab === 'settings' && <SettingsPanel />}
         {activeTab === 'notifications' && <NotificationsPanel notifications={notifications} />}
-        {activeTab === 'users' && <UserManagementPanel />}
+        {activeTab === 'users' && isAdmin && <UserManagementPanel />}
       </Suspense>
     </div>
   );

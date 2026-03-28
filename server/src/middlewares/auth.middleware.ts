@@ -25,3 +25,10 @@ export const verifyAuth = AsyncHandler(async (req: any, res: Response, next: Nex
     throw new ApiError(401, error?.message || 'Invalid access token');
   }
 });
+
+export const requireAdmin = AsyncHandler(async (req: any, res: Response, next: NextFunction) => {
+  if (req.user?.role !== 'Admin') {
+    throw new ApiError(403, 'Permission denied: Admin access required');
+  }
+  next();
+});

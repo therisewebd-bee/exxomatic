@@ -15,17 +15,18 @@ import {
     userIdParamSchema,
     findUserQuerySchema,
 } from '../dto/user.dto.ts';
-import { verifyAuth } from '../middlewares/auth.middleware.ts';
+import { verifyAuth, requireAdmin } from '../middlewares/auth.middleware.ts';
 
 const router = Router();
 
-router.post('/register', validate(createAccountSchema), registerUserHandler);
+// Public auth entrypoint
 router.post('/login', validate(loginAccountSchema), loginUserHandler);
 
-// Protected routes
-router.get('/', verifyAuth, validate(findUserQuerySchema, true), getUsers);
-router.get('/:userId', verifyAuth, validate(userIdParamSchema, true), getUser);
-router.patch('/:userId', verifyAuth, validate(userIdParamSchema, true), validate(updateUserSchema), updateUserHandler);
-router.delete('/:userId', verifyAuth, validate(userIdParamSchema, true), deleteUserHandler);
+// Protected Admin-only routes for completely managing the user lifecycle
+router.post('/register', verifyAuth, requireAdmin, validate(createAccountSchema), registerUserHandler);
+router.get('/', verifyAuth, requireAdmin, validate(findUserQuerySchema, true), getUsers);
+router.get('/:userId', verifyAuth, requireAdmin, validate(userIdParamSchema, true), getUser);
+router.patch('/:userId', verifyAuth, requireAdmin, validate(userIdParamSchema, true), validate(updateUserSchema), updateUserHandler);
+router.delete('/:userId', verifyAuth, requireAdmin, validate(userIdParamSchema, true), deleteUserHandler);
 
 export default router;
