@@ -389,20 +389,22 @@ export default function ReportsPanel({ vehicles = [] }) {
       {/* Fullscreen Receipt Lightbox */}
       {lightboxImage && (
         <div 
-          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-8 cursor-pointer animate-[fadeIn_0.15s_ease-out]"
+          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm overflow-y-auto cursor-pointer animate-[fadeIn_0.15s_ease-out]"
           onClick={() => setLightboxImage(null)}
         >
-          <div className="relative max-w-2xl max-h-[85vh] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20" onClick={(e) => e.stopPropagation()}>
-            <AdvancedImage 
-              cldImg={cld.image(lightboxImage).format('auto').quality('auto').resize(auto().gravity(autoGravity()).width(800).height(800))} 
-              className="w-full h-full object-contain bg-white" 
-            />
-            <button 
-              onClick={() => setLightboxImage(null)}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition-colors"
-            >
-              <MdClose size={18} />
-            </button>
+          <div className="min-h-full flex items-center justify-center p-6">
+            <div className="relative max-w-3xl w-full rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20" onClick={(e) => e.stopPropagation()}>
+              <AdvancedImage 
+                cldImg={cld.image(lightboxImage).format('auto').quality('auto')} 
+                className="w-full h-auto object-contain bg-white" 
+              />
+              <button 
+                onClick={() => setLightboxImage(null)}
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition-colors sticky"
+              >
+                <MdClose size={18} />
+              </button>
+            </div>
           </div>
         </div>
       )}
