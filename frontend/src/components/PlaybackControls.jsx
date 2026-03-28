@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Marker, Popup, useMap } from 'react-leaflet';
+import { Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import AddressCell from './AddressCell';
 
@@ -124,10 +124,29 @@ export default function PlaybackControls({ validHistoryPath, selectedVehicle, ov
   const timestamp = currentPoint?.timestamp ? new Date(currentPoint.timestamp).toLocaleTimeString() : '--:--:--';
   const speed = Number(currentPoint?.speed || 0).toFixed(0);
 
+  const isPlaybackActive = isPlaying || playbackIndex > 0;
+  
+  // Calculate the past and future paths to create a "glowing tail" effect
+  const pastPath = isPlaybackActive 
+      ? validHistoryPath.slice(0, currentIdx + 2).map(loc => [Number(loc.lat), Number(loc.lng)])
+      : validHistoryPath.map(loc => [Number(loc.lat), Number(loc.lng)]);
+      
+  const futurePath = isPlaybackActive && validHistoryPath.length > 1
+      ? validHistoryPath.slice(currentIdx).map(loc => [Number(loc.lat), Number(loc.lng)])
+      : [];
+
   // The Ghost Marker renders directly into the Leaflet DOM, 
   // The Controls render into the overlayTarget external DOM
   return (
     <>
+      {pastPath.length > 1 && (
+        <Polyline positions={pastPath} pathOptions={{ color: '#3B82F6', weight: 4, opacity: 0.9 }} />
+      )}
+      
+      {futurePath.length > 1 && (
+        <Polyline positions={futurePath} pathOptions={{ color: '#94A3B8', weight: 4, opacity: 0.25, dashArray: '5, 10' }} />
+      )}
+
       {playbackPos && (
         <Marker position={playbackPos} icon={createFocusIcon(motionStatus, false, '#3B82F6')} zIndexOffset={1000}>
           <Popup>

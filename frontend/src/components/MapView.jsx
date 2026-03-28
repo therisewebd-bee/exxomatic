@@ -146,16 +146,8 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                 <BoundsTracker onBoundsChange={handleBoundsChange} />
                 <FlyToVehicle selectedVehicle={selectedVehicle} selectionTime={selectionTime} />
                 <DrawControl active={true} onDrawComplete={onDrawComplete} />
-
-                {/* Vehicle History Path */}
-                {validHistoryPath && validHistoryPath.length > 1 && (
-                    <Polyline
-                        positions={validHistoryPath.map(loc => [Number(loc.lat), Number(loc.lng)])}
-                        pathOptions={{ color: '#3B82F6', weight: 4, opacity: 0.8 }}
-                    />
-                )}
                 
-                {/* Independent Playback Subsystem - Runs at 60FPS outside MapView render loop */}
+                {/* Independent Playback Subsystem - Runs at 60FPS outside MapView render loop. Now also handles Polyline rendering. */}
                 <PlaybackControls validHistoryPath={validHistoryPath} selectedVehicle={selectedVehicle} overlayTarget={overlayTarget} selectionTime={selectionTime} />
 
                 {/* Geofence polygons */}
