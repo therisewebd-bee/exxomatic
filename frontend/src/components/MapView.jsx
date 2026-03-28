@@ -114,9 +114,8 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
             >
                 <ZoomControl position="bottomright" />
                 <CachedTileLayer 
-                    key={activeLayer}
-                    url={MAP_LAYERS[activeLayer].url}
-                    attribution={MAP_LAYERS[activeLayer].attribution}
+                    layers={MAP_LAYERS}
+                    activeLayer={activeLayer}
                 />
                 
                 {/* Floating Clear Focus Tool - Top Center */}
