@@ -9,6 +9,7 @@ if (typeof window !== 'undefined' && !('type' in window)) {
 import 'leaflet-draw';
 import { MdLayers, MdAssessment, MdClose, MdHistory } from 'react-icons/md';
 import { useCreateVehicleMutation } from '../hooks/useQueries';
+import { useUpdateVehicleLocationMutation } from '../hooks/useVehicleQueries';
 import { getCachedTile, cacheTile } from '../services/tileCache';
 import { sendViewport } from '../services/websocket';
 import { getDistanceFromLatLonInKm, turf_destination } from '../utils/geoUtils';
@@ -99,10 +100,7 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
     }, []);
 
     const createMutation = useCreateVehicleMutation();
-
-
-
-
+    const updateLocationMutation = useUpdateVehicleLocationMutation();
     const initialCenter = useRef(center).current;
 
     return (
@@ -270,6 +268,32 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                                                 Assign Customer / Edit
                                             </button>
                                         )}
+
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const coords = prompt(`Enter new manual coordinates for ${vehicle.vechicleNumb || vehicle.imei}\nFormat: "lat, lng" (e.g. 18.5204, 73.8567):`);
+                                                if (coords) {
+                                                    const parts = coords.split(',');
+                                                    if (parts.length === 2) {
+                                                        const lat = parseFloat(parts[0].trim());
+                                                        const lng = parseFloat(parts[1].trim());
+                                                        if (!isNaN(lat) && !isNaN(lng)) {
+                                                            updateLocationMutation.mutate({ id: vehicle.id, data: { lat, lng } }, {
+                                                                onError: (err) => alert(err.message)
+                                                            });
+                                                        } else {
+                                                            alert("Invalid coordinates. Please enter valid numbers.");
+                                                        }
+                                                    } else {
+                                                        alert('Invalid format. Please enter exactly as: "lat, lng"');
+                                                    }
+                                                }
+                                            }}
+                                            className="w-full py-1.5 mt-1 text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100 text-xs font-bold rounded flex items-center justify-center transition-colors"
+                                        >
+                                            Update Location Manually
+                                        </button>
                                     </div>
                                 </div>
                             </Popup>

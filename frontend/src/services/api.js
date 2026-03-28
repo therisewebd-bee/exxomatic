@@ -57,6 +57,7 @@ export const getVehicles    = (params = {})  => {
 };
 export const createVehicle  = (data)      => request('/vehicles', 'POST', data);
 export const updateVehicle  = (id, data)    => request(`/vehicles/${id}`, 'PATCH', data);
+export const updateVehicleLocation = (id, data) => request(`/vehicles/${id}/location`, 'PUT', data);
 export const deleteVehicle  = (id)        => request(`/vehicles/${id}`, 'DELETE');
 
 // ─── Locations ───────────────────────────────────────

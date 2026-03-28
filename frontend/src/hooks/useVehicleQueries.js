@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getVehicles, createVehicle, updateVehicle, deleteVehicle } from '../services/api';
+import { getVehicles, createVehicle, updateVehicle, deleteVehicle, updateVehicleLocation } from '../services/api';
 import { queryKeys } from '../lib/queryKeys';
 
 export function useVehiclesQuery(enabled = true) {
@@ -37,6 +37,16 @@ export function useDeleteVehicleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id) => deleteVehicle(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all });
+    }
+  });
+}
+
+export function useUpdateVehicleLocationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => updateVehicleLocation(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all });
     }
