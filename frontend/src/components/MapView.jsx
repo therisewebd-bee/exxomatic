@@ -61,7 +61,7 @@ const MAP_LAYERS = {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     },
     google: {
-        name: 'Google Roads',
+        name: 'Google Maps',
         url: 'https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
         attribution: '&copy; Google'
     },

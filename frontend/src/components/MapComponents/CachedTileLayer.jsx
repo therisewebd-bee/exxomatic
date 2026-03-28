@@ -68,6 +68,10 @@ export default function CachedTileLayer({
         newLayer.addTo(map);
         currentLayerRef.current = newLayer;
 
+        // Force Leaflet to immediately load all visible tiles — no zoom needed
+        map.invalidateSize();
+        newLayer.redraw();
+
         return () => {
             if (currentLayerRef.current === newLayer) {
                 map.removeLayer(newLayer);
