@@ -6,7 +6,7 @@ import { snapToRoads } from '../services/osrm';
 const EMPTY_ARRAY = [];
 
 export function useVehicleHistory(selectedVehicle) {
-    const { fetchVehicleHistory, getHistory } = useHistory();
+    const { fetchVehicleHistory, getHistory, historyCache } = useHistory();
     const [showHistoryData, setShowHistoryData] = useState(false);
     const [snappedPath, setSnappedPath] = useState([]);
     const [isSnapping, setIsSnapping] = useState(false);
@@ -14,7 +14,7 @@ export function useVehicleHistory(selectedVehicle) {
     const historyPath = useMemo(() => {
         if (!selectedVehicle) return EMPTY_ARRAY;
         return getHistory(selectedVehicle.imei) || EMPTY_ARRAY;
-    }, [selectedVehicle, getHistory]);
+    }, [selectedVehicle, getHistory, historyCache]);
     
     // Background snapping task with instant raw-path fallback & 2.5s timeout
     useEffect(() => {
