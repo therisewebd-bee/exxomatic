@@ -392,18 +392,20 @@ export default function ReportsPanel({ vehicles = [] }) {
           className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm overflow-y-auto cursor-pointer animate-[fadeIn_0.15s_ease-out]"
           onClick={() => setLightboxImage(null)}
         >
-          <div className="min-h-full flex items-center justify-center p-6">
-            <div className="relative max-w-3xl w-full rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20" onClick={(e) => e.stopPropagation()}>
+          {/* Fixed Close Button always visible on screen */}
+          <button 
+            onClick={() => setLightboxImage(null)}
+            className="fixed top-6 right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-all hover:scale-105 z-50 backdrop-blur-md shadow-2xl"
+          >
+            <MdClose size={24} />
+          </button>
+
+          <div className="min-h-full flex items-center justify-center p-6 sm:p-12">
+            <div className="relative max-w-4xl w-full rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20" onClick={(e) => e.stopPropagation()}>
               <AdvancedImage 
                 cldImg={cld.image(lightboxImage).format('auto').quality('auto')} 
-                className="w-full h-auto object-contain bg-white" 
+                className="w-full h-auto object-contain bg-white block" 
               />
-              <button 
-                onClick={() => setLightboxImage(null)}
-                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition-colors sticky"
-              >
-                <MdClose size={18} />
-              </button>
             </div>
           </div>
         </div>
