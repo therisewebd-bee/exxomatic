@@ -61,14 +61,14 @@ const MAP_LAYERS = {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     },
     google: {
-        name: 'Google Maps',
-        url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+        name: 'Google Roads',
+        url: 'https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
         attribution: '&copy; Google'
     },
     googleSat: {
-        name: 'Google Satellite',
-        url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-        attribution: '&copy; Google'
+        name: 'Satellite',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: '&copy; Esri, Maxar, Earthstar Geographics'
     }
 };
 
