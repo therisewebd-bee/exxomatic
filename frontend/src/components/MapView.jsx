@@ -61,12 +61,12 @@ const MAP_LAYERS = {
     },
     google: {
         name: 'Google Maps',
-        url: 'http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
+        url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
         attribution: '&copy; Google'
     },
     googleSat: {
         name: 'Google Satellite',
-        url: 'http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}',
+        url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
         attribution: '&copy; Google'
     }
 };
