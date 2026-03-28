@@ -22,88 +22,71 @@ function getDistance(lat1, lon1, lat2, lon2) {
 }
 
 /**
+ * Path Smoothing Service (Replaces OSRM Network API)
+ * Uses Catmull-Rom spline interpolation to synthesize high-resolution curved paths locally.
+ * This guarantees smooth playback and curvy map lines with 0 network latency and 0 API errors.
+ */
+
+// Simple helper to calculate Catmull-Rom splines
+function catmullRom(p0, p1, p2, p3, t) {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return 0.5 * (
+    (2 * p1) +
+    (-p0 + p2) * t +
+    (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+    (-p0 + 3 * p1 - 3 * p2 + p3) * t3
+  );
+}
+
+/**
  * Takes an array of raw GPS logs { lat, lng, timestamp, speed, ... }
- * Returns a high-resolution array of road-snapped points with interpolated timestamps.
+ * Returns a high-resolution array of smoothly interpolated points using cubic splines.
  */
 export async function snapToRoads(rawLogs) {
   if (!rawLogs || rawLogs.length < 2) return rawLogs;
 
-  // DOWNSAMPLING: OSRM relies on road networks; it doesn't need every single GPS ping.
-  // Cap the input to 75 points. This guarantees max 3 parallel requests (well under Chrome's 6 limit)
-  // meaning snapping will always happen in a single, instant network roundtrip.
-  const MAX_SAMPLED_POINTS = 75;
-  let sampledLogs = rawLogs;
-  if (rawLogs.length > MAX_SAMPLED_POINTS) {
-    const step = Math.ceil(rawLogs.length / MAX_SAMPLED_POINTS);
-    sampledLogs = rawLogs.filter((_, i) => i % step === 0 || i === rawLogs.length - 1);
-  }
+  const smoothedLogs = [];
+  const pointsPerSegment = 10; // Generate 10 smooth points between every real GPS point
 
-  const chunks = [];
-  for (let i = 0; i < sampledLogs.length; i += MAX_COORDS_PER_REQUEST - 1) {
-    const chunk = sampledLogs.slice(i, i + MAX_COORDS_PER_REQUEST);
-    if (chunk.length >= 2) chunks.push({ chunk, index: i });
-  }
+  // Loop through all points to build spline segments
+  for (let i = 0; i < rawLogs.length - 1; i++) {
+    // Determine the 4 control points for a Catmull-Rom spline
+    const p0 = rawLogs[i === 0 ? 0 : i - 1];
+    const p1 = rawLogs[i];
+    const p2 = rawLogs[i + 1];
+    const p3 = rawLogs[i + 2 < rawLogs.length ? i + 2 : rawLogs.length - 1];
 
-  // Fetch all chunks in parallel for maximum speed
-  const promises = chunks.map(async ({ chunk, index }) => {
-    const coordsString = chunk.map(p => `${p.lng},${p.lat}`).join(';');
-    const url = `https://router.project-osrm.org/match/v1/driving/${coordsString}?overview=full&geometries=geojson&gaps=ignore`;
+    const t1 = new Date(p1.timestamp).getTime();
+    const t2 = new Date(p2.timestamp).getTime();
 
-    const fallbackResult = () => {
-      const res = [];
-      for (let j = (index === 0 ? 0 : 1); j < chunk.length; j++) {
-        res.push(chunk[j]);
-      }
-      return res;
-    };
+    // Push the actual starting point of this segment
+    smoothedLogs.push({ ...p1 });
 
-    try {
-      const res = await fetch(url);
-      if (!res.ok) return fallbackResult();
+    // Generate interpolated points within the segment
+    for (let step = 1; step < pointsPerSegment; step++) {
+      const t = step / pointsPerSegment;
       
-      const data = await res.json();
-      if (data.code !== 'Ok' || !data.matchings || !data.tracepoints) {
-        return fallbackResult();
-      }
+      const interpLat = catmullRom(p0.lat, p1.lat, p2.lat, p3.lat, t);
+      const interpLng = catmullRom(p0.lng, p1.lng, p2.lng, p3.lng, t);
+      
+      const interpTime = Math.round(t1 + (t2 - t1) * t);
 
-      const segmentLogs = [];
-      if (index === 0) {
-        segmentLogs.push({ ...chunk[0] });
-      }
-
-      const startTime = new Date(chunk[0].timestamp).getTime();
-      const endTime = new Date(chunk[chunk.length - 1].timestamp).getTime();
-      const timeDiff = endTime - startTime;
-
-      data.matchings.forEach((match) => {
-        const geom = match.geometry.coordinates;
-        const numPoints = geom.length;
-        
-        geom.forEach((coord, gIdx) => {
-            if (index === 0 && gIdx === 0) return;
-            if (index > 0 && gIdx === 0) return;
-
-            const fraction = gIdx / (numPoints - 1 || 1);
-            const interpolatedTime = Math.round(startTime + (timeDiff * fraction));
-            
-            segmentLogs.push({
-                lat: coord[1],
-                lng: coord[0],
-                timestamp: new Date(interpolatedTime).toISOString(),
-                speed: chunk[0].speed,
-                ignition: chunk[0].ignition
-            });
-        });
+      smoothedLogs.push({
+        lat: interpLat,
+        lng: interpLng,
+        timestamp: new Date(interpTime).toISOString(),
+        speed: p1.speed,        // Propagate source speed
+        ignition: p1.ignition   // Propagate source ignition
       });
-
-      return segmentLogs;
-    } catch (err) {
-      console.warn('OSRM Map Matching failed for a chunk, falling back to raw path', err);
-      return fallbackResult();
     }
-  });
+  }
 
-  // Await all parallel requests and combine in order
-  const results = await Promise.all(promises);
-  return results.flat();
+  // Always push the very last actual point
+  smoothedLogs.push({ ...rawLogs[rawLogs.length - 1] });
+
+  // Simulate a microscopic delay so React state batches cleanly if needed, though not strictly required
+  await new Promise(resolve => setTimeout(resolve, 10));
+
+  return smoothedLogs;
 }
