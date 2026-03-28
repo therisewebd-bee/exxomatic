@@ -32,6 +32,7 @@ export default function ReportsPanel({ vehicles = [] }) {
   const [filledAt, setFilledAt] = useState(new Date().toISOString().slice(0, 16));
   const [receiptFile, setReceiptFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   const totalCost = (parseFloat(fuelQuantity || 0) * parseFloat(fuelRate || 0)).toFixed(2);
 
@@ -256,7 +257,10 @@ export default function ReportsPanel({ vehicles = [] }) {
             </td>
             <td className="px-6 py-5">
               {r.receiptUrl ? (
-                <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 shadow-sm cursor-pointer hover:scale-150 transition-transform origin-right z-10 relative">
+                <div 
+                  onClick={() => setLightboxImage(r.receiptUrl)}
+                  className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 shadow-sm cursor-pointer hover:ring-2 hover:ring-brand-purple hover:ring-offset-1 transition-all"
+                >
                   <AdvancedImage 
                     cldImg={cld.image(r.receiptUrl).format('auto').quality('auto').resize(auto().gravity(autoGravity()).width(80).height(80))} 
                     className="w-full h-full object-cover" 
@@ -380,6 +384,27 @@ export default function ReportsPanel({ vehicles = [] }) {
             </button>
           </div>
         </Modal>
+      )}
+
+      {/* Fullscreen Receipt Lightbox */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-8 cursor-pointer animate-[fadeIn_0.15s_ease-out]"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div className="relative max-w-2xl max-h-[85vh] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20" onClick={(e) => e.stopPropagation()}>
+            <AdvancedImage 
+              cldImg={cld.image(lightboxImage).format('auto').quality('auto').resize(auto().gravity(autoGravity()).width(800).height(800))} 
+              className="w-full h-full object-contain bg-white" 
+            />
+            <button 
+              onClick={() => setLightboxImage(null)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition-colors"
+            >
+              <MdClose size={18} />
+            </button>
+          </div>
+        </div>
       )}
     </PanelLayout>
   );
