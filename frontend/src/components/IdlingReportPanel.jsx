@@ -5,7 +5,6 @@ import { MdTimer, MdLocalParking, MdTimeline, MdDirectionsCar } from 'react-icon
 import PanelLayout from './ui/PanelLayout';
 import DataTable from './ui/DataTable';
 import StatCard from './ui/StatCard';
-import Button from './ui/Button';
 
 export default function IdlingReportPanel() {
   const { data: vehicles = [] } = useVehiclesQuery();
@@ -117,13 +116,13 @@ export default function IdlingReportPanel() {
         className="px-4 py-2 border rounded-lg text-sm bg-white"
         max={new Date().toISOString().split('T')[0]}
       />
-      <Button 
+      <button 
         onClick={handleGenerateReport} 
         disabled={loading || !selectedImei}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 bg-brand-purple hover:bg-brand-purple-dark text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md shadow-brand-purple/20 transition-all disabled:opacity-50"
       >
         {loading ? 'Scanning Logs...' : 'Generate Report'}
-      </Button>
+      </button>
     </div>
   );
 
