@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MdClose } from 'react-icons/md';
 import AddressCell from './AddressCell';
 
@@ -6,6 +7,8 @@ import AddressCell from './AddressCell';
  * Shows a scrollable table of historical location data for a selected vehicle
  */
 export default function HistoryDataOverlay({ vehicle, historyPath, onClose }) {
+  const [filter, setFilter] = useState('all');
+
   if (!vehicle) return null;
 
   return (
@@ -23,6 +26,23 @@ export default function HistoryDataOverlay({ vehicle, historyPath, onClose }) {
         </button>
       </div>
 
+      {/* Filters Row */}
+      <div className="px-4 py-2 border-b border-gray-100 bg-white flex gap-2 overflow-x-auto scrollbar-hide">
+        {['all', 'moving', 'idle', 'stopped'].map(f => (
+          <button 
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full border transition-colors ${
+              filter === f 
+                ? 'bg-brand-purple text-white border-brand-purple shadow hover:bg-brand-purple/90' 
+                : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-gray-700'
+            }`}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
       <div className="flex-1 overflow-y-auto p-2">
         <table className="w-full text-left text-[11px]">
           <thead className="sticky top-0 bg-gray-50 text-gray-500 font-semibold">
@@ -34,18 +54,24 @@ export default function HistoryDataOverlay({ vehicle, historyPath, onClose }) {
             </tr>
           </thead>
           <tbody>
-            {historyPath.length === 0 ? (
-              <tr><td colSpan={4} className="text-center py-4 text-gray-400 italic">No history available for last 24h</td></tr>
-            ) : (
-              [...historyPath].reverse().map((loc, idx) => {
+            {(() => {
+              const processedPath = [...historyPath].map(loc => {
                 const speed = Number(loc.speed || 0);
                 const motionStatus = speed > 3 ? 'moving' : (loc.ignition === true ? 'idle' : 'stopped');
+                return { ...loc, computedSpeed: speed, computedStatus: motionStatus };
+              }).filter(loc => filter === 'all' || loc.computedStatus === filter);
+
+              if (processedPath.length === 0) {
+                return <tr><td colSpan={4} className="text-center py-4 text-gray-400 italic">No {filter !== 'all' ? filter : ''} history available</td></tr>;
+              }
+
+              return processedPath.reverse().map((loc, idx) => {
                 const statusStyle = {
                   moving:  { dot: 'bg-green-500', text: 'text-green-700', label: 'Moving' },
                   idle:    { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Idle' },
                   stopped: { dot: 'bg-red-500',   text: 'text-red-700',   label: 'Stopped' },
                 };
-                const s = statusStyle[motionStatus];
+                const s = statusStyle[loc.computedStatus];
 
                 return (
                   <tr key={idx} className="hover:bg-purple-50 transition-colors border-b border-gray-50">
@@ -53,7 +79,7 @@ export default function HistoryDataOverlay({ vehicle, historyPath, onClose }) {
                       {new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td className="px-2 py-1.5 font-bold text-brand-purple text-center">
-                      {speed}
+                      {loc.computedSpeed}
                     </td>
                     <td className="px-2 py-1.5 text-center">
                       <span className={`inline-flex items-center gap-1 text-[9px] font-bold ${s.text}`}>
@@ -66,8 +92,8 @@ export default function HistoryDataOverlay({ vehicle, historyPath, onClose }) {
                     </td>
                   </tr>
                 );
-              })
-            )}
+              });
+            })()}
           </tbody>
         </table>
       </div>
