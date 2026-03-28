@@ -30,6 +30,7 @@ export default function ReportsPanel({ vehicles = [] }) {
   const [city, setCity] = useState('delhi');
   const [filledBy, setFilledBy] = useState(user?.name || '');
   const [filledAt, setFilledAt] = useState(new Date().toISOString().slice(0, 16));
+  const [filledAddress, setFilledAddress] = useState('');
   const [receiptFile, setReceiptFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -76,8 +77,10 @@ export default function ReportsPanel({ vehicles = [] }) {
         const detectedCity = data.address?.city || data.address?.town || data.address?.state_district;
         if (detectedCity) {
           setCity(detectedCity.toLowerCase().replace(/\s+/g, '-'));
+          setFilledAddress(data.display_name || detectedCity);
         } else {
           setCity('unknown-gps-area');
+          setFilledAddress('Unknown precise location');
         }
       } catch (err) {
         console.warn('Silent Geocode Fail', err);
@@ -135,12 +138,14 @@ export default function ReportsPanel({ vehicles = [] }) {
         totalCost: parseFloat(totalCost),
         filledBy,
         filledAt: new Date(filledAt).toISOString(),
+        filledAddress,
         ...(receiptUrl && { receiptUrl })
       });
       setShowModal(false);
       // Reset
       setFuelQuantity('');
       setFuelRate('');
+      setFilledAddress('');
       setReceiptFile(null);
     } catch (e) {
       alert(e.message || 'Failed to file report');
@@ -342,12 +347,23 @@ export default function ReportsPanel({ vehicles = [] }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Filled Location / Address</label>
+                <input
+                  type="text" value={filledAddress} onChange={(e) => setFilledAddress(e.target.value)}
+                  className="w-full px-4 py-3.5 rounded-xl border border-gray-200 outline-none focus:border-purple-500 transition-all text-sm font-medium bg-gray-50/30"
+                  placeholder="Street, City..."
+                />
+              </div>
+              <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Staff Name</label>
                 <input
                   type="text" value={filledBy} onChange={(e) => setFilledBy(e.target.value)}
                   className="w-full px-4 py-3.5 rounded-xl border border-gray-200 outline-none focus:border-purple-500 transition-all text-sm font-medium bg-gray-50/30"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Date Time</label>
                 <input
