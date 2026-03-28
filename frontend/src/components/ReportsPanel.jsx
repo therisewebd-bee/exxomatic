@@ -8,6 +8,14 @@ import PanelLayout from './ui/PanelLayout';
 import Modal from './ui/Modal';
 import DataTable from './ui/DataTable';
 import StatCard from './ui/StatCard';
+import { uploadFuelReceipt } from '../services/cloudinary';
+import { Cloudinary } from '@cloudinary/url-gen';
+import { auto } from '@cloudinary/url-gen/actions/resize';
+import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity';
+import { AdvancedImage } from '@cloudinary/react';
+
+// Initialize Cloudinary instance using Vite env variable
+const cld = new Cloudinary({ cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dljqtrocn' } });
 
 export default function ReportsPanel({ vehicles = [] }) {
   const { user } = useAuth();
@@ -22,6 +30,8 @@ export default function ReportsPanel({ vehicles = [] }) {
   const [city, setCity] = useState('delhi');
   const [filledBy, setFilledBy] = useState(user?.name || '');
   const [filledAt, setFilledAt] = useState(new Date().toISOString().slice(0, 16));
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const totalCost = (parseFloat(fuelQuantity || 0) * parseFloat(fuelRate || 0)).toFixed(2);
 
@@ -111,7 +121,13 @@ export default function ReportsPanel({ vehicles = [] }) {
       return alert('Please fill all required fields');
     }
 
+    setIsUploading(true);
     try {
+      let receiptUrl = null;
+      if (receiptFile) {
+        receiptUrl = await uploadFuelReceipt(receiptFile);
+      }
+
       await createMutation.mutateAsync({
         vehicleId,
         fuelQuantity: parseFloat(fuelQuantity),
@@ -119,13 +135,17 @@ export default function ReportsPanel({ vehicles = [] }) {
         totalCost: parseFloat(totalCost),
         filledBy,
         filledAt: new Date(filledAt).toISOString(),
+        ...(receiptUrl && { receiptUrl })
       });
       setShowModal(false);
       // Reset
       setFuelQuantity('');
       setFuelRate('');
+      setReceiptFile(null);
     } catch (e) {
       alert(e.message || 'Failed to file report');
+    } finally {
+      setIsUploading(false);
     }
   }
 
@@ -136,7 +156,8 @@ export default function ReportsPanel({ vehicles = [] }) {
     { key: 'rate', label: 'Rate (₹)' },
     { key: 'cost', label: 'Total Cost (₹)' },
     { key: 'filledBy', label: 'Filled By' },
-    { key: 'date', label: 'Date' }
+    { key: 'date', label: 'Date' },
+    { key: 'receipt', label: 'Receipt' }
   ];
 
   const actionButton = (
@@ -230,7 +251,19 @@ export default function ReportsPanel({ vehicles = [] }) {
               </div>
             </td>
             <td className="px-6 py-5">
-              <span className="text-[11px] text-gray-400 font-medium">{new Date(r.filledAt).toLocaleDateString()} at {new Date(r.filledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="text-[11px] text-gray-400 font-medium">{new Date(r.filledAt).toLocaleDateString()}</span>
+            </td>
+            <td className="px-6 py-5">
+              {r.receiptUrl ? (
+                <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 shadow-sm cursor-pointer hover:scale-150 transition-transform origin-right z-10 relative">
+                  <AdvancedImage 
+                    cldImg={cld.image(r.receiptUrl).format('auto').quality('auto').resize(auto().gravity(autoGravity()).width(80).height(80))} 
+                    className="w-full h-full object-cover" 
+                  />
+                </div>
+              ) : (
+                <span className="text-[10px] text-gray-300 italic">No receipt</span>
+              )}
             </td>
           </tr>
         )}
@@ -324,11 +357,25 @@ export default function ReportsPanel({ vehicles = [] }) {
               </div>
             </div>
 
+            {/* Cloudinary Receipt Upload Field */}
+            <div className="mt-2 p-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl relative hover:bg-purple-50 hover:border-brand-purple/50 transition-colors">
+              <label className="block w-full cursor-pointer text-center">
+                <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest block mb-2">Upload Fuel Receipt</span>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => setReceiptFile(e.target.files[0])}
+                  className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-brand-purple file:text-white hover:file:bg-brand-purple-dark"
+                />
+              </label>
+            </div>
+
             <button
-              onClick={handleSave} disabled={createMutation.isPending}
-              className="w-full py-4 bg-brand-purple hover:bg-brand-purple-dark text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-brand-purple/30 active:scale-[0.98] disabled:opacity-50 mt-2"
+              onClick={handleSave} disabled={createMutation.isPending || isUploading}
+              className="w-full py-4 bg-brand-purple hover:bg-brand-purple-dark text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-brand-purple/30 active:scale-[0.98] disabled:opacity-50 mt-2 flex justify-center items-center gap-2"
             >
-              {createMutation.isPending ? 'Syncing...' : 'Authorize & Submit'}
+              {(createMutation.isPending || isUploading) && <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>}
+              {(createMutation.isPending || isUploading) ? 'Uploading & Syncing...' : 'Authorize & Submit'}
             </button>
           </div>
         </Modal>
