@@ -1,20 +1,46 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useHistory } from '../context/HistoryContext';
 import { useGeofencesQuery } from './useQueries';
+import { snapToRoads } from '../services/osrm';
 
 const EMPTY_ARRAY = [];
 
 export function useVehicleHistory(selectedVehicle) {
     const { fetchVehicleHistory, getHistory } = useHistory();
     const [showHistoryData, setShowHistoryData] = useState(false);
+    const [snappedPath, setSnappedPath] = useState([]);
+    const [isSnapping, setIsSnapping] = useState(false);
 
     const historyPath = useMemo(() => {
         if (!selectedVehicle) return EMPTY_ARRAY;
         return getHistory(selectedVehicle.imei) || EMPTY_ARRAY;
     }, [selectedVehicle, getHistory]);
     
+    // Background snapping task
+    useEffect(() => {
+        let isActive = true;
+        if (historyPath.length > 1) {
+            setIsSnapping(true);
+            snapToRoads(historyPath).then(snapped => {
+                if (isActive) {
+                    setSnappedPath(snapped);
+                    setIsSnapping(false);
+                }
+            }).catch(() => {
+                if (isActive) {
+                    setSnappedPath(historyPath);
+                    setIsSnapping(false);
+                }
+            });
+        } else {
+            setSnappedPath(historyPath);
+            setIsSnapping(false);
+        }
+        return () => { isActive = false; };
+    }, [historyPath]);
+
     const validHistoryPath = useMemo(() => {
-        const path = historyPath;
+        const path = snappedPath;
         if (path.length === 0 && selectedVehicle && selectedVehicle.lat && selectedVehicle.lng) {
             // Fallback to current live position if DB has zero data
             return [{
@@ -27,7 +53,7 @@ export function useVehicleHistory(selectedVehicle) {
             }];
         }
         return path;
-    }, [historyPath, selectedVehicle]);
+    }, [snappedPath, selectedVehicle]);
 
     // Load history when vehicle selected
     useEffect(() => {
@@ -36,7 +62,7 @@ export function useVehicleHistory(selectedVehicle) {
         }
     }, [selectedVehicle?.imei, fetchVehicleHistory]);
 
-    return { validHistoryPath, showHistoryData, setShowHistoryData, historyPath: validHistoryPath };
+    return { validHistoryPath, showHistoryData, setShowHistoryData, rawHistoryPath: historyPath, isSnapping };
 }
 
 export function useGeofencePolygons() {

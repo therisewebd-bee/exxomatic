@@ -79,7 +79,7 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
     const [showLayerMenu, setShowLayerMenu] = useState(false);
     
     // Extracted custom hooks module to handle heavy logic separately
-    const { validHistoryPath, showHistoryData, setShowHistoryData, historyPath } = useVehicleHistory(selectedVehicle);
+    const { validHistoryPath, showHistoryData, setShowHistoryData, rawHistoryPath, isSnapping } = useVehicleHistory(selectedVehicle);
     const geofencePolygons = useGeofencePolygons();
     const { bounds, handleBoundsChange } = useMapBounds(onViewportChange);
     const { visibleUnknown, visibleVehicles } = useVehicleClusters(vehicles, livePositions, unknownDevices, selectedVehicle, bounds, isAdmin);
@@ -105,6 +105,16 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
 
     return (
         <div className="flex-1 h-screen relative">
+            {/* OSRM Route Snapping Indicator */}
+            {isSnapping && (
+                <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1003] pointer-events-none animate-bounce">
+                    <div className="bg-blue-600/90 backdrop-blur text-white px-4 py-2 rounded-full shadow-lg shadow-blue-500/20 text-xs font-bold flex items-center gap-2 border border-blue-400">
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Snapping History to Road Network...
+                    </div>
+                </div>
+            )}
+
             <MapContainer
                 center={initialCenter}
                 zoom={14}
@@ -136,7 +146,6 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                 )}
 
                 <BoundsTracker onBoundsChange={handleBoundsChange} />
-
                 <FlyToVehicle selectedVehicle={selectedVehicle} selectionTime={selectionTime} />
                 <DrawControl active={true} onDrawComplete={onDrawComplete} />
 
@@ -144,7 +153,7 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                 {validHistoryPath && validHistoryPath.length > 1 && (
                     <Polyline
                         positions={validHistoryPath.map(loc => [Number(loc.lat), Number(loc.lng)])}
-                        pathOptions={{ color: '#3B82F6', weight: 4, opacity: 0.5, dashArray: '10, 10' }}
+                        pathOptions={{ color: '#3B82F6', weight: 4, opacity: 0.8 }}
                     />
                 )}
                 
@@ -376,7 +385,7 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
             {showHistoryData && selectedVehicle && (
                 <HistoryDataOverlay
                     vehicle={selectedVehicle}
-                    historyPath={historyPath}
+                    historyPath={rawHistoryPath}
                     onClose={() => setShowHistoryData(false)}
                 />
             )}
