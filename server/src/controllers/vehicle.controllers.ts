@@ -14,6 +14,7 @@ import {
   UpdateVehicleInput,
   FindVehicleQueryInput,
   VehicleIdParam,
+  UpdateVehicleLocationInput,
 } from '../dto/vehicle.dto.ts';
 import { ValidatedRequest } from '../types/request.ts';
 import { vehicleCache } from '../services/tracker/vehicleCache.ts';
@@ -135,10 +136,46 @@ const deleteVehicleHandler = AsyncHandler(async (req: ValidatedRequest<VehicleId
   return res.status(200).json(new ApiResponse(200, result, 'Vehicle deleted successfully'));
 });
 
+/**
+ * PUT /api/vehicles/:vehicleId/location
+ * Admin    → can update any vehicle's location.
+ * Customer → can only update their own vehicle's location.
+ */
+const updateVehicleLocationHandler = AsyncHandler(async (req: ValidatedRequest<UpdateVehicleLocationInput & VehicleIdParam> | any, res: Response) => {
+  const { body, params } = req.validated;
+
+  const vehicle = await findVehicleByIdDb(params.vehicleId);
+  if (!vehicle) throw new ApiError(404, 'Vehicle not found');
+
+  if (req.user?.role !== 'Admin' && vehicle.customerId !== req.user?.id) {
+    throw new ApiError(403, 'You do not have permission to update location for this vehicle');
+  }
+
+  // Resolve longitude parameter whether it was passed as `long` or `lng`
+  const lng = body.lng !== undefined ? body.lng : body.long;
+
+  if (lng === undefined) {
+      throw new ApiError(400, 'Longitude is required');
+  }
+
+  // Process through the normalization and broadcasting pipeline natively
+  const result = await processTrackerUpdate({
+    imei: vehicle.imei,
+    lat: body.lat,
+    lng: lng,
+    speed: body.speed || 0,
+    ignition: body.ignition !== undefined ? body.ignition : true, 
+    timestamp: new Date()
+  });
+
+  return res.status(200).json(new ApiResponse(200, result, 'Vehicle location manually updated successfully'));
+});
+
 export {
   registerVehicleHandler,
   getVehicles,
   getVehicle,
   updateVehicleHandler,
   deleteVehicleHandler,
+  updateVehicleLocationHandler,
 };

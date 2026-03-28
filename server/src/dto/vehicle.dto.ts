@@ -47,8 +47,22 @@ export const vehicleIdParamSchema = z.object({
   }),
 });
 
+export const updateVehicleLocationSchema = z.object({
+  body: z.object({
+    lat: z.number().min(-90).max(90, 'Latitude must be between -90 and 90'),
+    long: z.number().min(-180).max(180, 'Longitude must be between -180 and 180').optional(),
+    lng: z.number().min(-180).max(180, 'Longitude must be between -180 and 180').optional(),
+    speed: z.number().nonnegative().optional(),
+    ignition: z.boolean().optional(),
+  }).refine(data => data.long !== undefined || data.lng !== undefined, {
+    message: "Either 'long' or 'lng' must be provided",
+    path: ["long", "lng"],
+  }),
+});
+
 // Export types
 export type CreateVehicleInput = z.infer<typeof createVehicleSchema>;
 export type UpdateVehicleInput = z.infer<typeof updateVehicleSchema>;
 export type FindVehicleQueryInput = z.infer<typeof findVehicleQuerySchema>;
 export type VehicleIdParam = z.infer<typeof vehicleIdParamSchema>;
+export type UpdateVehicleLocationInput = z.infer<typeof updateVehicleLocationSchema>;
