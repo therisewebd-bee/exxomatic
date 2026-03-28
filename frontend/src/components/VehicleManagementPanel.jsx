@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCreateVehicleMutation, useUpdateVehicleMutation, useDeleteVehicleMutation, useUsersQuery } from '../hooks/useQueries';
+import { useUpdateVehicleLocationMutation } from '../hooks/useVehicleQueries';
 import { useAuth } from '../context/AuthContext';
-import { MdDirectionsCar, MdAdd, MdClose, MdDelete, MdEdit } from 'react-icons/md';
+import { MdDirectionsCar, MdAdd, MdClose, MdDelete, MdEdit, MdMyLocation } from 'react-icons/md';
 import PanelLayout from './ui/PanelLayout';
 import Modal from './ui/Modal';
 import DataTable from './ui/DataTable';
@@ -12,6 +13,7 @@ export default function VehicleManagementPanel({ vehicles, registerImei, editVeh
   const createMutation = useCreateVehicleMutation();
   const updateMutation = useUpdateVehicleMutation();
   const deleteMutation = useDeleteVehicleMutation();
+  const updateLocationMutation = useUpdateVehicleLocationMutation();
   const { data: users = [] } = useUsersQuery(isAdmin);
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
@@ -142,10 +144,36 @@ export default function VehicleManagementPanel({ vehicles, registerImei, editVeh
                <StatusPill status={v.status} />
             </td>
             <td className="px-6 py-4 flex items-center gap-2">
-              <button onClick={() => openEdit(v)} className="text-brand-purple hover:text-brand-purple-dark transition p-1 bg-purple-50 hover:bg-purple-100 rounded">
+              <button onClick={() => openEdit(v)} className="text-brand-purple hover:text-brand-purple-dark transition p-1 bg-purple-50 hover:bg-purple-100 rounded" title="Edit Vehicle">
                 <MdEdit size={18} />
               </button>
-              <button onClick={() => handleDelete(v.id)} className="text-red-400 hover:text-red-600 transition p-1 bg-red-50 hover:bg-red-100 rounded">
+              <button 
+                onClick={() => {
+                  const coords = prompt(`Enter new coordinates for ${v.vechicleNumb || v.imei}\nFormat: "lat, lng" (e.g. 18.5204, 73.8567):`);
+                  if (coords) {
+                    const parts = coords.split(',');
+                    if (parts.length === 2) {
+                      const lat = parseFloat(parts[0].trim());
+                      const lng = parseFloat(parts[1].trim());
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        updateLocationMutation.mutate({ id: v.id, data: { lat, lng } }, {
+                          onSuccess: () => alert('Location updated successfully!'),
+                          onError: (err) => alert(err.message || 'Location update failed')
+                        });
+                      } else {
+                        alert('Invalid coordinates. Please enter valid numbers.');
+                      }
+                    } else {
+                      alert('Invalid format. Please enter exactly as: "lat, lng"');
+                    }
+                  }
+                }}
+                className="text-blue-500 hover:text-blue-700 transition p-1 bg-blue-50 hover:bg-blue-100 rounded"
+                title="Update GPS Location"
+              >
+                <MdMyLocation size={18} />
+              </button>
+              <button onClick={() => handleDelete(v.id)} className="text-red-400 hover:text-red-600 transition p-1 bg-red-50 hover:bg-red-100 rounded" title="Delete Vehicle">
                 <MdDelete size={18} />
               </button>
             </td>
