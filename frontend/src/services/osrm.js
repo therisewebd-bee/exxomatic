@@ -67,8 +67,8 @@ export async function snapToRoads(rawLogs) {
     for (let step = 1; step < pointsPerSegment; step++) {
       const t = step / pointsPerSegment;
       
-      const interpLat = catmullRom(p0.lat, p1.lat, p2.lat, p3.lat, t);
-      const interpLng = catmullRom(p0.lng, p1.lng, p2.lng, p3.lng, t);
+      const interpLat = catmullRom(Number(p0.lat), Number(p1.lat), Number(p2.lat), Number(p3.lat), t);
+      const interpLng = catmullRom(Number(p0.lng), Number(p1.lng), Number(p2.lng), Number(p3.lng), t);
       
       const interpTime = Math.round(t1 + (t2 - t1) * t);
 
