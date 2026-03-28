@@ -53,9 +53,29 @@ if (typeof L !== 'undefined' && L.DomEvent) {
 
 const EMPTY_ARRAY = [];
 
+const MAP_LAYERS = {
+    osm: {
+        name: 'OpenStreetMap',
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    },
+    google: {
+        name: 'Google Maps',
+        url: 'http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
+        attribution: '&copy; Google'
+    },
+    googleSat: {
+        name: 'Google Satellite',
+        url: 'http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}',
+        attribution: '&copy; Google'
+    }
+};
+
 export default function MapView({ vehicles, selectedVehicle, selectionTime, onSelectVehicle, livePositions = {}, unknownDevices = {}, onDrawComplete, isAdmin, onViewportChange, onRegisterRequest, onEditRequest, onAnalyzeRequest }) {
     const mapRef = useRef(null);
     const [overlayTarget, setOverlayTarget] = useState(null);
+    const [activeLayer, setActiveLayer] = useState('osm');
+    const [showLayerMenu, setShowLayerMenu] = useState(false);
     
     // Extracted custom hooks module to handle heavy logic separately
     const { validHistoryPath, showHistoryData, setShowHistoryData, historyPath } = useVehicleHistory(selectedVehicle);
@@ -95,7 +115,11 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                 ref={mapRef}
             >
                 <ZoomControl position="bottomright" />
-                <CachedTileLayer />
+                <CachedTileLayer 
+                    key={activeLayer}
+                    url={MAP_LAYERS[activeLayer].url}
+                    attribution={MAP_LAYERS[activeLayer].attribution}
+                />
                 
                 {/* Floating Clear Focus Tool - Top Center */}
                 {selectedVehicle && (
@@ -337,11 +361,37 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
 
 
 
-            {/* Layers button */}
-            <button className="absolute top-4 right-4 z-[1000] bg-white hover:bg-gray-50 shadow-lg rounded-lg px-3 py-2 flex items-center gap-2 text-sm font-medium text-gray-700 transition-all duration-200 hover:shadow-xl border border-gray-200">
-                <MdLayers size={18} />
-                Layers
-            </button>
+            {/* Layers button and dropdown */}
+            <div className="absolute top-4 right-4 z-[1000]">
+                <button 
+                    onClick={() => setShowLayerMenu(!showLayerMenu)}
+                    className="bg-white hover:bg-gray-50 shadow-lg rounded-lg px-3 py-2 flex items-center gap-2 text-sm font-medium text-gray-700 transition-all duration-200 hover:shadow-xl border border-gray-200"
+                >
+                    <MdLayers size={18} />
+                    Layers
+                </button>
+                
+                {showLayerMenu && (
+                    <div className="absolute top-full mt-2 right-0 w-48 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1">
+                        {Object.entries(MAP_LAYERS).map(([key, layer]) => (
+                            <button
+                                key={key}
+                                onClick={() => {
+                                    setActiveLayer(key);
+                                    setShowLayerMenu(false);
+                                }}
+                                className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                                    activeLayer === key 
+                                        ? 'bg-brand-purple/10 text-brand-purple font-bold' 
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                {layer.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             {/* Portal target for floating map controls that need to escape the Leaflet DOM tree */}
             <div ref={setOverlayTarget} className="absolute inset-x-0 bottom-0 top-0 pointer-events-none z-[1000]"></div>

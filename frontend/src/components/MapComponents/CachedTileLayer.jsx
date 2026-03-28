@@ -4,7 +4,11 @@ import L from 'leaflet';
 import { getCachedTile, cacheTile } from '../../services/tileCache';
 
 // Custom TileLayer that caches tiles in IndexedDB
-export default function CachedTileLayer() {
+export default function CachedTileLayer({ 
+    url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom = 19
+}) {
     const map = useMap();
 
     useEffect(() => {
@@ -14,15 +18,15 @@ export default function CachedTileLayer() {
                 tile.alt = '';
                 tile.setAttribute('role', 'presentation');
 
-                const url = this.getTileUrl(coords);
-                const key = `${coords.z}_${coords.x}_${coords.y}`;
+                const urlVal = this.getTileUrl(coords);
+                const key = `${coords.z}_${coords.x}_${coords.y}_${btoa(url).slice(0,10)}`; // cache key bound to url
 
                 getCachedTile(key).then((blob) => {
                     if (blob) {
                         tile.src = URL.createObjectURL(blob);
                         done(null, tile);
                     } else {
-                        fetch(url)
+                        fetch(urlVal)
                             .then(res => res.blob())
                             .then(fetchedBlob => {
                                 cacheTile(key, fetchedBlob);
@@ -30,7 +34,7 @@ export default function CachedTileLayer() {
                                 done(null, tile);
                             })
                             .catch(() => {
-                                tile.src = url;
+                                tile.src = urlVal;
                                 done(null, tile);
                             });
                     }
@@ -40,14 +44,14 @@ export default function CachedTileLayer() {
             }
         });
 
-        const layer = new CachingTileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            maxZoom: 19,
+        const layer = new CachingTileLayer(url, {
+            attribution: attribution,
+            maxZoom: maxZoom,
         });
         layer.addTo(map);
 
         return () => { map.removeLayer(layer); };
-    }, [map]);
+    }, [map, url, attribution, maxZoom]);
 
     return null;
 }
