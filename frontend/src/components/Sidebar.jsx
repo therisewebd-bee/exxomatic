@@ -11,9 +11,7 @@ import {
     MdKeyboardArrowUp,
     MdKeyboardArrowDown,
     MdLogout,
-    MdPeople,
-    MdLocalGasStation,
-    MdLocalParking
+    MdPeople
 } from 'react-icons/md';
 import { HiStatusOnline } from 'react-icons/hi';
 import UserProfileCard from './UserProfileCard';
@@ -50,11 +48,6 @@ const navItems = [
         id: 'reports',
         label: 'Reports',
         icon: <MdAssessment size={18} />,
-        expandable: true,
-        children: [
-            { id: 'fuel_reports', label: 'Fuel Compliance', icon: <MdLocalGasStation size={16} /> },
-            { id: 'idling_reports', label: 'Idling Report', icon: <MdLocalParking size={16} /> },
-        ]
     },
     {
         id: 'notifications',

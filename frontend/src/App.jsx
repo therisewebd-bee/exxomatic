@@ -10,7 +10,6 @@ import { useWebSocketVehicles } from './hooks/useWebSocketVehicles';
 
 // Lazy loaded panels to reduce initial bundle size
 const ReportsPanel = lazy(() => import('./components/ReportsPanel'));
-const IdlingReportPanel = lazy(() => import('./components/IdlingReportPanel'));
 const AnalyticsPanel = lazy(() => import('./components/AnalyticsPanel'));
 const SettingsPanel = lazy(() => import('./components/SettingsPanel'));
 const NotificationsPanel = lazy(() => import('./components/NotificationsPanel'));
@@ -211,8 +210,7 @@ function Dashboard() {
         )}
 
         {activeTab === 'analytics' && <AnalyticsPanel key={analyticsImei} initialImei={analyticsImei} />}
-        {activeTab === 'fuel_reports' && <ReportsPanel vehicles={mergedVehicles} />}
-        {activeTab === 'idling_reports' && <IdlingReportPanel />}
+        {activeTab === 'reports' && <ReportsPanel vehicles={mergedVehicles} />}
         {activeTab === 'settings' && <SettingsPanel />}
         {activeTab === 'notifications' && <NotificationsPanel notifications={notifications} />}
         {activeTab === 'users' && <UserManagementPanel />}

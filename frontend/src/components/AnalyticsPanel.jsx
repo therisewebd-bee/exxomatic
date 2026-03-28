@@ -174,6 +174,50 @@ export default function AnalyticsPanel({ initialImei }) {
     return () => { isSubscribed = false; };
   }, [selectedImei, date]);
 
+  const filteredCharts = useMemo(() => {
+    if (!metrics) return null;
+    if (filter === 'all') return metrics;
+
+    const filteredLogs = metrics.rawLogs.filter(log => log.computedStatus === filter);
+    const chronologicalLogs = [...filteredLogs].reverse();
+
+    const speedChartData = [];
+    const tempChartData = [];
+    const odometerChartData = [];
+    const batteryBarData = [];
+    const chartStep = Math.max(1, Math.floor(chronologicalLogs.length / 80));
+
+    chronologicalLogs.forEach((p, i) => {
+      if (i % chartStep !== 0 && i !== chronologicalLogs.length - 1) return;
+
+      const timeLabel = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      speedChartData.push({
+        time: timeLabel,
+        speed: Number(p.speed || 0),
+        battery: p.batteryVoltage != null ? Number(p.batteryVoltage) : null,
+        inputV: p.inputVoltage != null ? Number(p.inputVoltage) : null,
+      });
+
+      if (p.temperature != null) tempChartData.push({ time: timeLabel, temp: Number(p.temperature) });
+      if (p.odometer != null) odometerChartData.push({ time: timeLabel, odometer: Number(p.odometer) });
+      if (p.batteryHealth != null || p.batteryCharge != null) {
+        batteryBarData.push({
+          time: timeLabel,
+          health: p.batteryHealth != null ? Number(p.batteryHealth) : 0,
+          charge: p.batteryCharge != null ? Number(p.batteryCharge) : 0,
+        });
+      }
+    });
+
+    return {
+      ...metrics,
+      speedChartData,
+      tempChartData,
+      odometerChartData,
+      batteryBarData
+    };
+  }, [metrics, filter]);
+
   const controlBar = (
     <div className="flex gap-4 items-center">
       <input
@@ -290,10 +334,10 @@ export default function AnalyticsPanel({ initialImei }) {
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="font-bold text-gray-800 mb-6">Speed & Battery Overview</h3>
+              <h3 className="font-bold text-gray-800 mb-6">Speed & Battery Overview {filter !== 'all' && `(${filter})`}</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={metrics.speedChartData}>
+                  <LineChart data={filteredCharts.speedChartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                     <XAxis dataKey="time" stroke="#9ca3af" fontSize={12} tickMargin={10} minTickGap={30} />
                     <YAxis yAxisId="left" stroke="#9ca3af" fontSize={12} tickMargin={10} />
@@ -349,12 +393,12 @@ export default function AnalyticsPanel({ initialImei }) {
           {/* ── New Hardware Charts Row ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Temperature Timeline */}
-            {metrics.tempChartData.length > 0 && (
+            {filteredCharts.tempChartData.length > 0 && (
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-4">Temperature (°C)</h3>
+                <h3 className="font-bold text-gray-800 mb-4">Temperature (°C) {filter !== 'all' && `(${filter})`}</h3>
                 <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={metrics.tempChartData}>
+                    <AreaChart data={filteredCharts.tempChartData}>
                       <defs>
                         <linearGradient id="tempGrad" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
@@ -373,12 +417,12 @@ export default function AnalyticsPanel({ initialImei }) {
             )}
 
             {/* Battery Health & Charge */}
-            {metrics.batteryBarData.length > 0 && (
+            {filteredCharts.batteryBarData.length > 0 && (
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-4">Battery Health & Charge (%)</h3>
+                <h3 className="font-bold text-gray-800 mb-4">Battery Health & Charge (%) {filter !== 'all' && `(${filter})`}</h3>
                 <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={metrics.batteryBarData}>
+                    <BarChart data={filteredCharts.batteryBarData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                       <XAxis dataKey="time" fontSize={10} stroke="#9ca3af" minTickGap={20} />
                       <YAxis fontSize={10} stroke="#9ca3af" domain={[0, 100]} />
@@ -393,12 +437,12 @@ export default function AnalyticsPanel({ initialImei }) {
             )}
 
             {/* Odometer Progression */}
-            {metrics.odometerChartData.length > 0 && (
+            {filteredCharts.odometerChartData.length > 0 && (
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-4">Odometer (km)</h3>
+                <h3 className="font-bold text-gray-800 mb-4">Odometer (km) {filter !== 'all' && `(${filter})`}</h3>
                 <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={metrics.odometerChartData}>
+                    <AreaChart data={filteredCharts.odometerChartData}>
                       <defs>
                         <linearGradient id="odoGrad" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
