@@ -22,6 +22,7 @@ export const config = {
     'http://127.0.0.1:5173',
     'https://exxomatic.netlify.app',
     'https://codeczero-test.duckdns.org',
-    (process.env.FRONTEND_URL || '').trim().replace(/^["'](.*)["']$/, '$1'),
+    (process.env.FRONTEND_URL || '').trim().replace(/^["'](.*?)["']$/, '$1'),
   ].filter(Boolean) as string[],
+  emailWorkerUrl: (process.env.EMAIL_WORKER_URL || '').trim(),
 };

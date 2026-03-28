@@ -3,6 +3,7 @@ import { createLocationLogDb, createLocationLogsBatchDb } from '../../dbQuery/lo
 import { checkWithInGeofenceDb, checkWithInGeofenceBatchDb } from '../../dbQuery/geofence.dbquery.ts';
 import { wsService } from '../websocket/socket.ts';
 import { vehicleCache } from './vehicleCache.ts';
+import { sendGeofenceBreachEmail } from '../email/emailAlert.ts';
 
 export interface TrackerPayload {
   imei: string;
@@ -87,13 +88,17 @@ export const processLiveUpdate = async (data: TrackerPayload): Promise<void> => 
     wsService.broadcast('tracker:live', result, imei, lat, lng, isBreached);
 
     if (isBreached && needsAudit && vehicleCache.shouldNotify(imei)) {
+      const geofenceName = allAssignedFences.map(f => f.name).join(', ');
       wsService.broadcast('geofence:breach', {
         imei,
         action: 'exited',
-        geofence: { name: allAssignedFences.map(f => f.name).join(', ') },
+        geofence: { name: geofenceName },
         timestamp: timestamp.toISOString(),
       }, imei);
       vehicleCache.markNotified(imei);
+
+      // Fire-and-forget: queue geofence breach email via Cloudflare Worker
+      sendGeofenceBreachEmail({ imei, geofenceName, lat, lng, timestamp: timestamp.toISOString() }).catch(() => {});
     }
   } catch (err) {
     logger.error(`[tracker-live] broadcast failure: ${err}`);
@@ -183,13 +188,17 @@ export const processTrackerUpdate = async (data: TrackerPayload): Promise<Normal
     wsService.broadcast('tracker:live', result, imei, Number(locationLog.lat), Number(locationLog.lng), isBreached);
 
     if (isBreached && needsAudit && vehicleCache.shouldNotify(imei)) {
+      const geofenceName = allAssignedFences.map(f => f.name).join(', ');
       wsService.broadcast('geofence:breach', {
         imei,
         action: 'exited',
-        geofence: { name: allAssignedFences.map(f => f.name).join(', ') },
+        geofence: { name: geofenceName },
         timestamp: timestamp.toISOString(),
       }, imei);
       vehicleCache.markNotified(imei);
+
+      // Fire-and-forget: queue geofence breach email via Cloudflare Worker
+      sendGeofenceBreachEmail({ imei, geofenceName, lat: Number(locationLog.lat), lng: Number(locationLog.lng), timestamp: timestamp.toISOString() }).catch(() => {});
     }
 
     return result;
@@ -318,13 +327,17 @@ export const processTrackerUpdateBatch = async (updates: TrackerPayload[]): Prom
       wsService.broadcast('tracker:live', result, imei, Number(lat), Number(lng), isBreached);
 
       if (isBreached && needsAudit && vehicleCache.shouldNotify(imei)) {
+        const geofenceName = allAssignedFences.map(f => f.name).join(', ');
         wsService.broadcast('geofence:breach', {
           imei,
           action: 'exited',
-          geofence: { name: allAssignedFences.map(f => f.name).join(', ') },
+          geofence: { name: geofenceName },
           timestamp: timestamp.toISOString(),
         }, imei);
         vehicleCache.markNotified(imei);
+
+        // Fire-and-forget: queue geofence breach email via Cloudflare Worker
+        sendGeofenceBreachEmail({ imei, geofenceName, lat: Number(lat), lng: Number(lng), timestamp: timestamp.toISOString() }).catch(() => {});
       }
     }
 
