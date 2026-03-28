@@ -28,9 +28,19 @@ function getDistance(lat1, lon1, lat2, lon2) {
 export async function snapToRoads(rawLogs) {
   if (!rawLogs || rawLogs.length < 2) return rawLogs;
 
+  // DOWNSAMPLING: OSRM relies on road networks; it doesn't need every single GPS ping.
+  // Cap the input to 75 points. This guarantees max 3 parallel requests (well under Chrome's 6 limit)
+  // meaning snapping will always happen in a single, instant network roundtrip.
+  const MAX_SAMPLED_POINTS = 75;
+  let sampledLogs = rawLogs;
+  if (rawLogs.length > MAX_SAMPLED_POINTS) {
+    const step = Math.ceil(rawLogs.length / MAX_SAMPLED_POINTS);
+    sampledLogs = rawLogs.filter((_, i) => i % step === 0 || i === rawLogs.length - 1);
+  }
+
   const chunks = [];
-  for (let i = 0; i < rawLogs.length; i += MAX_COORDS_PER_REQUEST - 1) {
-    const chunk = rawLogs.slice(i, i + MAX_COORDS_PER_REQUEST);
+  for (let i = 0; i < sampledLogs.length; i += MAX_COORDS_PER_REQUEST - 1) {
+    const chunk = sampledLogs.slice(i, i + MAX_COORDS_PER_REQUEST);
     if (chunk.length >= 2) chunks.push({ chunk, index: i });
   }
 
