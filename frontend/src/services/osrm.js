@@ -3,8 +3,9 @@
  * Provides Map Matching to snap raw GPS coordinates to actual road networks.
  */
 
-// OSRM Match API allows max 100 coordinates per request
-const MAX_COORDS_PER_REQUEST = 90; 
+// OSRM Match API allows max 100 coordinates per request, but the public demo
+// server often throws "TooBig" even for 90. We use 50 to be completely safe.
+const MAX_COORDS_PER_REQUEST = 50; 
 
 /**
  * Calculates straight line distance between two points in km

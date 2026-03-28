@@ -107,10 +107,14 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
         <div className="flex-1 h-screen relative">
             {/* OSRM Route Snapping Indicator */}
             {isSnapping && (
-                <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1003] pointer-events-none animate-bounce">
-                    <div className="bg-blue-600/90 backdrop-blur text-white px-4 py-2 rounded-full shadow-lg shadow-blue-500/20 text-xs font-bold flex items-center gap-2 border border-blue-400">
-                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Snapping History to Road Network...
+                <div className="absolute inset-0 z-[1003] flex items-center justify-center pointer-events-none bg-black/5 backdrop-blur-[1px]">
+                    <div className="bg-white/90 backdrop-blur-md text-gray-800 px-6 py-4 rounded-2xl shadow-2xl flex flex-col items-center gap-3 border border-gray-100 animate-[fadeIn_0.2s_ease-out] scale-105">
+                        <div className="relative w-8 h-8">
+                            <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
+                            <div className="absolute inset-0 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        <span className="font-bold text-sm text-brand-purple tracking-wide">Snapping to Road Network...</span>
+                        <span className="text-[10px] text-gray-500 max-w-[200px] text-center">Optimizing precise vehicle path along mapped roads</span>
                     </div>
                 </div>
             )}
