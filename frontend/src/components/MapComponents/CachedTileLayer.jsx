@@ -1,15 +1,12 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { getCachedTile, cacheTile } from '../../services/tileCache';
 
 /**
- * Multi-layer cached tile component with smooth crossfade.
- * 
- * All layers are mounted with full opacity but stacked via z-index.
- * The active layer sits on top (z-index: 2), inactive layers sit below (z-index: 1).
- * This ensures Leaflet loads tiles for ALL layers at EVERY zoom level,
- * so switching is always instant with no re-loading.
+ * Single-active-layer tile component with smooth handoff.
+ * Only ONE layer loads tiles at a time (avoids Google rate-limiting).
+ * On switch: new layer is added on top → old layer removed after load.
  */
 export default function CachedTileLayer({ 
     layers,       // { osm: { url, attribution }, google: {...}, googleSat: {...} }
@@ -17,11 +14,15 @@ export default function CachedTileLayer({
     maxZoom = 19
 }) {
     const map = useMap();
-    const layerRefs = useRef({});
-    const mountedRef = useRef(false);
+    const currentLayerRef = useRef(null);
+    const currentIdRef = useRef(null);
 
-    // Build a caching tile layer class once
-    const createCachingLayer = useCallback((url, attribution, cacheId) => {
+    useEffect(() => {
+        const config = layers[activeLayer];
+        if (!config) return;
+
+        const cacheId = btoa(config.url).slice(0, 10);
+
         const CachingTileLayer = L.TileLayer.extend({
             createTile(coords, done) {
                 const tile = document.createElement('img');
@@ -44,8 +45,10 @@ export default function CachedTileLayer({
                                 done(null, tile);
                             })
                             .catch(() => {
+                                // Direct load fallback (skip cache)
                                 tile.src = urlVal;
-                                done(null, tile);
+                                tile.onload = () => done(null, tile);
+                                tile.onerror = () => done(null, tile);
                             });
                     }
                 });
@@ -54,51 +57,37 @@ export default function CachedTileLayer({
             }
         });
 
-        return new CachingTileLayer(url, { attribution, maxZoom });
-    }, [maxZoom]);
-
-    // Mount all layers once
-    useEffect(() => {
-        if (mountedRef.current) return;
-        mountedRef.current = true;
-
-        Object.entries(layers).forEach(([id, config]) => {
-            const cacheId = btoa(config.url).slice(0, 10);
-            const layer = createCachingLayer(config.url, config.attribution, cacheId);
-            layer.addTo(map);
-            layerRefs.current[id] = layer;
+        const newLayer = new CachingTileLayer(config.url, {
+            attribution: config.attribution,
+            maxZoom,
         });
 
-        return () => {
-            Object.values(layerRefs.current).forEach(l => map.removeLayer(l));
-            layerRefs.current = {};
-            mountedRef.current = false;
-        };
-    }, [map, layers, createCachingLayer]);
+        // Keep ref to old layer so we can remove it after new one loads
+        const oldLayer = currentLayerRef.current;
 
-    // Toggle active layer using z-index stacking (all layers keep opacity 1)
+        // Add new layer on top
+        newLayer.addTo(map);
+        currentLayerRef.current = newLayer;
+        currentIdRef.current = activeLayer;
+
+        // Remove old layer after a short delay (lets new tiles appear first)
+        if (oldLayer) {
+            const removeTimer = setTimeout(() => {
+                try { map.removeLayer(oldLayer); } catch(e) {}
+            }, 600);
+
+            return () => clearTimeout(removeTimer);
+        }
+    }, [map, activeLayer, layers, maxZoom]);
+
+    // Cleanup on unmount
     useEffect(() => {
-        // Small delay to ensure containers exist after first mount
-        const timer = setTimeout(() => {
-            Object.entries(layerRefs.current).forEach(([id, layer]) => {
-                const container = layer.getContainer?.();
-                if (container) {
-                    if (id === activeLayer) {
-                        container.style.zIndex = '2';
-                        container.style.opacity = '1';
-                        container.style.pointerEvents = 'auto';
-                    } else {
-                        container.style.zIndex = '1';
-                        container.style.opacity = '0';
-                        container.style.pointerEvents = 'none';
-                    }
-                    container.style.transition = 'opacity 0.3s ease';
-                }
-            });
-        }, 50);
-
-        return () => clearTimeout(timer);
-    }, [activeLayer]);
+        return () => {
+            if (currentLayerRef.current) {
+                try { map.removeLayer(currentLayerRef.current); } catch(e) {}
+            }
+        };
+    }, [map]);
 
     return null;
 }
