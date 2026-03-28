@@ -105,20 +105,6 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
 
     return (
         <div className="flex-1 h-screen relative">
-            {/* OSRM Route Snapping Indicator */}
-            {isSnapping && (
-                <div className="absolute inset-0 z-[1003] flex items-center justify-center pointer-events-none bg-black/5 backdrop-blur-[1px]">
-                    <div className="bg-white/90 backdrop-blur-md text-gray-800 px-6 py-4 rounded-2xl shadow-2xl flex flex-col items-center gap-3 border border-gray-100 animate-[fadeIn_0.2s_ease-out] scale-105">
-                        <div className="relative w-8 h-8">
-                            <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
-                            <div className="absolute inset-0 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                        <span className="font-bold text-sm text-brand-purple tracking-wide">Snapping to Road Network...</span>
-                        <span className="text-[10px] text-gray-500 max-w-[200px] text-center">Optimizing precise vehicle path along mapped roads</span>
-                    </div>
-                </div>
-            )}
-
             <MapContainer
                 center={initialCenter}
                 zoom={14}
@@ -132,9 +118,9 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                     activeLayer={activeLayer}
                 />
                 
-                {/* Floating Clear Focus Tool - Top Center */}
-                {selectedVehicle && (
-                    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1002] pointer-events-none">
+                {/* Floating Map Top Controls */}
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1002] pointer-events-none flex flex-col items-center gap-2">
+                    {selectedVehicle && (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -146,8 +132,16 @@ export default function MapView({ vehicles, selectedVehicle, selectionTime, onSe
                             <span className="text-xs font-bold text-gray-700">Exit Focused View</span>
                             <MdClose size={16} className="text-gray-400 group-hover:text-red-500 transition-colors" />
                         </button>
-                    </div>
-                )}
+                    )}
+
+                    {/* Non-blocking OSRM Route Snapping Indicator */}
+                    {isSnapping && (
+                        <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md border border-gray-100 flex items-center gap-2 animate-[fadeIn_0.2s_ease-out]">
+                            <div className="w-3 h-3 border-2 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-[10px] font-bold text-gray-600">Snapping to roads...</span>
+                        </div>
+                    )}
+                </div>
 
                 <BoundsTracker onBoundsChange={handleBoundsChange} />
                 <FlyToVehicle selectedVehicle={selectedVehicle} selectionTime={selectionTime} />
