@@ -54,8 +54,15 @@ const getGeofenceHandler = AsyncHandler(async (req: ValidatedRequest<GeofenceIdP
     throw new ApiError(404, 'Geofence not found');
   }
 
-  if (req.user?.role !== 'Admin' && geofence.customerId !== req.user?.id) {
-    throw new ApiError(403, 'Permission denied');
+  if (req.user?.role !== 'Admin') {
+    const isOwner = geofence.customerId === req.user?.id;
+    const hasLinkedVehicle = geofence.vehicles?.some(
+      (vg: any) => vg.vehicle?.customerId === req.user?.id
+    );
+
+    if (!isOwner && !hasLinkedVehicle) {
+      throw new ApiError(403, 'Permission denied');
+    }
   }
 
   return res.status(200).json(new ApiResponse(200, geofence, 'Geofence retrieved successfully'));
@@ -68,7 +75,10 @@ const getAllGeofencesHandler = AsyncHandler(async (req: ValidatedRequest<FindGeo
 
   const filters: any = {};
   if (req.user?.role !== 'Admin') {
-    filters.customerId = req.user?.id;
+    filters.OR = [
+      { customerId: req.user?.id },
+      { vehicles: { some: { vehicle: { customerId: req.user?.id } } } }
+    ];
   }
 
   const geofences = await findAllGeofenceDb(page, limit, filters);
