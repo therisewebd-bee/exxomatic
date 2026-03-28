@@ -10,6 +10,7 @@ import SearchableMultiSelect from './ui/SearchableMultiSelect';
 
 export default function AnalyticsPanel({ initialImei }) {
   const [selectedImei, setSelectedImei] = useState(initialImei || '');
+  const [filter, setFilter] = useState('all');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const { fetchVehicleHistory } = useHistory();
   const [loading, setLoading] = useState(false);
@@ -71,6 +72,9 @@ export default function AnalyticsPanel({ initialImei }) {
           const isMoving = speed > 3 || dist > 0.03;
           const hasIgnition = p1.ignition === true;
 
+          const computedStatus = isMoving ? 'moving' : (hasIgnition ? 'idle' : 'stopped');
+          p1.computedStatus = computedStatus;
+
           if (isMoving) {
             runningMinutes += mins;
             runningPts++;
@@ -81,6 +85,13 @@ export default function AnalyticsPanel({ initialImei }) {
             stoppedMinutes += mins;
             stoppedPts++;
           }
+        }
+
+        // Apply computedStatus to the very last point
+        if (pts.length > 0) {
+          const lastPt = pts[pts.length - 1];
+          const lastSpeed = Number(lastPt.speed || 0);
+          lastPt.computedStatus = lastSpeed > 3 ? 'moving' : (lastPt.ignition === true ? 'idle' : 'stopped');
         }
 
         // ── Real Odometer: use hardware ECU value if available ──
@@ -407,12 +418,29 @@ export default function AnalyticsPanel({ initialImei }) {
           </div>
 
           {/* Detailed Path Logs Table */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between">
-                <h3 className="font-bold text-gray-800">Historical Movement Logs</h3>
-                <span className="text-xs text-gray-500 font-medium">{metrics.pointsCount} points captured</span>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mt-6">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="font-bold text-gray-800">Historical Movement Logs</h3>
+                  <span className="text-[10px] text-gray-500 font-bold px-2 py-0.5 bg-gray-200 rounded-full">{metrics.pointsCount} points</span>
+                </div>
+                <div className="flex gap-2">
+                  {['all', 'moving', 'idle', 'stopped'].map(f => (
+                    <button 
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full border transition-colors ${
+                        filter === f 
+                          ? 'bg-brand-purple text-white border-brand-purple shadow hover:bg-brand-purple/90' 
+                          : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-gray-700'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
             </div>
-            <div className="max-h-[500px] overflow-y-auto">
+            <div className="max-h-[500px] overflow-y-auto w-full">
                 <table className="w-full text-left selectable-text">
                     <thead className="sticky top-0 bg-white border-b border-gray-200 z-10">
                         <tr>
@@ -428,7 +456,9 @@ export default function AnalyticsPanel({ initialImei }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {metrics.rawLogs.slice(0, 200).map((log, i) => (
+                        {metrics.rawLogs
+                          .filter(log => filter === 'all' || log.computedStatus === filter)
+                          .slice(0, 200).map((log, i) => (
                             <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                                 <td className="px-4 py-3 text-sm text-gray-700">{new Date(log.timestamp).toLocaleTimeString()}</td>
                                 <td className="px-4 py-3 text-sm">
