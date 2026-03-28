@@ -16,26 +16,39 @@ export function useVehicleHistory(selectedVehicle) {
         return getHistory(selectedVehicle.imei) || EMPTY_ARRAY;
     }, [selectedVehicle, getHistory]);
     
-    // Background snapping task
+    // Background snapping task with instant raw-path fallback & 2.5s timeout
     useEffect(() => {
         let isActive = true;
+        
         if (historyPath.length > 1) {
+            // Instantly show the raw path while snapping happens in the background!
+            setSnappedPath(historyPath);
             setIsSnapping(true);
-            snapToRoads(historyPath).then(snapped => {
-                if (isActive) {
-                    setSnappedPath(snapped);
-                    setIsSnapping(false);
-                }
-            }).catch(() => {
-                if (isActive) {
-                    setSnappedPath(historyPath);
-                    setIsSnapping(false);
-                }
-            });
+
+            // Timeout wrapper: if OSRM takes > 2.5s, just stick to raw path entirely
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('OSRM Snapping Timeout')), 2500)
+            );
+
+            Promise.race([snapToRoads(historyPath), timeoutPromise])
+                .then(snapped => {
+                    if (isActive) {
+                        setSnappedPath(snapped);
+                        setIsSnapping(false);
+                    }
+                })
+                .catch(err => {
+                    if (isActive) {
+                        console.warn('Snapping aborted:', err.message);
+                        setSnappedPath(historyPath); // Use old/raw way
+                        setIsSnapping(false);
+                    }
+                });
         } else {
             setSnappedPath(historyPath);
             setIsSnapping(false);
         }
+        
         return () => { isActive = false; };
     }, [historyPath]);
 
