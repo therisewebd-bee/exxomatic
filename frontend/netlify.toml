@@ -1,6 +1,6 @@
 [build]
   base = "frontend"
-  command = "npm install && npm run build && echo '/api/* https://base.exxomatic.live/api/:splat 200!' > dist/_redirects && echo '/* /index.html 200' >> dist/_redirects"
+  command = "npm install && npm run build && echo '/* /index.html 200' > dist/_redirects"
   publish = "dist"
 
 [[headers]]

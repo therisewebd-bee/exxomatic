@@ -1,0 +1,15 @@
+node_modules
+.git
+.gitignore
+*.md
+.env
+.env.*
+!.env.example
+server/logs
+server/dist
+frontend/node_modules
+frontend/dist
+server/node_modules
+**/.DS_Store
+**/npm-debug.log*
+certbot

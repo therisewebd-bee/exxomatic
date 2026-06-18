@@ -20,7 +20,7 @@ export const config = {
     'http://localhost:5173',
     'http://localhost:3000',
     'http://127.0.0.1:5173',
-    'https://exxomatic.netlify.app',
+    'https://fleettrackerd.onrender.com',
     'https://codeczero-test.duckdns.org',
     (process.env.FRONTEND_URL || '').trim().replace(/^["'](.*?)["']$/, '$1'),
   ].filter(Boolean) as string[],

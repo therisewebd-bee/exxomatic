@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: fleettracker-demo
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: TCP_PORT
+        value: 5000
+      - key: FRONTEND_URL
+        value: https://fleettrackerd.onrender.com

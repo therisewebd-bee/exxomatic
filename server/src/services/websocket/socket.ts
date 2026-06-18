@@ -136,7 +136,7 @@ class WebSocketService {
 
       this.sendToClient(
         ws,
-        SocketResponse.format('welcome', { message: 'Connected to live fleet tracker' })
+        SocketResponse.format('welcome', { message: 'Connected to FleetTracker live feed' })
       );
     });
 

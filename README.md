@@ -1,4 +1,4 @@
-# Exxomatic — Fleet Tracker Pro
+# FleetTracker — Real-Time Fleet Management System
 
 ![Fleet Tracker Badge](https://img.shields.io/badge/Status-Active-success)
 ![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=nodedotjs&logoColor=white)
@@ -29,7 +29,7 @@ A complete, production-grade, real-time fleet management and vehicle monitoring 
 
 ## System Architecture
 
-Exxomatic operates as a three-tier system: **Device Ingest Layer** (TCP socket server), **Application Layer** (REST API + WebSocket broadcaster + Geofence Engine), and **Client Layer** (React SPA dashboard). In production, all traffic is routed through an **NGINX reverse proxy** that handles SSL termination, WebSocket upgrades (`wss://`), and TCP stream proxying.
+FleetTracker operates as a three-tier system: **Device Ingest Layer** (TCP socket server), **Application Layer** (REST API + WebSocket broadcaster + Geofence Engine), and **Client Layer** (React SPA dashboard). In production, all traffic is routed through an **NGINX reverse proxy** that handles SSL termination, WebSocket upgrades (`wss://`), and TCP stream proxying.
 
 ```mermaid
 graph TD
@@ -271,7 +271,7 @@ All endpoints except auth are protected via JWT (`Authorization: Bearer <token>`
 ## Project Structure
 
 ```
-exxomatic/
+fleettracker/
 ├── server/                              # Backend (Node.js + Express + TypeScript)
 │   ├── prisma/
 │   │   └── schema.prisma               # Database schema (5 tables + PostGIS)
@@ -503,7 +503,7 @@ Located in `server/scripts/`:
 | `DATABASE_URL` | — | PostgreSQL connection string |
 | `JWT_SECRET` | — | Secret for JWT token signing |
 | `JWT_EXPIRES_IN` | `7d` | JWT token expiry duration |
-| `FRONTEND_URL` | `https://exxomatic.netlify.app` | CORS allowed origin |
+| `FRONTEND_URL` | `https://fleettrackerd.onrender.com` | CORS allowed origin |
 | `NODE_ENV` | `development` | Environment mode |
 | `LOG_LEVEL` | `info` | Winston logging level |
 

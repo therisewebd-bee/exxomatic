@@ -142,7 +142,7 @@ export default function Sidebar({ activeTab, onTabChange, onLogout }) {
                     </svg>
                 </div>
                 <span className="text-white font-bold text-lg tracking-tight">
-                    Exxo<span className="text-brand-purple-light">matic</span>
+                    Fleet<span className="text-brand-purple-light">Tracker</span>
                 </span>
             </div>
 

@@ -16,7 +16,7 @@ services:
       PORT: 3000
       TCP_PORT: 5000
       JWT_SECRET: ${JWT_SECRET:-your-default-secret-key}
-      FRONTEND_URL: ${FRONTEND_URL:-https://exxomatic.netlify.app}
+      FRONTEND_URL: ${FRONTEND_URL:-https://fleettrackerd.onrender.com}
     # Port 3000 is INTERNAL only — nginx proxies it via port 80/443
     # Port 5000 (IoT TCP) is also INTERNAL — nginx stream proxies it
     expose:

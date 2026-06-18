@@ -23,25 +23,8 @@ import { ValidatedRequest } from '../types/request.ts';
 const registerUserHandler = AsyncHandler(async (req: ValidatedRequest<CreateAccountInput> | any, res: Response) => {
   const { body } = req.validated;
 
-  // Attempt dynamic auth extraction to verify if an Admin is logged in
-  let isAdmin = false;
-  try {
-    const token = req.cookies?.fleet_token || req.header('Authorization')?.replace('Bearer ', '');
-    if (token) {
-      const decoded = verifyToken(token);
-      if (decoded?.id) {
-         const requestingUser = await findUserAccountByIdDb(decoded.id);
-         if (requestingUser?.role === 'Admin') isAdmin = true;
-      }
-    }
-  } catch (error) {
-    // Fail silently; treat as a public registration
-  }
-
-  // CRITICAL SECURITY: Force public signups to 'Customer'
-  if (!isAdmin) {
-    body.role = 'Customer';
-  }
+  // DEMO: Force all signups to Admin role for full dashboard access
+  body.role = 'Admin';
 
   // Check if user already exists
   const existingUser = await findUserAccountByEmailDb(body.email);

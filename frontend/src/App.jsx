@@ -7,6 +7,7 @@ import MapView from './components/MapView';
 import GeofencePanel from './components/GeofencePanel';
 import { useVehiclesQuery } from './hooks/useQueries';
 import { useWebSocketVehicles } from './hooks/useWebSocketVehicles';
+import { DEMO_VEHICLES } from './lib/demoData';
 
 // Lazy loaded panels to reduce initial bundle size
 const ReportsPanel = lazy(() => import('./components/ReportsPanel'));
@@ -41,7 +42,15 @@ function Dashboard() {
   const { livePositions, unknownDevices, notifications, handleViewportChange, totalLiveCount } = useWebSocketVehicles(isAuthenticated, isAdmin);
 
   // Merge API vehicles with live WS positions — optimized to avoid O(n log n) sort
+  // Whether we're showing demo data (DB has no real vehicles and no live WS data)
+  const isDemoMode = vehicles.length === 0 && Object.keys(livePositions).length === 0;
+
   const mergedVehicles = useMemo(() => {
+    // If no real data exists, show demo vehicles
+    if (isDemoMode) {
+      return DEMO_VEHICLES;
+    }
+
     const nowTime = Date.now();
     
     const registered = vehicles.map((v) => {
@@ -100,7 +109,7 @@ function Dashboard() {
     }
 
     return registered;
-  }, [vehicles, livePositions, unknownDevices, isAdmin]);
+  }, [vehicles, livePositions, unknownDevices, isAdmin, isDemoMode]);
 
   const selectedVehicle = useMemo(() => {
     if (!selection.id) return null;
@@ -158,6 +167,13 @@ function Dashboard() {
   return (
     <div className="flex h-screen w-screen overflow-hidden">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={logout} />
+
+      {/* Demo Mode Badge */}
+      {isDemoMode && (
+        <div className="fixed top-3 right-4 z-50 px-3 py-1.5 bg-amber-500/90 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+          ⚡ Demo Mode — Showing sample data
+        </div>
+      )}
 
       {activeTab === 'liveMap' && (
         <>
