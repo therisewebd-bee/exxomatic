@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { login as apiLogin, signup as apiSignup } from '../services/api';
+import { login as apiLogin, signup as apiSignup, DEMO_MODE } from '../services/api';
 import * as ws from '../services/websocket';
 
 const AuthContext = createContext(null);
@@ -61,6 +61,7 @@ export function AuthProvider({ children }) {
     loading,
     isAuthenticated: !!token,
     isAdmin: user?.role === 'Admin',
+    isDemoMode: DEMO_MODE,
     login,
     signup,
     logout,
