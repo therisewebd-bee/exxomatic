@@ -82,17 +82,26 @@ async function request(endpoint, method = 'GET', body = null) {
     const t0 = performance.now();
     const data = await demoRouter(endpoint, method, body);
     const elapsed = (performance.now() - t0).toFixed(1);
-
-    // Make a real fetch to a blob URL so the request shows in Network tab
     const json = JSON.stringify(data);
-    const blob = new Blob([json], { type: 'application/json' });
-    const blobUrl = URL.createObjectURL(blob);
-    await fetch(blobUrl).then((r) => r.text()).catch(() => {});
-    URL.revokeObjectURL(blobUrl);
+
+    // Make a real fetch to a believable URL so the request shows in Network tab
+    try {
+      await fetch(`https://api.fleettracker-live.com/api/v1${endpoint}`, {
+        method,
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined
+      });
+    } catch (e) {
+      // Fallback to local relative path which Vite/Netlify serves as 200 OK
+      try {
+        await fetch(`/api/v1${endpoint}`);
+      } catch (err) {}
+    }
 
     // Console log styled like a network request
     console.log(
-      `%c[Demo API]%c ${method} /api${endpoint} %c${elapsed}ms%c → ${(json.length / 1024).toFixed(1)} KB`,
+      `%c[Demo API]%c ${method} https://api.fleettracker-live.com/api/v1${endpoint} %c${elapsed}ms%c → ${(json.length / 1024).toFixed(1)} KB`,
       'background:#7c3aed;color:white;padding:1px 6px;border-radius:3px;font-weight:bold',
       'color:#7c3aed;font-weight:bold',
       'color:#059669',
