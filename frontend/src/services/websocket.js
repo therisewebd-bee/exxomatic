@@ -143,6 +143,9 @@ function stopDemoSimulator() {
 }
 
 // ─── Real WebSocket Logic ────────────────────────────────────
+let _wsFailCount = 0;
+const WS_MAX_FAILURES = 3; // After 3 failures, switch to demo simulator
+
 function getWsUrl() {
   let apiUrl = import.meta.env.VITE_API_URL || '/api';
   
@@ -171,6 +174,13 @@ export function connect() {
     return;
   }
 
+  // ── Auto-fallback: too many WS failures → switch to demo simulator ──
+  if (_wsFailCount >= WS_MAX_FAILURES) {
+    console.warn('[WS] Backend unreachable after 3 attempts — using demo simulator');
+    startDemoSimulator();
+    return;
+  }
+
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
     return;
   }
@@ -179,14 +189,20 @@ export function connect() {
 
   // Don't even attempt if no token is available
   if (!url.includes('token=')) {
+    _wsFailCount++;
+    if (_wsFailCount >= WS_MAX_FAILURES) {
+      console.warn('[WS] No token and backend unreachable — using demo simulator');
+      startDemoSimulator();
+      return;
+    }
     scheduleReconnect();
     return;
   }
 
   const isSecurePage = window.location.protocol === 'https:';
   if (isSecurePage && url.startsWith('ws:')) {
-    console.warn('[WS] Blocking insecure WebSocket attempt from HTTPS page. Please configure WSS.');
-    scheduleReconnect();
+    console.warn('[WS] Blocking insecure WebSocket from HTTPS — using demo simulator');
+    startDemoSimulator();
     return;
   }
 
@@ -194,12 +210,13 @@ export function connect() {
     socket = new WebSocket(url);
   } catch (err) {
     console.error('[WS] Failed to create WebSocket:', err);
+    _wsFailCount++;
     scheduleReconnect();
     return;
   }
 
   socket.onopen = () => {
-
+    _wsFailCount = 0; // Reset on successful connection
     reconnectDelay = 1000;
   };
 
@@ -218,12 +235,16 @@ export function connect() {
   };
 
   socket.onclose = (e) => {
-
+    _wsFailCount++;
+    if (_wsFailCount >= WS_MAX_FAILURES) {
+      console.warn('[WS] Connection lost — falling back to demo simulator');
+      startDemoSimulator();
+      return;
+    }
     scheduleReconnect();
   };
 
   socket.onerror = (err) => {
-
     // Don't call socket.close() here - onclose will fire automatically
   };
 }

@@ -1,9 +1,12 @@
 // ─── Demo Mode ──────────────────────────────────────────────
 // When VITE_API_URL is not set, all API calls route to the local demoStore.
-// This allows the frontend to run fully standalone without a backend.
+// When the real API is unreachable, we automatically fall back to demo mode.
 import * as demo from './demoStore';
 
-const DEMO_MODE = !import.meta.env.VITE_API_URL;
+let DEMO_MODE = !import.meta.env.VITE_API_URL;
+
+// Track if the real API has ever failed — once it does, stay in demo mode
+let _apiFailed = false;
 
 /**
  * Routes demo-mode API calls to the in-memory demoStore.
@@ -68,6 +71,26 @@ async function demoRouter(endpoint, method, body) {
   return { data: [] };
 }
 
+/**
+ * Serves a demo response with styled console logging.
+ */
+async function serveDemoResponse(endpoint, method, body) {
+  const t0 = performance.now();
+  const data = await demoRouter(endpoint, method, body);
+  const elapsed = (performance.now() - t0).toFixed(1);
+  const json = JSON.stringify(data);
+
+  console.log(
+    `%c[Demo API]%c ${method} /api${endpoint} %c${elapsed}ms%c → ${(json.length / 1024).toFixed(1)} KB`,
+    'background:#7c3aed;color:white;padding:1px 6px;border-radius:3px;font-weight:bold',
+    'color:#7c3aed;font-weight:bold',
+    'color:#059669',
+    'color:#6b7280'
+  );
+
+  return data;
+}
+
 // Force relative path on HTTPS to leverage Netlify proxy and avoid Mixed Content blocks
 const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 const envApiUrl = import.meta.env.VITE_API_URL || '';
@@ -76,41 +99,12 @@ const isEnvHttp = envApiUrl.startsWith('http:');
 const BASE = (isHttps && isEnvHttp) ? '/api' : (envApiUrl || '/api');
 
 async function request(endpoint, method = 'GET', body = null) {
-  // ── Demo Mode: intercept all API calls ──
-  // Uses real fetch() via blob URLs so requests appear in the Network tab.
-  if (DEMO_MODE) {
-    const t0 = performance.now();
-    const data = await demoRouter(endpoint, method, body);
-    const elapsed = (performance.now() - t0).toFixed(1);
-    const json = JSON.stringify(data);
-
-    // Make a real fetch to a believable URL so the request shows in Network tab
-    try {
-      await fetch(`https://api.fleettracker-live.com/api/v1${endpoint}`, {
-        method,
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: body ? JSON.stringify(body) : undefined
-      });
-    } catch (e) {
-      // Fallback to local relative path which Vite/Netlify serves as 200 OK
-      try {
-        await fetch(`/api/v1${endpoint}`);
-      } catch (err) {}
-    }
-
-    // Console log styled like a network request
-    console.log(
-      `%c[Demo API]%c ${method} https://api.fleettracker-live.com/api/v1${endpoint} %c${elapsed}ms%c → ${(json.length / 1024).toFixed(1)} KB`,
-      'background:#7c3aed;color:white;padding:1px 6px;border-radius:3px;font-weight:bold',
-      'color:#7c3aed;font-weight:bold',
-      'color:#059669',
-      'color:#6b7280'
-    );
-
-    return data;
+  // ── If already in demo mode (explicit or auto-detected), use demo directly ──
+  if (DEMO_MODE || _apiFailed) {
+    return serveDemoResponse(endpoint, method, body);
   }
 
+  // ── Try the real API first ──
   const token = localStorage.getItem('fleet_token_val');
   const opts = {
     method,
@@ -122,29 +116,46 @@ async function request(endpoint, method = 'GET', body = null) {
   };
   if (body) opts.body = JSON.stringify(body);
 
-  // If BASE ends with /api, and endpoint starts with /, we might have double slash.
-  // fetch handles this fine but let's be clean.
   const url = `${BASE.replace(/\/$/, '')}${endpoint}`;
-  const res = await fetch(url, opts);
-  const json = await res.json();
 
-  if (!res.ok) {
-    let errorMessage = json.message || 'Request failed';
-    
-    // Normalize validation errors from Zod into a readable string
-    if (json.error?.type === 'validation error' && json.error?.details) {
-       const details = Object.entries(json.error.details)
-         .map(([field, msg]) => `${field.replace(/^body\./, '')}: ${msg}`)
-         .join(', ');
-       errorMessage = `${errorMessage} - ${details}`;
+  try {
+    const res = await fetch(url, opts);
+
+    // Detect if we got HTML back instead of JSON (Netlify serving SPA fallback for /api routes)
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      console.warn(`[API] Got HTML instead of JSON for ${method} ${url} — switching to demo mode`);
+      _apiFailed = true;
+      return serveDemoResponse(endpoint, method, body);
     }
 
-    const err = new Error(errorMessage);
-    err.status = res.status;
-    err.details = json.error?.details;
-    throw err;
+    const json = await res.json();
+
+    if (!res.ok) {
+      let errorMessage = json.message || 'Request failed';
+      
+      // Normalize validation errors from Zod into a readable string
+      if (json.error?.type === 'validation error' && json.error?.details) {
+         const details = Object.entries(json.error.details)
+           .map(([field, msg]) => `${field.replace(/^body\./, '')}: ${msg}`)
+           .join(', ');
+         errorMessage = `${errorMessage} - ${details}`;
+      }
+
+      const err = new Error(errorMessage);
+      err.status = res.status;
+      err.details = json.error?.details;
+      throw err;
+    }
+    return json;
+  } catch (err) {
+    // Network error, CORS error, or JSON parse failure → backend is unreachable
+    if (err.status) throw err; // Re-throw real API errors (4xx from the actual backend)
+
+    console.warn(`[API] Backend unreachable for ${method} ${url} — falling back to demo mode`);
+    _apiFailed = true;
+    return serveDemoResponse(endpoint, method, body);
   }
-  return json;
 }
 
 // ─── Auth / Users ────────────────────────────────────────────
