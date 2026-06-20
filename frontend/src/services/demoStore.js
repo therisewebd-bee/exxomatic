@@ -180,29 +180,29 @@ export async function demoDeleteUser(id) {
 }
 
 // ─── AUTH ────────────────────────────────────────────────────
+const DEMO_CREDENTIALS = { email: 'test1@gmail.com', password: 'test@123T' };
+
 export async function demoLogin(data) {
   await delay(300);
-  // Accept any credentials — return the first admin user
-  const user = store.users.find((u) => u.role === 'Admin') || store.users[0] || {
-    id: 'demo-user-auto',
-    name: 'Demo User',
-    email: data.email || 'demo@demo.com',
-    role: 'Admin',
-  };
+  // Only allow the hardcoded demo credentials
+  if (data.email !== DEMO_CREDENTIALS.email || data.password !== DEMO_CREDENTIALS.password) {
+    throw new Error('Invalid credentials. Use the demo account shown below.');
+  }
   return {
     data: {
-      user,
+      user: {
+        id: 'demo-admin',
+        name: 'Demo Admin',
+        email: DEMO_CREDENTIALS.email,
+        role: 'Admin',
+      },
       token: 'demo-jwt-' + Date.now(),
     },
   };
 }
 
-export async function demoSignup(data) {
-  await delay(300);
-  const result = await demoCreateUser(data);
-  // Auto-grant admin for demo
-  result.data.user.role = 'Admin';
-  return result;
+export async function demoSignup() {
+  throw new Error('Signup is disabled. Please use the demo credentials to log in.');
 }
 
 // ─── COMPLIANCE ──────────────────────────────────────────────
